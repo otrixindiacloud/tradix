@@ -1,0 +1,488 @@
+
+> rest-express@1.0.0 dev
+> cross-env NODE_ENV=development DATABASE_URL="postgresql://neondb_owner:npg_4qUzlEaM3vPc@ep-small-moon-ad292p30.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require" tsx server/index.ts
+
+DATABASE_URL from env: SET
+NODE_ENV: development
+[STORAGE] Using database storage
+[dotenv@17.2.1] injecting env (0) from .env -- tip: 📡 version env with Radar: https://dotenvx.com/radar
+6:04:08 PM [express] serving on port 5000
+getEnquiries called with: { limit: 100, offset: 0, filters: undefined }
+Executing query...
+getEnquiries called with: { limit: 5, offset: 0, filters: undefined }
+Executing query...
+6:04:34 PM [express] GET /api/quotations 200 in 1671ms :: [{"id":"9776671f-d0ee-4545-b0e2-4c152ed197…
+6:04:35 PM [express] POST /api/customers 201 in 3991ms :: {"id":"41aaf431-95e6-4a31-a77f-f52b3f44201…
+Query result: 4 enquiries found
+6:04:36 PM [express] GET /api/enquiries 200 in 3660ms :: [{"id":"564d0f3c-24c4-4233-bd3d-a6b796b235c…
+6:04:36 PM [express] GET /api/sales-orders 304 in 3666ms :: []
+Query result: 4 enquiries found
+6:04:36 PM [express] GET /api/dashboard/stats 200 in 3704ms :: {"activeEnquiries":4,"pendingQuotes":…
+getEnquiries called with: { limit: 100, offset: 0, filters: undefined }
+Executing query...
+getEnquiries called with: { limit: 5, offset: 0, filters: undefined }
+Executing query...
+Query result: 4 enquiries found
+6:04:42 PM [express] GET /api/enquiries 200 in 280ms :: [{"id":"564d0f3c-24c4-4233-bd3d-a6b796b235cb…
+6:04:42 PM [express] GET /api/sales-orders 304 in 281ms :: []
+6:04:42 PM [express] GET /api/quotations 200 in 285ms :: [{"id":"9776671f-d0ee-4545-b0e2-4c152ed197f…
+Query result: 4 enquiries found
+6:04:42 PM [express] GET /api/dashboard/stats 200 in 297ms :: {"activeEnquiries":4,"pendingQuotes":1…
+getEnquiries called with: { limit: 50, offset: 0, filters: undefined }
+Executing query...
+Query result: 4 enquiries found
+6:05:04 PM [express] GET /api/enquiries 200 in 1642ms :: [{"id":"564d0f3c-24c4-4233-bd3d-a6b796b235c…
+6:05:04 PM [express] GET /api/customers 200 in 1691ms :: [{"id":"41aaf431-95e6-4a31-a77f-f52b3f44201…
+6:05:08 PM [express] GET /api/enquiries/564d0f3c-24c4-4233-bd3d-a6b796b235cb 200 in 296ms :: {"id":"…
+6:05:09 PM [express] GET /api/customers/772db978-27ef-4c36-92b7-763678837836 200 in 294ms :: {"id":"…
+6:05:14 PM [express] GET /api/enquiries/564d0f3c-24c4-4233-bd3d-a6b796b235cb/items 200 in 296ms :: […
+6:05:14 PM [express] GET /api/items 304 in 301ms :: []
+6:05:29 PM [express] PUT /api/enquiries/564d0f3c-24c4-4233-bd3d-a6b796b235cb 200 in 2224ms :: {"id":…
+6:05:29 PM [express] GET /api/enquiries/564d0f3c-24c4-4233-bd3d-a6b796b235cb 200 in 284ms :: {"id":"…
+Generating quotation for enquiry: 564d0f3c-24c4-4233-bd3d-a6b796b235cb
+generateQuotationFromEnquiry called with: {
+  enquiryId: '564d0f3c-24c4-4233-bd3d-a6b796b235cb',
+  userId: 'e459998e-0a4d-4652-946e-44b2ba161d16'
+}
+Retrieved enquiry and customer: {
+  enquiry: {
+    id: '564d0f3c-24c4-4233-bd3d-a6b796b235cb',
+    notes: 'Debug test enquiry for promotional materials'
+  },
+  customer: {
+    id: '772db978-27ef-4c36-92b7-763678837836',
+    name: 'Debug Test Corp',
+    customerType: 'Wholesale'
+  }
+}
+Error generating quotation from enquiry: ReferenceError: Cannot access 'enquiryItems2' before initialization
+    at QuotationStorage.generateQuotationFromEnquiry (/workspaces/tradix/server/storage/quotation-storage.ts:217:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (/workspaces/tradix/server/routes/quotations.ts:88:25)
+Error generating quotation: ReferenceError: Cannot access 'enquiryItems2' before initialization
+    at QuotationStorage.generateQuotationFromEnquiry (/workspaces/tradix/server/storage/quotation-storage.ts:217:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (/workspaces/tradix/server/routes/quotations.ts:88:25)
+Error details: {
+  "stack": "ReferenceError: Cannot access 'enquiryItems2' before initialization\n    at QuotationStorage.generateQuotationFromEnquiry (/workspaces/tradix/server/storage/quotation-storage.ts:217:15)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async <anonymous> (/workspaces/tradix/server/routes/quotations.ts:88:25)",
+  "message": "Cannot access 'enquiryItems2' before initialization"
+}
+6:05:35 PM [express] POST /api/quotations/generate/564d0f3c-24c4-4233-bd3d-a6b796b235cb 500 in 293ms…
+6:05:38 PM [express] GET /api/quotations 200 in 287ms :: [{"id":"9776671f-d0ee-4545-b0e2-4c152ed197f…
+Fetching quotation items for quotation ID: 9776671f-d0ee-4545-b0e2-4c152ed197fa
+6:05:42 PM [express] GET /api/quotations/9776671f-d0ee-4545-b0e2-4c152ed197fa/history 200 in 0ms :: …
+6:05:42 PM [express] GET /api/quotations/9776671f-d0ee-4545-b0e2-4c152ed197fa 200 in 285ms :: {"id":…
+Found quotation items: 0
+6:05:44 PM [express] GET /api/quotations/9776671f-d0ee-4545-b0e2-4c152ed197fa/items 200 in 1704ms ::…
+6:05:44 PM [express] GET /api/quotations/9776671f-d0ee-4545-b0e2-4c152ed197fa/revisions 200 in 1837m…
+6:06:02 PM [express] GET /api/quotations 200 in 1690ms :: [{"id":"9776671f-d0ee-4545-b0e2-4c152ed197…
+6:06:04 PM [express] GET /api/quotations 304 in 297ms :: [{"id":"9776671f-d0ee-4545-b0e2-4c152ed197f…
+6:06:11 PM [express] GET /api/quotations 200 in 303ms :: []
+6:06:13 PM [express] GET /api/quotations 200 in 296ms :: []
+6:06:14 PM [express] GET /api/quotations 200 in 296ms :: []
+Error logging audit event: error: invalid input syntax for type uuid: "system"
+    at file:///workspaces/tradix/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async QuotationStorage.logAuditEvent (/workspaces/tradix/server/storage/base.ts:28:7)
+    at async QuotationStorage.createQuotation (/workspaces/tradix/server/storage/quotation-storage.ts:137:5)
+    at async <anonymous> (/workspaces/tradix/server/routes/quotations.ts:47:25) {
+  length: 138,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $6 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'uuid.c',
+  line: '133',
+  routine: 'string_to_uuid'
+}
+6:06:23 PM [express] POST /api/quotations 201 in 901ms :: {"id":"aedb35a2-04f1-4f31-a537-05f6b3215a2…
+DEBUG: Attempting to create quotation item with body: {
+  description: 'Test Item',
+  quantity: 2,
+  unitPrice: '12.5000',
+  lineTotal: '25.00',
+  notes: 'Test'
+}
+DEBUG: Quotation ID from params: aedb35a2-04f1-4f31-a537-05f6b3215a21
+DEBUG: Parsed item data: {
+  quotationId: 'aedb35a2-04f1-4f31-a537-05f6b3215a21',
+  description: 'Test Item',
+  quantity: 2,
+  unitPrice: '12.5000',
+  lineTotal: '25.00',
+  notes: 'Test'
+}
+DEBUG: createQuotationItem called with: {
+  quotationId: 'aedb35a2-04f1-4f31-a537-05f6b3215a21',
+  description: 'Test Item',
+  quantity: 2,
+  unitPrice: '12.5000',
+  lineTotal: '25.00',
+  notes: 'Test'
+}
+DEBUG: About to insert with data: {
+  quotationId: 'aedb35a2-04f1-4f31-a537-05f6b3215a21',
+  description: 'Test Item',
+  quantity: 2,
+  unitPrice: '12.5000',
+  lineTotal: '25.00',
+  notes: 'Test',
+  id: 'p3xeuloxw',
+  createdAt: 2025-09-13T18:06:42.099Z
+}
+DEBUG: Database insert error: error: invalid input syntax for type uuid: "p3xeuloxw"
+    at file:///workspaces/tradix/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async NeonPreparedQuery.execute (/workspaces/tradix/node_modules/src/neon-serverless/session.ts:102:18)
+    at async QuotationStorage.createQuotationItem (/workspaces/tradix/server/storage/quotation-storage.ts:351:22)
+    at async <anonymous> (/workspaces/tradix/server/routes/quotations.ts:163:20) {
+  length: 141,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $1 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'uuid.c',
+  line: '133',
+  routine: 'string_to_uuid'
+}
+DEBUG: Other error creating quotation item: error: invalid input syntax for type uuid: "p3xeuloxw"
+    at file:///workspaces/tradix/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async NeonPreparedQuery.execute (/workspaces/tradix/node_modules/src/neon-serverless/session.ts:102:18)
+    at async QuotationStorage.createQuotationItem (/workspaces/tradix/server/storage/quotation-storage.ts:351:22)
+    at async <anonymous> (/workspaces/tradix/server/routes/quotations.ts:163:20) {
+  length: 141,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $1 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'uuid.c',
+  line: '133',
+  routine: 'string_to_uuid'
+}
+6:06:43 PM [express] POST /api/quotations/aedb35a2-04f1-4f31-a537-05f6b3215a21/items 500 in 1642ms :…
+6:07:58 PM [express] POST /api/customers 201 in 2005ms :: {"id":"dd4ecff6-10d3-474e-9cab-c9fcc7a11f2…
+Received enquiry data: {
+  customerId: 'dd4ecff6-10d3-474e-9cab-c9fcc7a11f23',
+  source: 'Email',
+  targetDeliveryDate: '2025-11-01T00:00:00.000Z',
+  notes: 'Flow test enquiry'
+}
+insertEnquirySchema shape: {
+  customerId: ZodString {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: { checks: [Array], typeName: 'ZodString', coerce: false },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  enquiryDate: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodNullable],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  status: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodNullable],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  source: ZodEnum {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: { values: [Array], typeName: 'ZodEnum' },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  targetDeliveryDate: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodString],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  notes: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodNullable],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  attachments: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodNullable],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  createdBy: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodString],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  }
+}
+Creating enquiry with data: {
+  customerId: 'dd4ecff6-10d3-474e-9cab-c9fcc7a11f23',
+  source: 'Email',
+  targetDeliveryDate: '2025-11-01T00:00:00.000Z',
+  notes: 'Flow test enquiry'
+}
+Generated enquiry number: ENQ-2024-005
+Processed data: {
+  customerId: 'dd4ecff6-10d3-474e-9cab-c9fcc7a11f23',
+  source: 'Email',
+  targetDeliveryDate: 2025-11-01T00:00:00.000Z,
+  notes: 'Flow test enquiry',
+  enquiryNumber: 'ENQ-2024-005'
+}
+Created enquiry: {
+  id: 'a4393b12-3c87-4f67-95ef-832e8d541ef6',
+  enquiryNumber: 'ENQ-2024-005',
+  customerId: 'dd4ecff6-10d3-474e-9cab-c9fcc7a11f23',
+  enquiryDate: 2025-09-13T18:08:05.993Z,
+  status: 'New',
+  source: 'Email',
+  targetDeliveryDate: 2025-11-01T00:00:00.000Z,
+  notes: 'Flow test enquiry',
+  attachments: null,
+  createdBy: null,
+  createdAt: 2025-09-13T18:08:05.993Z,
+  updatedAt: 2025-09-13T18:08:05.993Z
+}
+6:08:06 PM [express] POST /api/enquiries 201 in 904ms :: {"id":"a4393b12-3c87-4f67-95ef-832e8d541ef6…
+6:08:13 PM [express] POST /api/enquiry-items 201 in 598ms :: {"id":"7b2f1fb3-69b0-4eb6-8d3d-d94c4229…
+6:09:10 PM [express] GET /api/enquiries/a4393b12-3c87-4f67-95ef-832e8d541ef6 200 in 1694ms :: {"id":…
+6:10:35 PM [express] GET /api/enquiries/a4393b12-3c87-4f67-95ef-832e8d541ef6/items 200 in 1710ms :: …
+6:11:30 PM [express] GET /api/enquiries/a4393b12-3c87-4f67-95ef-832e8d541ef6 200 in 1705ms :: {"id":…
+6:11:48 PM [express] GET /api/enquiries/a4393b12-3c87-4f67-95ef-832e8d541ef6/items 200 in 1667ms :: …
+6:12:05 PM [express] GET /api/enquiries/a4393b12-3c87-4f67-95ef-832e8d541ef6 200 in 1692ms :: {"id":…

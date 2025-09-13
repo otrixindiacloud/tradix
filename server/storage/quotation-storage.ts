@@ -249,39 +249,43 @@ export class QuotationStorage extends BaseStorage {
       // Copy enquiry items to quotation items
       if (enquiryItems.length > 0) {
         let totalAmount = 0;
-        
+        const createdItems: QuotationItem[] = [];
+
         for (const enquiryItem of enquiryItems) {
-          // Calculate price with markup
           const basePrice = parseFloat(enquiryItem.unitPrice || "0");
           const quotedPrice = basePrice * (1 + markup);
           const totalPrice = quotedPrice * enquiryItem.quantity;
           totalAmount += totalPrice;
 
-          const quotationItemData = {
-            quotationId: quotation.id,
-            description: enquiryItem.description,
-            quantity: enquiryItem.quantity,
-            unitPrice: quotedPrice.toFixed(4),
-            lineTotal: totalPrice.toFixed(2),
-            notes: enquiryItem.notes || "",
-          };
+            const quotationItemData: InsertQuotationItem = {
+              quotationId: quotation.id,
+              description: enquiryItem.description,
+              quantity: enquiryItem.quantity,
+              // Provide costPrice & markup explicitly to satisfy downstream reporting
+              costPrice: basePrice.toFixed(4) as any,
+              markup: (markup * 100).toFixed(2) as any, // store percentage if needed
+              unitPrice: quotedPrice.toFixed(4) as any,
+              lineTotal: totalPrice.toFixed(2) as any,
+              notes: enquiryItem.notes || "",
+            } as any;
 
           console.log("Creating quotation item:", quotationItemData);
-          await this.createQuotationItem(quotationItemData as unknown as InsertQuotationItem);
+          const created = await this.createQuotationItem(quotationItemData);
+          createdItems.push(created);
         }
 
-        // Update quotation totals
         const updatedQuotation = {
           subtotal: totalAmount.toFixed(2),
           totalAmount: totalAmount.toFixed(2),
         };
-
         console.log("Updating quotation totals:", updatedQuotation);
         await this.updateQuotation(quotation.id, updatedQuotation);
       }
 
+      // Return fresh quotation with updated totals (re-query)
+      const refreshed = await this.getQuotation(quotation.id);
       console.log("Successfully generated quotation with items from enquiry");
-      return quotation;
+      return refreshed || quotation;
     } catch (error) {
       console.error("Error generating quotation from enquiry:", error);
       throw error;
@@ -336,24 +340,18 @@ export class QuotationStorage extends BaseStorage {
   }
 
   async createQuotationItem(item: InsertQuotationItem) {
-    console.log("DEBUG: createQuotationItem called with:", item);
+    // Do NOT generate custom id; let DB default gen_random_uuid() handle it
     try {
-      const id = this.generateId();
-      const now = this.getCurrentTimestamp();
-
-      const newItem = {
+      const baseItem = {
         ...item,
-        id,
-        createdAt: now,
-      };
+        // createdAt left to DB default
+      } as any;
 
-      console.log("DEBUG: About to insert with data:", newItem);
-      const result = await db.insert(quotationItems).values(newItem).returning();
-      console.log("DEBUG: Insert successful, result:", result);
-
-      return { ...newItem } as QuotationItem;
+      const inserted = await db.insert(quotationItems).values(baseItem).returning();
+      const row = (inserted as any)[0];
+      return row as QuotationItem;
     } catch (error) {
-      console.error("DEBUG: Database insert error:", error);
+      console.error("createQuotationItem failed:", error);
       throw error;
     }
   }

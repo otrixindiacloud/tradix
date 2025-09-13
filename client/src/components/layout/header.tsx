@@ -79,10 +79,10 @@ export default function Header() {
                 <FaTag className="text-white text-sm sm:text-lg" />
               </div>
               <div className="hidden sm:block">
-                <h1 className="text-lg sm:text-xl font-bold text-gray-900">Tradix for Golden Tag</h1>
+                <h1 className="text-lg sm:text-xl font-bold text-gray-900">Tradix - Golden Tag</h1>
               </div>
               <div className="sm:hidden">
-                <h1 className="text-lg font-bold text-gray-900">GT ERP</h1>
+                <h1 className="text-lg font-bold text-gray-900">Golden Tag</h1>
               </div>
             </div>
           </div>

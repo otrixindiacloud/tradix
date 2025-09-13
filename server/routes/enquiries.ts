@@ -41,7 +41,16 @@ export function registerEnquiryRoutes(app: Express) {
       if (!enquiry) {
         return res.status(404).json({ message: "Enquiry not found" });
       }
-      res.json(enquiry);
+      // Also fetch items so API provides embedded data for scripts expecting enquiry.items
+      // Frontend still uses /items endpoint; this is additive and non-breaking.
+      try {
+        const items = await storage.getEnquiryItems(req.params.id);
+        // Attach items (do not mutate original reference just in case)
+        return res.json({ ...enquiry, items });
+      } catch (itemErr) {
+        console.warn("Failed to fetch enquiry items for", req.params.id, itemErr);
+        return res.json({ ...enquiry, items: [] });
+      }
     } catch (error) {
       console.error("Error fetching enquiry:", error);
       res.status(500).json({ message: "Failed to fetch enquiry" });
