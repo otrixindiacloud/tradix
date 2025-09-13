@@ -323,7 +323,7 @@ export default function QuotationsPage() {
       header: "Approval",
       render: (value: string, quotation: Quotation) => (
         <div>
-          <Badge className={`${getApprovalStatusColor(value)} mb-1`}>
+          <Badge className={`mb-1`}>
             {value}
           </Badge>
           {quotation.requiredApprovalLevel && (
@@ -428,82 +428,68 @@ export default function QuotationsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      {/* Card-style header */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 px-8 py-6 flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900" data-testid="page-title">
-            Quotations
-          </h1>
-          <p className="text-gray-600">
-            Manage quotations with automated pricing and approval workflows
-          </p>
+          <h2 className="text-2xl font-bold text-gray-900">Quotations</h2>
+          <p className="text-gray-600 text-base mt-1">Step 2: Manage quotations, pricing, and approvals</p>
         </div>
-        <div className="flex gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" data-testid="button-export">
-                <FileDown className="h-4 w-4 mr-2" />
-                Export
-                <ChevronDown className="h-4 w-4 ml-2" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => exportQuotations('csv')}>
-                <FileText className="h-4 w-4 mr-2" />
-                Export as CSV
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => exportQuotations('excel')}>
-                <FileText className="h-4 w-4 mr-2" />
-                Export as Excel
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Link href="/quotations/new">
-            <Button data-testid="button-create-quotation">
-              <Plus className="h-4 w-4 mr-2" />
-              Create Quotation
-            </Button>
-          </Link>
-        </div>
+        <Link href="/quotations/new">
+          <button
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
+            data-testid="button-new-quotation"
+          >
+            <span className="text-xl font-bold">+</span> New Quotation
+          </button>
+        </Link>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="flex items-center gap-2">
-          <Clock className="h-5 w-5 text-gray-500" />
-          <div>
-            <div className="text-2xl font-bold">
+      {/* Stats Cards - Card/Box UI */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 my-6">
+        <Card className="flex flex-row items-start gap-4 p-4 shadow-sm border border-gray-200 bg-white">
+          <div className="rounded-full bg-gray-100 p-2 mt-1">
+            <Clock className="h-6 w-6 text-gray-500" />
+          </div>
+          <div className="flex-1">
+            <div className="text-lg font-bold text-gray-700">Draft Quotes</div>
+            <div className="text-2xl font-bold text-gray-900">
               {quotations?.filter((q: Quotation) => q.status === "Draft").length || 0}
             </div>
-            <div className="text-sm text-gray-600">Draft Quotes</div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-gray-500" />
-          <div>
-            <div className="text-2xl font-bold">
+        </Card>
+        <Card className="flex flex-row items-start gap-4 p-4 shadow-sm border border-gray-200 bg-white">
+          <div className="rounded-full bg-gray-100 p-2 mt-1">
+            <FileText className="h-6 w-6 text-gray-500" />
+          </div>
+          <div className="flex-1">
+            <div className="text-lg font-bold text-gray-700">Sent Quotes</div>
+            <div className="text-2xl font-bold text-gray-900">
               {quotations?.filter((q: Quotation) => q.status === "Sent").length || 0}
             </div>
-            <div className="text-sm text-gray-600">Sent Quotes</div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5 text-yellow-500" />
-          <div>
-            <div className="text-2xl font-bold">
+        </Card>
+        <Card className="flex flex-row items-start gap-4 p-4 shadow-sm border border-gray-200 bg-white">
+          <div className="rounded-full bg-yellow-100 p-2 mt-1">
+            <AlertTriangle className="h-6 w-6 text-yellow-500" />
+          </div>
+          <div className="flex-1">
+            <div className="text-lg font-bold text-gray-700">Pending Approval</div>
+            <div className="text-2xl font-bold text-gray-900">
               {quotations?.filter((q: Quotation) => q.approvalStatus === "Pending").length || 0}
             </div>
-            <div className="text-sm text-gray-600">Pending Approval</div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <CheckCircle className="h-5 w-5 text-green-500" />
-          <div>
-            <div className="text-2xl font-bold">
+        </Card>
+        <Card className="flex flex-row items-start gap-4 p-4 shadow-sm border border-gray-200 bg-white">
+          <div className="rounded-full bg-green-100 p-2 mt-1">
+            <CheckCircle className="h-6 w-6 text-green-500" />
+          </div>
+          <div className="flex-1">
+            <div className="text-lg font-bold text-gray-700">Accepted</div>
+            <div className="text-2xl font-bold text-gray-900">
               {quotations?.filter((q: Quotation) => q.status === "Accepted").length || 0}
             </div>
-            <div className="text-sm text-gray-600">Accepted</div>
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Filters */}
@@ -519,7 +505,7 @@ export default function QuotationsPage() {
               placeholder="Search quotes..."
               value={filters.search}
               onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-              className="pl-10"
+              className="pl-10 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 rounded-md shadow-none"
               data-testid="input-search"
             />
           </div>

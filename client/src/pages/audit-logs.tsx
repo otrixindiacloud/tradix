@@ -273,7 +273,7 @@ export default function AuditLogsPage() {
                   placeholder="Search logs..."
                   value={filters.search}
                   onChange={(e) => handleFilterChange("search", e.target.value)}
-                  className="pl-8"
+                  className="pl-8 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 rounded-md shadow-none"
                 />
               </div>
             </div>

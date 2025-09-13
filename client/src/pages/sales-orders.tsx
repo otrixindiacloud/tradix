@@ -479,28 +479,19 @@ export default function SalesOrders() {
 
   return (
     <div>
-      {/* Page Header */}
-      <div className="flex items-center justify-between mb-6">
+      {/* Card-style header */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 px-8 py-6 flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900" data-testid="text-page-title">
-            Sales Orders
-          </h2>
-          <p className="text-gray-600">
-            Step 5: Manage sales orders with auto-creation, barcode enforcement, version control, and LPO validation
-          </p>
+          <h2 className="text-2xl font-bold text-gray-900">Sales Orders</h2>
+          <p className="text-gray-600 text-base mt-1">Step 5: Manage sales orders with auto-creation, barcode enforcement, version control, and LPO validation</p>
         </div>
-        <div className="flex items-center space-x-2">
-          <Badge variant="outline" className="text-blue-600">
-            {readyQuotations.length} Ready for SO Creation
-          </Badge>
-          <Button
-            onClick={() => setShowCreateDialog(true)}
-            data-testid="button-create-sales-order"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Create Sales Order
-          </Button>
-        </div>
+        <button
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
+          onClick={() => setShowCreateDialog(true)}
+          data-testid="button-new-sales-order"
+        >
+          <span className="text-xl font-bold">+</span> New Sales Order
+        </button>
       </div>
 
       {/* Quick Actions for Ready Quotations */}
@@ -552,84 +543,84 @@ export default function SalesOrders() {
       <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start gap-3">
+              <Edit className="h-6 w-6 text-gray-400" />
               <div>
-                <p className="text-sm text-gray-600">Draft</p>
+                <p className="text-lg font-bold text-black">Draft</p>
                 <p className="text-2xl font-bold text-gray-600" data-testid="stat-draft-orders">
                   {orderStats.draft}
                 </p>
               </div>
-              <Edit className="h-8 w-8 text-gray-400" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start gap-3">
+              <CheckCircle className="h-6 w-6 text-green-400" />
               <div>
-                <p className="text-sm text-gray-600">Confirmed</p>
+                <p className="text-lg font-bold text-black">Confirmed</p>
                 <p className="text-2xl font-bold text-green-600" data-testid="stat-confirmed-orders">
                   {orderStats.confirmed}
                 </p>
               </div>
-              <CheckCircle className="h-8 w-8 text-green-400" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start gap-3">
+              <Package className="h-6 w-6 text-blue-400" />
               <div>
-                <p className="text-sm text-gray-600">Processing</p>
+                <p className="text-lg font-bold text-black">Processing</p>
                 <p className="text-2xl font-bold text-blue-600" data-testid="stat-processing-orders">
                   {orderStats.processing}
                 </p>
               </div>
-              <Package className="h-8 w-8 text-blue-400" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start gap-3">
+              <Truck className="h-6 w-6 text-purple-400" />
               <div>
-                <p className="text-sm text-gray-600">Shipped</p>
+                <p className="text-lg font-bold text-black">Shipped</p>
                 <p className="text-2xl font-bold text-purple-600" data-testid="stat-shipped-orders">
                   {orderStats.shipped}
                 </p>
               </div>
-              <Truck className="h-8 w-8 text-purple-400" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start gap-3">
+              <CheckCircle className="h-6 w-6 text-green-400" />
               <div>
-                <p className="text-sm text-gray-600">Delivered</p>
+                <p className="text-lg font-bold text-black">Delivered</p>
                 <p className="text-2xl font-bold text-green-600" data-testid="stat-delivered-orders">
                   {orderStats.delivered}
                 </p>
               </div>
-              <CheckCircle className="h-8 w-8 text-green-400" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start gap-3">
+              <Clock className="h-6 w-6 text-orange-400" />
               <div>
-                <p className="text-sm text-orange-600">Pending LPO</p>
+                <p className="text-lg font-bold text-black">Pending LPO</p>
                 <p className="text-2xl font-bold text-orange-600" data-testid="stat-pending-lpo">
                   {orderStats.pendingLpo}
                 </p>
               </div>
-              <Clock className="h-8 w-8 text-orange-400" />
             </div>
           </CardContent>
         </Card>
@@ -647,13 +638,13 @@ export default function SalesOrders() {
                   placeholder="Search orders..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-64 pl-10"
+                  className="w-64 pl-10 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 rounded-md shadow-none"
                   data-testid="input-search-orders"
                 />
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-40 border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-md">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -667,7 +658,7 @@ export default function SalesOrders() {
                 </SelectContent>
               </Select>
               <Select value={customerFilter} onValueChange={setCustomerFilter}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-48 border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-md">
                   <SelectValue placeholder="Filter by customer" />
                 </SelectTrigger>
                 <SelectContent>
@@ -679,6 +670,17 @@ export default function SalesOrders() {
                   ))}
                 </SelectContent>
               </Select>
+              <Button
+                variant="default"
+                className="ml-2 bg-blue-600 hover:bg-blue-700 text-white border border-blue-600 shadow-sm"
+                onClick={() => {
+                  setSearchTerm("");
+                  setStatusFilter("");
+                  setCustomerFilter("");
+                }}
+              >
+                Clear
+              </Button>
             </div>
           </div>
         </CardHeader>

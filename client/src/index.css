@@ -1,3 +1,33 @@
+table, th, td, tr {
+  border: none !important;
+}
+
+/* Table style: match 'Search & Filter' box border and focus color */
+table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  border: none !important;
+  border-radius: 1.2rem !important;
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+  background: white !important;
+}
+th, td {
+  border: none !important;
+  border-bottom: none !important;
+  border-radius: 0 !important;
+  background: white !important;
+}
+tr {
+  border-radius: 0 !important;
+  background: white !important;
+  border-bottom: none !important;
+}
+table:focus, table:active, table:focus-visible {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -324,7 +354,12 @@
   }
 
   .kpi-card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-300;
+    @apply bg-white rounded-xl border-2 border-gray-200 hover:border-gray-300 transition-all duration-300 h-full flex flex-col;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+
+  .kpi-card:hover {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   }
 
   .kpi-card-header {
@@ -332,7 +367,7 @@
   }
 
   .kpi-card-content {
-    @apply p-6 pt-0;
+    @apply p-6 flex-1 flex flex-col justify-between;
   }
 
   .kpi-value {
@@ -340,7 +375,7 @@
   }
 
   .kpi-label {
-    @apply text-sm font-medium text-gray-600;
+    @apply text-lg font-bold text-black;
   }
 
   .kpi-icon {
@@ -355,20 +390,24 @@
     @apply text-red-600;
   }
 
+
   .table-header {
-    @apply bg-gray-50/50 border-b border-gray-200;
+  @apply bg-gray-50/50 rounded-none;
   }
+
 
   .table-row {
-    @apply hover:bg-gray-50/50 transition-colors duration-150;
+  @apply hover:bg-gray-50/50 transition-colors duration-150 rounded-none;
   }
+
 
   .table-cell {
-    @apply px-6 py-4 text-sm;
+  @apply px-6 py-4 text-sm rounded-none;
   }
 
+
   .table-cell-header {
-    @apply px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider;
+  @apply px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider rounded-none;
   }
 
   .loading-skeleton {
@@ -433,7 +472,7 @@
   /* High contrast mode support */
   @media (prefers-contrast: high) {
     .kpi-card {
-      @apply border-2 border-gray-300;
+      @apply border-4 border-gray-600 shadow-xl;
     }
     
     .sidebar-item {
@@ -488,7 +527,7 @@
     }
     
     .kpi-card {
-      @apply shadow-none border border-gray-300;
+      @apply shadow-none border-2 border-gray-400;
     }
   }
 }

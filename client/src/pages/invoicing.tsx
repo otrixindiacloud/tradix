@@ -392,22 +392,27 @@ export default function Invoicing() {
 
   return (
     <div>
-      {/* Page Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900" data-testid="text-page-title">
-            Invoicing
-          </h2>
-          <p className="text-gray-600">
-            Step 10: Generate and manage customer invoices with multi-currency support
-          </p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Badge variant="outline" className="text-green-600">
-            <DollarSign className="h-4 w-4 mr-1" />
-            {completedDeliveries?.length || 0} Ready for Invoice
-          </Badge>
-        </div>
+      {/* Page Header - Card Style */}
+      <div className="mb-6">
+        <Card className="rounded-2xl shadow-sm">
+          <div className="flex items-center justify-between p-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900" data-testid="text-page-title">
+                Invoicing
+              </h2>
+              <p className="text-gray-600">
+                Step 10: Generate and manage customer invoices with multi-currency support
+              </p>
+            </div>
+            <span
+              className="flex items-center px-4 py-1 bg-green-500 text-white rounded-md font-medium text-base shadow-sm border border-green-600"
+              data-testid="badge-ready-for-invoice"
+            >
+              <DollarSign className="h-4 w-4 mr-1" />
+              {completedDeliveries?.length || 0} Ready for Invoice
+            </span>
+          </div>
+        </Card>
       </div>
 
       {/* Quick Actions for Completed Deliveries */}
@@ -458,7 +463,7 @@ export default function Invoicing() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Draft Invoices</p>
+                <p className="text-sm text-gray-600 font-bold">Draft Invoices</p>
                 <p className="text-2xl font-bold text-gray-600" data-testid="stat-draft-invoices">
                   {invoiceStats.draft}
                 </p>
@@ -474,7 +479,7 @@ export default function Invoicing() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Sent Invoices</p>
+                <p className="text-sm text-gray-600 font-bold">Sent Invoices</p>
                 <p className="text-2xl font-bold text-blue-600" data-testid="stat-sent-invoices">
                   {invoiceStats.sent}
                 </p>
@@ -490,7 +495,7 @@ export default function Invoicing() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Paid Invoices</p>
+                <p className="text-sm text-gray-600 font-bold">Paid Invoices</p>
                 <p className="text-2xl font-bold text-green-600" data-testid="stat-paid-invoices">
                   {invoiceStats.paid}
                 </p>
@@ -550,7 +555,7 @@ export default function Invoicing() {
                   placeholder="Search invoices..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-64 pl-10"
+                  className="w-64 pl-10 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 rounded-md shadow-none"
                   data-testid="input-search-invoices"
                 />
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />

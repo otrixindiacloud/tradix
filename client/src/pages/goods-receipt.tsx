@@ -220,22 +220,26 @@ export default function GoodsReceipt() {
 
   return (
     <div>
-      {/* Page Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900" data-testid="text-page-title">
-            Goods Receipt
-          </h2>
-          <p className="text-gray-600">
-            Step 7: Receive and validate goods against supplier LPOs with barcode scanning
-          </p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Badge variant="outline" className="text-orange-600">
-            <Package className="h-4 w-4 mr-1" />
-            {receiptStats.pending} Pending Receipt
-          </Badge>
-        </div>
+      {/* Page Header - Card Style */}
+      <div className="mb-6">
+        <Card className="rounded-2xl shadow-sm">
+          <div className="flex items-center justify-between p-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900" data-testid="text-page-title">
+                Goods Receipt
+              </h2>
+              <p className="text-gray-600">
+                Step 7: Receive and validate goods against supplier LPOs with barcode scanning
+              </p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Badge variant="outline" className="text-orange-600">
+                <Package className="h-4 w-4 mr-1" />
+                {receiptStats.pending} Pending Receipt
+              </Badge>
+            </div>
+          </div>
+        </Card>
       </div>
 
       {/* Status Overview Cards */}
@@ -329,7 +333,7 @@ export default function GoodsReceipt() {
                   placeholder="Search LPOs..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-64 pl-10"
+                  className="w-64 pl-10 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 rounded-md shadow-none"
                   data-testid="input-search-lpos"
                 />
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />

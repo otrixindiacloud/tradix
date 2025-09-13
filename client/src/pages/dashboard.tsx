@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils";
-import { Download, Plus, TrendingUp, TrendingDown, Eye, CheckCircle, HelpCircle, FileText, ShoppingCart, DollarSign, CheckCircle2, Upload, Package, BarChart3 } from "lucide-react";
+import { Download, Plus, TrendingUp, TrendingDown, Eye, CheckCircle, HelpCircle, FileText, ShoppingCart, DollarSign, CheckCircle2, Upload, Package, BarChart3, Clock } from "lucide-react";
 import { 
   FaDownload, 
   FaPlus, 
@@ -51,8 +51,10 @@ import {
   FaTruckMoving,
   FaSync,
   FaBuilding,
-  FaReceipt
+  FaReceipt,
+  FaRegCheckCircle
 } from "react-icons/fa";
+
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
@@ -395,18 +397,18 @@ export default function Dashboard() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <div className="kpi-card card-elevated">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 items-start">
+        <div className="kpi-card shadow-lg">
           <div className="kpi-card-content">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-start justify-between">
+              <div className="kpi-icon bg-amber-100 flex-shrink-0 mr-4">
+                <FaRegCheckCircle className="h-6 w-6 text-amber-600" />
+              </div>
+              <div className="flex-1">
                 <p className="kpi-label">Active Enquiries</p>
                 <p className="kpi-value" data-testid="stat-active-enquiries">
                   {statsLoading ? "..." : stats?.activeEnquiries || 0}
                 </p>
-              </div>
-              <div className="kpi-icon bg-amber-100">
-                <FaQuestionCircle className="h-6 w-6 text-amber-600" />
               </div>
             </div>
             <div className="mt-4 flex items-center text-sm">
@@ -417,17 +419,17 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="kpi-card card-elevated">
+        <div className="kpi-card shadow-lg">
           <div className="kpi-card-content">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-start justify-between">
+              <div className="kpi-icon bg-gray-100 flex-shrink-0 mr-4">
+                <FaFileInvoice className="h-6 w-6 text-gray-600" />
+              </div>
+              <div className="flex-1">
                 <p className="kpi-label">Pending Quotes</p>
                 <p className="kpi-value" data-testid="stat-pending-quotes">
                   {statsLoading ? "..." : stats?.pendingQuotes || 0}
                 </p>
-              </div>
-              <div className="kpi-icon bg-gray-100">
-                <FaFileInvoice className="h-6 w-6 text-gray-600" />
               </div>
             </div>
             <div className="mt-4 flex items-center text-sm">
@@ -438,17 +440,17 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="kpi-card card-elevated">
+        <div className="kpi-card shadow-lg">
           <div className="kpi-card-content">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-start justify-between">
+              <div className="kpi-icon bg-green-100 flex-shrink-0 mr-4">
+                <FaShoppingCart className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="flex-1">
                 <p className="kpi-label">Active Orders</p>
                 <p className="kpi-value" data-testid="stat-active-orders">
                   {statsLoading ? "..." : stats?.activeOrders || 0}
                 </p>
-              </div>
-              <div className="kpi-icon bg-green-100">
-                <FaShoppingCart className="h-6 w-6 text-green-600" />
               </div>
             </div>
             <div className="mt-4 flex items-center text-sm">
@@ -459,17 +461,17 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="kpi-card card-elevated">
+        <div className="kpi-card shadow-lg">
           <div className="kpi-card-content">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-start justify-between">
+              <div className="kpi-icon bg-green-100 flex-shrink-0 mr-4">
+                <FaDollarSign className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="flex-1">
                 <p className="kpi-label">Revenue (Month)</p>
                 <p className="kpi-value" data-testid="stat-monthly-revenue">
                   {statsLoading ? "..." : formatCurrency(stats?.monthlyRevenue || 0)}
                 </p>
-              </div>
-              <div className="kpi-icon bg-green-100">
-                <FaDollarSign className="h-6 w-6 text-green-600" />
               </div>
             </div>
             <div className="mt-4 flex items-center text-sm">
@@ -483,7 +485,7 @@ export default function Dashboard() {
 
       {/* Selected Enquiries Progress Section */}
       {selectedEnquiries.length > 0 && (
-        <Card className="mb-8">
+        <Card className="shadow-lg mb-8">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
@@ -598,14 +600,17 @@ export default function Dashboard() {
 
       {/* AI Insights Widget */}
       <div className="mb-8">
-        <AIInsightsWidget page="/dashboard" data={stats} />
+        <AIInsightsWidget page="/dashboard" data={stats} className="shadow-lg" />
       </div>
 
       {/* Notification Demo */}
       <div className="mb-8">
-        <Card>
+        <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle>Notification System Demo</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <FaBell className="h-5 w-5 text-blue-600" />
+              Notification System Demo
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <NotificationDemo />
@@ -616,9 +621,12 @@ export default function Dashboard() {
       {/* Recent Activities & Current Tasks */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Recent Activities */}
-        <Card>
+        <Card className="shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Recent Activities</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <FaHistory className="h-5 w-5 text-gray-600" />
+              Recent Activities
+            </CardTitle>
             <Button variant="ghost" size="sm" data-testid="button-view-all-activities" onClick={() => setLocation("/recent-activities")}>
               View All
             </Button>
@@ -646,9 +654,12 @@ export default function Dashboard() {
         </Card>
 
         {/* Current Tasks */}
-        <Card>
+        <Card className="shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Tasks Requiring Action</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <FaTasks className="h-5 w-5 text-red-600" />
+              Tasks Requiring Action
+            </CardTitle>
             <Badge className="bg-red-500 text-white" data-testid="badge-urgent-tasks">
               5 Urgent
             </Badge>
@@ -709,9 +720,12 @@ export default function Dashboard() {
       {/* Data Tables Section */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
         {/* Recent Enquiries */}
-        <Card>
+        <Card className="shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Recent Enquiries</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <FaQuestionCircle className="h-5 w-5 text-blue-600" />
+              Recent Enquiries
+            </CardTitle>
             <Button variant="ghost" size="sm" data-testid="button-manage-all-enquiries" onClick={() => setLocation("/enquiries")}>
               Manage All
             </Button>
@@ -727,9 +741,12 @@ export default function Dashboard() {
         </Card>
 
         {/* Active Orders */}
-        <Card>
+        <Card className="shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Active Sales Orders</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <FaCheckCircle className="h-5 w-5 text-green-600" />
+              Active Sales Orders
+            </CardTitle>
             <Button variant="ghost" size="sm" data-testid="button-view-all-orders" onClick={() => setLocation("/sales-orders")}>
               View All Orders
             </Button>

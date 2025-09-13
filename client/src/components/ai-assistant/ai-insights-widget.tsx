@@ -12,6 +12,7 @@ import {
   Sparkles,
   BarChart3
 } from 'lucide-react';
+import { RiRobot2Line } from "react-icons/ri";
 import { useAI } from './ai-context';
 
 interface Insight {
@@ -95,7 +96,7 @@ export default function AIInsightsWidget({ page, data, className }: AIInsightsWi
     <Card className={`border-l-4 border-l-purple-500 ${className}`}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
+          <CardTitle className="text-sm font-bold flex items-center gap-2">
             <Brain className="h-4 w-4 text-purple-600" />
             AI Insights
             <Badge variant="secondary" className="bg-purple-100 text-purple-700">
@@ -107,9 +108,9 @@ export default function AIInsightsWidget({ page, data, className }: AIInsightsWi
             variant="ghost" 
             size="sm" 
             onClick={() => openAssistant()}
-            className="text-purple-600 hover:text-purple-700"
+            className="bg-blue-600 text-white hover:bg-blue-700 hover:text-white"
           >
-            <BarChart3 className="h-4 w-4 mr-1" />
+            <RiRobot2Line className="h-4 w-4 mr-1" />
             Ask AI
           </Button>
         </div>

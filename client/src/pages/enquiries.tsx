@@ -307,63 +307,63 @@ export default function Enquiries() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
         <div className="kpi-card card-elevated">
           <div className="kpi-card-content">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-start gap-3">
+              <div className="kpi-icon bg-blue-100">
+                <PlusCircle className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="text-left">
                 <p className="kpi-label">New Enquiries</p>
                 <p className="kpi-value text-blue-600" data-testid="stat-new-enquiries">
                   {statusCounts.new}
                 </p>
               </div>
-              <div className="kpi-icon bg-blue-100">
-                <PlusCircle className="h-6 w-6 text-blue-600" />
-              </div>
             </div>
           </div>
         </div>
 
         <div className="kpi-card card-elevated">
           <div className="kpi-card-content">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-start gap-3">
+              <div className="kpi-icon bg-amber-100">
+                <Clock className="h-6 w-6 text-amber-600" />
+              </div>
+              <div className="text-left">
                 <p className="kpi-label">In Progress</p>
                 <p className="kpi-value text-amber-600" data-testid="stat-in-progress-enquiries">
                   {statusCounts.inProgress}
                 </p>
               </div>
-              <div className="kpi-icon bg-amber-100">
-                <Clock className="h-6 w-6 text-amber-600" />
-              </div>
             </div>
           </div>
         </div>
 
         <div className="kpi-card card-elevated">
           <div className="kpi-card-content">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-start gap-3">
+              <div className="kpi-icon bg-green-100">
+                <FileText className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="text-left">
                 <p className="kpi-label">Quoted</p>
                 <p className="kpi-value text-green-600" data-testid="stat-quoted-enquiries">
                   {statusCounts.quoted}
                 </p>
               </div>
-              <div className="kpi-icon bg-green-100">
-                <FileText className="h-6 w-6 text-green-600" />
-              </div>
             </div>
           </div>
         </div>
 
         <div className="kpi-card card-elevated">
           <div className="kpi-card-content">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-start gap-3">
+              <div className="kpi-icon bg-gray-100">
+                <CheckCircle className="h-6 w-6 text-gray-600" />
+              </div>
+              <div className="text-left">
                 <p className="kpi-label">Closed</p>
                 <p className="kpi-value text-gray-600" data-testid="stat-closed-enquiries">
                   {statusCounts.closed}
                 </p>
-              </div>
-              <div className="kpi-icon bg-gray-100">
-                <CheckCircle className="h-6 w-6 text-gray-600" />
               </div>
             </div>
           </div>

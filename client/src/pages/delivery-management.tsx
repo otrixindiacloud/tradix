@@ -295,6 +295,7 @@ const DeliveryManagement = () => {
                 value={filters.search}
                 onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
                 data-testid="input-search"
+                className="border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 rounded-md shadow-none"
               />
             </div>
             <div>

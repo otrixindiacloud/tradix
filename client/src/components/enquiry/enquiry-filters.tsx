@@ -105,6 +105,7 @@ export default function EnquiryFilters({ onFiltersChange, customers = [] }: Enqu
             value={filters.search}
             onChange={(e) => handleFilterChange("search", e.target.value)}
             data-testid="input-search"
+            className="border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 rounded-md shadow-none"
           />
         </div>
 

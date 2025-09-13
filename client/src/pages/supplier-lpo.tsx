@@ -143,54 +143,19 @@ export default function SupplierLpoPage() {
 
   return (
     <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Card-style header */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 px-8 py-6 flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-            Supplier LPO Management
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Manage Local Purchase Orders with suppliers including auto-generation, amendments, and approval workflows
-          </p>
+          <h2 className="text-2xl font-bold text-gray-900">Supplier LPO Management</h2>
+          <p className="text-gray-600 text-base mt-1">Step 6: Manage Local Purchase Orders with suppliers including auto-generation, amendments, and approval workflows</p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setShowBacklog(!showBacklog)}
-            data-testid="button-toggle-backlog"
-          >
-            <Eye className="w-4 h-4 mr-2" />
-            {showBacklog ? "Hide" : "Show"} Backlog
-          </Button>
-          <Dialog open={showAutoGenerate} onOpenChange={setShowAutoGenerate}>
-            <DialogTrigger asChild>
-              <Button data-testid="button-auto-generate">
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Auto Generate LPOs
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Auto Generate Supplier LPOs</DialogTitle>
-              </DialogHeader>
-              <AutoGenerateLposForm onClose={() => setShowAutoGenerate(false)} />
-            </DialogContent>
-          </Dialog>
-          <Dialog open={showCreateLpo} onOpenChange={setShowCreateLpo}>
-            <DialogTrigger asChild>
-              <Button data-testid="button-create-lpo">
-                <Plus className="w-4 h-4 mr-2" />
-                Create LPO
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Create New LPO</DialogTitle>
-              </DialogHeader>
-              <CreateLpoForm onClose={() => setShowCreateLpo(false)} />
-            </DialogContent>
-          </Dialog>
-        </div>
+        <button
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
+          onClick={() => setShowCreateLpo(true)}
+          data-testid="button-new-supplier-lpo"
+        >
+          <span className="text-xl font-bold">+</span> New Supplier LPO
+        </button>
       </div>
 
       {/* Statistics Cards */}
@@ -367,6 +332,7 @@ export default function SupplierLpoPage() {
                 value={filters.search || ""}
                 onChange={(e) => handleFilterChange("search", e.target.value)}
                 data-testid="input-search"
+                className="border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 rounded-md shadow-none"
               />
             </div>
           </CardContent>

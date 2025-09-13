@@ -224,12 +224,13 @@ export default function QuotationDetailPage() {
     }
   };
 
-  const getApprovalStatusColor = (status: string) => {
+  // Returns Tailwind classes for badge background and text color
+  const getApprovalStatusBadgeClass = (status: string) => {
     switch (status) {
-      case "Approved": return "text-green-700";
-      case "Pending": return "text-yellow-700";
-      case "Rejected": return "text-red-700";
-      default: return "text-gray-700";
+      case "Approved": return "bg-green-100 text-green-800";
+      case "Pending": return "bg-yellow-100 text-yellow-800";
+      case "Rejected": return "bg-red-100 text-red-800";
+      default: return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -302,7 +303,7 @@ export default function QuotationDetailPage() {
             {quotation.status}
           </Badge>
           {quotation.approvalStatus && (
-            <Badge className={`${getApprovalStatusColor(quotation.approvalStatus)} flex items-center gap-1`}>
+            <Badge className={`${getApprovalStatusBadgeClass(quotation.approvalStatus)} flex items-center gap-1`}>
               {quotation.approvalStatus}
             </Badge>
           )}
@@ -332,6 +333,7 @@ export default function QuotationDetailPage() {
             onClick={() => updateStatusMutation.mutate("Sent")}
             disabled={updateStatusMutation.isPending}
             data-testid="button-send"
+            className="bg-gray-700 text-white hover:bg-gray-800"
           >
             <Send className="h-4 w-4 mr-2" />
             Send to Customer
@@ -349,6 +351,7 @@ export default function QuotationDetailPage() {
               onClick={() => updateStatusMutation.mutate("Accepted")}
               disabled={updateStatusMutation.isPending}
               data-testid="button-accept"
+              className="bg-green-700 text-white hover:bg-green-800"
             >
               <Check className="h-4 w-4 mr-2" />
               Mark Accepted
@@ -358,6 +361,7 @@ export default function QuotationDetailPage() {
               onClick={() => updateStatusMutation.mutate("Rejected")}
               disabled={updateStatusMutation.isPending}
               data-testid="button-reject"
+              className="border-red-700 text-red-700 hover:bg-red-50"
             >
               <X className="h-4 w-4 mr-2" />
               Mark Rejected
@@ -512,8 +516,8 @@ export default function QuotationDetailPage() {
 
                   <div className="pt-4 border-t">
                     <div className="text-center p-3 bg-blue-50 rounded-lg">
-                      <DollarSign className="h-6 w-6 mx-auto text-blue-600 mb-1" />
-                      <div className="text-sm text-blue-800 font-medium">
+                      <DollarSign className="h-6 w-6 mx-auto text-gray-600 mb-1" />
+                      <div className="text-sm text-gray-800 font-medium">
                         {quotation.customerType} Pricing Applied
                       </div>
                     </div>
@@ -549,7 +553,7 @@ export default function QuotationDetailPage() {
                       }
                     </div>
                   </div>
-                  <Badge className={getApprovalStatusColor(quotation.approvalStatus)}>
+                  <Badge className={getApprovalStatusBadgeClass(quotation.approvalStatus)}>
                     {quotation.approvalStatus || "None"}
                   </Badge>
                 </div>
@@ -644,7 +648,7 @@ export default function QuotationDetailPage() {
                   };
 
                   return (
-                    <div key={`${event.id}-${index}`} className={`flex items-center gap-3 p-3 border-l-4 ${getEventColor(event.action)}`}>
+                    <div key={`${event.id}-${index}`} className={`flex items-center gap-3 p-3 border-l-4 ${getEventColor(event.action).replace('bg-blue-50', 'bg-gray-50')}`}> 
                       <Calendar className="h-4 w-4" />
                       <div className="flex-1">
                         <div className="font-medium">{getEventTitle(event.action)}</div>
@@ -661,8 +665,8 @@ export default function QuotationDetailPage() {
                   );
                 })}
                 {(!quotationHistory || quotationHistory.length === 0) && (
-                  <div className="flex items-center gap-3 p-3 border-l-4 border-blue-500 bg-blue-50">
-                    <Calendar className="h-4 w-4 text-blue-600" />
+                  <div className="flex items-center gap-3 p-3 border-l-4 border-gray-500 bg-gray-50">
+                    <Calendar className="h-4 w-4 text-gray-600" />
                     <div>
                       <div className="font-medium">Quotation Created</div>
                       <div className="text-sm text-gray-600">

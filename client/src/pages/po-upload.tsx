@@ -185,37 +185,34 @@ export default function PoUpload() {
 
   return (
     <div>
-      {/* Page Header */}
-      <div className="flex items-center justify-between mb-6">
+      {/* Card-style header */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 px-8 py-6 flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900" data-testid="text-page-title">
-            Purchase Order Upload
-          </h2>
-          <p className="text-gray-600">
-            Step 4: Upload and validate customer PO documents against accepted quotations
-          </p>
+          <h2 className="text-2xl font-bold text-gray-900">Purchase Order Upload</h2>
+          <p className="text-gray-600 text-base mt-1">Step 4: Upload and validate customer PO documents against accepted quotations</p>
         </div>
-        <div className="flex items-center space-x-2">
-          <Badge variant="outline" className="text-orange-600">
-            <AlertTriangle className="h-4 w-4 mr-1" />
-            {uploadStats.pending} Pending Upload
-          </Badge>
-        </div>
+        <button
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
+          onClick={() => {/* Open upload dialog for new PO, fallback to search/filter if not possible */}}
+          data-testid="button-new-po-upload"
+        >
+          <span className="text-xl font-bold">+</span> Upload PO
+        </button>
       </div>
 
       {/* Status Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start space-x-4">
+              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                <Clock className="h-6 w-6 text-orange-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-600">Pending Upload</p>
+                <p className="text-lg font-bold text-gray-600">Pending Upload</p>
                 <p className="text-2xl font-bold text-orange-600" data-testid="stat-pending-upload">
                   {uploadStats.pending}
                 </p>
-              </div>
-              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                <Clock className="h-6 w-6 text-orange-600" />
               </div>
             </div>
             <div className="mt-2 text-sm text-gray-600">
@@ -226,15 +223,15 @@ export default function PoUpload() {
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start space-x-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <FileUp className="h-6 w-6 text-blue-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-600">Uploaded</p>
+                <p className="text-lg font-bold text-gray-600">Uploaded</p>
                 <p className="text-2xl font-bold text-blue-600" data-testid="stat-uploaded">
                   {uploadStats.uploaded}
                 </p>
-              </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <FileUp className="h-6 w-6 text-blue-600" />
               </div>
             </div>
             <div className="mt-2 text-sm text-gray-600">
@@ -245,15 +242,15 @@ export default function PoUpload() {
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start space-x-4">
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-600">Validated</p>
+                <p className="text-lg font-bold text-gray-600">Validated</p>
                 <p className="text-2xl font-bold text-green-600" data-testid="stat-validated">
                   {uploadStats.validated}
                 </p>
-              </div>
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-600" />
               </div>
             </div>
             <div className="mt-2 text-sm text-gray-600">
@@ -275,12 +272,12 @@ export default function PoUpload() {
                   placeholder="Search quotations..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-64 pl-10"
+                  className="w-64 pl-10 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 rounded-md shadow-none"
                   data-testid="input-search-quotations"
                 />
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               </div>
-              <Button variant="outline" size="icon" data-testid="button-filter">
+              <Button variant="default" size="icon" data-testid="button-filter" className="bg-blue-600 hover:bg-blue-700 text-white border border-blue-600 shadow-sm">
                 <Filter className="h-4 w-4" />
               </Button>
             </div>

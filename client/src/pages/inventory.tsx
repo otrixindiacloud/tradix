@@ -362,7 +362,7 @@ export default function Inventory() {
                   placeholder="Search items..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-64 pl-10"
+                  className="w-64 pl-10 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 rounded-md shadow-none"
                   data-testid="input-search-inventory"
                 />
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />

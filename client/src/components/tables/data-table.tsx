@@ -61,7 +61,7 @@ export default function DataTable<T extends Record<string, any>>({
           <span className="text-gray-600">Loading data...</span>
         </div>
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="h-12 bg-gray-100 rounded animate-pulse" />
+          <div key={i} className="h-12 bg-gray-100 animate-pulse" />
         ))}
       </div>
     );
@@ -139,8 +139,8 @@ export default function DataTable<T extends Record<string, any>>({
   };
 
   return (
-    <div className={cn("rounded-md border bg-white", className)}>
-      <Table>
+  <div className={cn("bg-white border border-indigo-200 rounded-xl", className)}>
+    <Table>
         <TableHeader>
           <TableRow>
             {columns.map((column) => (
