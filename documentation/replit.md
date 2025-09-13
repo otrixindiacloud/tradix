@@ -1,4 +1,4 @@
-# Golden Tag ERP System
+# Tradix for Golden Tag System
 
 ## Overview
 A comprehensive sequential workflow ERP system following the exact 10-step process from Customer Enquiry to Invoice with strict step validation and audit compliance.

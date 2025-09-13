@@ -1,4 +1,4 @@
-# Enhanced Analytics Dashboard - Golden Tag ERP
+# Enhanced Analytics Dashboard - Tradix for Golden Tag
 
 ## Overview
 I have successfully enhanced the analytics page to meet all the requirements specified in the Golden Tag WLL ERP Requirements Specification. The enhanced dashboard provides comprehensive business intelligence and performance metrics across all key business areas.
@@ -155,6 +155,6 @@ Added 5 new API endpoints:
 
 ## Conclusion
 
-The enhanced analytics dashboard now provides comprehensive business intelligence that covers all aspects of the Golden Tag ERP requirements. It offers real-time visibility into enquiries, quotations, sales orders, inventory, suppliers, financials, and compliance - enabling data-driven decision making and improved business performance.
+The enhanced analytics dashboard now provides comprehensive business intelligence that covers all aspects of the Tradix for Golden Tag requirements. It offers real-time visibility into enquiries, quotations, sales orders, inventory, suppliers, financials, and compliance - enabling data-driven decision making and improved business performance.
 
 The dashboard is fully functional with both frontend and backend implementations, providing a complete analytics solution for the ERP system.

@@ -1,6 +1,6 @@
-# PDF Generation for Golden Tag ERP
+# PDF Generation for Tradix for Golden Tag
 
-This document describes the PDF generation functionality implemented for quotations and invoices in the Golden Tag ERP system.
+This document describes the PDF generation functionality implemented for quotations and invoices in the Tradix for Golden Tag system.
 
 ## Features
 
@@ -202,4 +202,4 @@ Enable debug logging by adding console.log statements in the PDF service methods
 
 ---
 
-**Note**: This PDF generation system is designed for the Golden Tag ERP system and follows professional business document standards. The implementation is scalable and can be extended for additional document types as needed.
+**Note**: This PDF generation system is designed for the Tradix for Golden Tag system and follows professional business document standards. The implementation is scalable and can be extended for additional document types as needed.

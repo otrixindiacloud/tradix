@@ -3,6 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { SYSTEM_USER_ID } from "@shared/utils/uuid";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -152,7 +153,7 @@ export default function QuotationForm({ enquiryId: propEnquiryId, onSuccess, onC
         taxAmount: tax.toString(),
         totalAmount: total.toString(),
         validUntil: data.validUntil ? new Date(data.validUntil).toISOString() : undefined,
-        createdBy: "default-user-id", // In real app, get from auth context
+        createdBy: SYSTEM_USER_ID, // System user ID
       };
 
       if (enquiryId) {
@@ -160,7 +161,7 @@ export default function QuotationForm({ enquiryId: propEnquiryId, onSuccess, onC
         const response = await fetch(`/api/quotations/generate/${enquiryId}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...payload, userId: "default-user-id" }),
+          body: JSON.stringify({ ...payload, userId: SYSTEM_USER_ID }),
         });
         if (!response.ok) throw new Error("Failed to generate quotation");
         return response.json();

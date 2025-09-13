@@ -2,7 +2,7 @@ export class TestStorage {
   // Mock data
   private mockCustomers = [
     {
-      id: "cust-1",
+      id: "ac0a1d83-e061-4784-9ede-91ae8ca7299f",
       name: "Al Rawi Trading LLC",
       email: "info@alrawi.com",
       phone: "+971-4-1234567",
@@ -17,7 +17,7 @@ export class TestStorage {
       updatedAt: new Date("2024-01-15T10:00:00Z")
     },
     {
-      id: "cust-2", 
+      id: "5587878e-2b8f-43ea-ad2d-57650a5cfb58", 
       name: "Gulf Construction Co.",
       email: "procurement@gulfconstruction.ae",
       phone: "+971-2-9876543",
@@ -39,7 +39,7 @@ export class TestStorage {
       quoteNumber: "QT-2024-001",
       revision: 1,
       enquiryId: "enq-1",
-      customerId: "cust-1",
+      customerId: "ac0a1d83-e061-4784-9ede-91ae8ca7299f",
       customerType: "Wholesale" as const,
       status: "Sent" as const,
       quoteDate: "2024-08-20",
@@ -60,7 +60,7 @@ export class TestStorage {
       quoteNumber: "QT-2024-002",
       revision: 1,
       enquiryId: "enq-2", 
-      customerId: "cust-2",
+      customerId: "5587878e-2b8f-43ea-ad2d-57650a5cfb58",
       customerType: "Retail" as const,
       status: "Draft" as const,
       quoteDate: "2024-08-25",
@@ -130,7 +130,7 @@ export class TestStorage {
     {
       id: "enq-1",
       enquiryNumber: "ENQ-2024-001",
-      customerId: "cust-1",
+      customerId: "ac0a1d83-e061-4784-9ede-91ae8ca7299f",
       source: "Email",
       status: "New",
       targetDeliveryDate: "2024-09-15",
@@ -140,7 +140,7 @@ export class TestStorage {
     {
       id: "enq-2", 
       enquiryNumber: "ENQ-2024-002",
-      customerId: "cust-2",
+      customerId: "5587878e-2b8f-43ea-ad2d-57650a5cfb58",
       source: "Phone",
       status: "In Progress",
       targetDeliveryDate: "2024-09-30",

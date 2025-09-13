@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { storage } from "../storage";
 import { insertQuotationSchema, insertQuotationItemSchema } from "@shared/schema";
+import { SYSTEM_USER_ID, validateUserIdOrDefault } from "@shared/utils/uuid";
 import { z } from "zod";
 import { pdfService } from "../pdf-service";
 
@@ -81,22 +82,26 @@ export function registerQuotationRoutes(app: Express) {
   // Generate quotation from enquiry
   app.post("/api/quotations/generate/:enquiryId", async (req, res) => {
     try {
-      const userId = req.body.userId || "default-user-id"; // In real app, get from auth
+      // Use the system user ID for now - in real app, get from auth
+      const userId = validateUserIdOrDefault(req.body.userId); 
       console.log("Generating quotation for enquiry:", req.params.enquiryId);
       const quotation = await storage.generateQuotationFromEnquiry(req.params.enquiryId, userId);
       console.log("Quotation generated successfully:", quotation.id);
       res.status(201).json(quotation);
     } catch (error) {
       console.error("Error generating quotation:", error);
-      console.error("Error details:", JSON.stringify(error, null, 2));
-      res.status(500).json({ message: "Failed to generate quotation from enquiry", error: error.message });
+      console.error("Error details:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+      res.status(500).json({ 
+        message: "Failed to generate quotation from enquiry", 
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
   // Quotation revision routes
   app.post("/api/quotations/:id/revisions", async (req, res) => {
     try {
-      const userId = req.body.userId || "default-user-id"; // In real app, get from auth
+      const userId = validateUserIdOrDefault(req.body.userId);
       const revisionData = req.body; // Should include revisionReason and other fields
       
       if (!revisionData.revisionReason) {
@@ -146,18 +151,34 @@ export function registerQuotationRoutes(app: Express) {
 
   app.post("/api/quotations/:id/items", async (req, res) => {
     try {
+      console.log("DEBUG: Attempting to create quotation item with body:", req.body);
+      console.log("DEBUG: Quotation ID from params:", req.params.id);
+      
       const itemData = insertQuotationItemSchema.parse({
         ...req.body,
         quotationId: req.params.id,
       });
+      
+      console.log("DEBUG: Parsed item data:", itemData);
       const item = await storage.createQuotationItem(itemData);
+      console.log("DEBUG: Created item:", item);
       res.status(201).json(item);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid quotation item data", errors: error.errors });
+        console.error("DEBUG: Zod validation error:", error.errors);
+        return res.status(400).json({ 
+          message: "Invalid quotation item data", 
+          errors: error.errors,
+          received: req.body 
+        });
       }
-      console.error("Error creating quotation item:", error);
-      res.status(500).json({ message: "Failed to create quotation item" });
+      console.error("DEBUG: Other error creating quotation item:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      res.status(500).json({ 
+        message: "Failed to create quotation item", 
+        error: errorMessage,
+        stack: error instanceof Error ? error.stack : undefined
+      });
     }
   });
 

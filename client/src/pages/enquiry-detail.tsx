@@ -13,6 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import EnquiryItemsManager from "@/components/enquiry/enquiry-items-manager";
 import AttachmentManager from "@/components/enquiry/attachment-manager";
 import { formatDate, getStatusColor } from "@/lib/utils";
+import { SYSTEM_USER_ID } from "@shared/utils/uuid";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -110,7 +111,7 @@ export default function EnquiryDetail() {
 
   const convertToQuotation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/quotations/generate/${id}`, { userId: "default-user-id" });
+      const response = await apiRequest("POST", `/api/quotations/generate/${id}`, { userId: SYSTEM_USER_ID });
       return response.json();
     },
     onSuccess: (quotation) => {

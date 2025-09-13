@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import DataTable, { Column } from "@/components/tables/data-table";
 import { formatDate, formatCurrency, getStatusColor } from "@/lib/utils";
+import { SYSTEM_USER_ID } from "@shared/utils/uuid";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
@@ -520,7 +521,7 @@ export default function SalesOrders() {
                   </div>
                   <Button
                     size="sm"
-                    onClick={() => createSalesOrderFromQuotation.mutate({ quotationId: quotation.id, userId: "default-user-id" })}
+                    onClick={() => createSalesOrderFromQuotation.mutate({ quotationId: quotation.id, userId: SYSTEM_USER_ID })}
                     disabled={createSalesOrderFromQuotation.isPending}
                     data-testid={`button-create-so-${quotation.id}`}
                   >
@@ -726,7 +727,7 @@ export default function SalesOrders() {
                       <p className="text-sm text-gray-600">Value: {formatCurrency(Number(quotation.totalAmount) || 0)}</p>
                     </div>
                     <Button
-                      onClick={() => createSalesOrderFromQuotation.mutate({ quotationId: quotation.id, userId: "default-user-id" })}
+                      onClick={() => createSalesOrderFromQuotation.mutate({ quotationId: quotation.id, userId: SYSTEM_USER_ID })}
                       disabled={createSalesOrderFromQuotation.isPending}
                       data-testid={`button-create-from-${quotation.id}`}
                     >

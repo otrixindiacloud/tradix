@@ -4,7 +4,7 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "dev": "cross-env NODE_ENV=development DATABASE_URL=postgresql://neondb_owner:npg_wsPHOo9QCW8y@ep-restless-salad-afnqcaao.c-2.us-west-2.aws.neon.tech/neondb?sslmode=require tsx server/index.ts",
+    "dev": "cross-env NODE_ENV=development DATABASE_URL=\"postgresql://neondb_owner:npg_4qUzlEaM3vPc@ep-small-moon-ad292p30.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" tsx server/index.ts",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "cross-env NODE_ENV=production node dist/index.js",
     "check": "tsc",

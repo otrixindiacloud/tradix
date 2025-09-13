@@ -2,7 +2,7 @@
 const fetch = require('node-fetch');
 
 async function testPDFGeneration() {
-  console.log('Testing PDF Generation for Golden Tag ERP...\n');
+  console.log('Testing PDF Generation for Tradix for Golden Tag...\n');
 
   try {
     // Test quotation PDF generation

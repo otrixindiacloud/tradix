@@ -26,7 +26,7 @@ curl -s "${BASE_URL}/api/customers" | jq '.' | head -10
 echo -e "\n6. 📊 Testing POST /api/quotations (Create - will fail with validation)"
 curl -s -X POST "${BASE_URL}/api/quotations" \
   -H "Content-Type: application/json" \
-  -d '{"customerId": "cust-1"}' | jq '.'
+  -d '{"customerId": "ac0a1d83-e061-4784-9ede-91ae8ca7299f"}' | jq '.'
 
 echo -e "\n\n✅ API Test Summary:"
 echo "- GET quotations: Working with test data"

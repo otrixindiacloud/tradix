@@ -787,6 +787,25 @@ export const insertEnquirySchema = createInsertSchema(enquiries, {
   targetDeliveryDate: z.string().optional(),
   createdBy: z.string().uuid().optional(),
 }).omit({ id: true, enquiryNumber: true, createdAt: true, updatedAt: true });
+
+// Update schema for enquiries with proper UUID validation
+export const updateEnquirySchema = createInsertSchema(enquiries, {
+  targetDeliveryDate: z.string().optional(),
+  createdBy: z.string().uuid().optional(),
+  customerId: z.string().uuid().optional(),  // Make customerId optional for updates
+}).omit({ id: true, enquiryNumber: true, createdAt: true, updatedAt: true }).partial().extend({
+  // Override customerId to handle empty strings and null values gracefully
+  customerId: z.union([
+    z.string().uuid(),
+    z.string().length(0),  // Allow empty string
+    z.null()
+  ]).optional().transform(val => {
+    // Convert empty strings to undefined, keep valid UUIDs
+    if (val === "" || val === null) return undefined;
+    return val;
+  })
+});
+
 export const insertEnquiryItemSchema = createInsertSchema(enquiryItems).omit({ id: true }).extend({
   description: z.string().min(1, "Description is required"),
   quantity: z.number().min(1, "Quantity must be at least 1"),
@@ -905,8 +924,8 @@ export const inventoryLevels = pgTable("inventory_levels", {
 export const goodsReceiptHeaders = pgTable("goods_receipt_headers", {
   id: text("id").primaryKey().$defaultFn(() => nanoid()),
   receiptNumber: text("receipt_number").notNull().unique(),
-  supplierLpoId: text("supplier_lpo_id").references(() => supplierLpos.id),
-  supplierId: text("supplier_id").notNull().references(() => suppliers.id),
+  supplierLpoId: uuid("supplier_lpo_id").references(() => supplierLpos.id),
+  supplierId: uuid("supplier_id").notNull().references(() => suppliers.id),
   receiptDate: date("receipt_date").notNull(),
   expectedDeliveryDate: date("expected_delivery_date"),
   actualDeliveryDate: date("actual_delivery_date"),
@@ -924,9 +943,9 @@ export const goodsReceiptHeaders = pgTable("goods_receipt_headers", {
 export const goodsReceiptItems = pgTable("goods_receipt_items", {
   id: text("id").primaryKey().$defaultFn(() => nanoid()),
   receiptHeaderId: text("receipt_header_id").notNull().references(() => goodsReceiptHeaders.id, { onDelete: "cascade" }),
-  lpoItemId: text("lpo_item_id").references(() => supplierLpoItems.id),
-  itemId: text("item_id").references(() => inventoryItems.id),
-  variantId: text("variant_id").references(() => inventoryVariants.id),
+  lpoItemId: uuid("lpo_item_id").references(() => supplierLpoItems.id),
+  itemId: uuid("item_id").references(() => inventoryItems.id),
+  variantId: uuid("variant_id").references(() => inventoryVariants.id),
   barcode: text("barcode"),
   supplierCode: text("supplier_code"),
   itemDescription: text("item_description").notNull(),
@@ -1002,8 +1021,8 @@ export const supplierReturnItems = pgTable("supplier_return_items", {
 // Stock Movement Tracking
 export const stockMovements = pgTable("stock_movements", {
   id: text("id").primaryKey().$defaultFn(() => nanoid()),
-  itemId: text("item_id").references(() => inventoryItems.id),
-  variantId: text("variant_id").references(() => inventoryVariants.id),
+  itemId: uuid("item_id").references(() => inventoryItems.id),
+  variantId: uuid("variant_id").references(() => inventoryVariants.id),
   movementType: text("movement_type").notNull(), // Receipt, Issue, Transfer, Adjustment, Return
   referenceType: text("reference_type"), // GoodsReceipt, SalesOrder, Transfer, Adjustment, Return
   referenceId: text("reference_id"),
@@ -1112,6 +1131,7 @@ export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
 export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
 export type InsertItem = z.infer<typeof insertItemSchema>;
 export type InsertEnquiry = z.infer<typeof insertEnquirySchema>;
+export type UpdateEnquiry = z.infer<typeof updateEnquirySchema>;
 export type InsertEnquiryItem = z.infer<typeof insertEnquiryItemSchema>;
 export type InsertQuotation = z.infer<typeof insertQuotationSchema>;
 export type InsertQuotationItem = z.infer<typeof insertQuotationItemSchema>;

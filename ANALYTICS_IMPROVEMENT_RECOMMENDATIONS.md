@@ -1,5 +1,5 @@
 # Analytics Dashboard - Improvement Recommendations
-## Golden Tag ERP Analytics Enhancement Plan
+## Tradix for Golden Tag Analytics Enhancement Plan
 
 ### 🎯 **Current Status Assessment**
 

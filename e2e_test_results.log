@@ -1,0 +1,203 @@
+[2025-09-13 16:04:34] STEP 1: CUSTOMER MANAGEMENT
+[2025-09-13 16:04:34] Testing: Creating test customer
+[2025-09-13 16:04:34] Request: POST /api/customers
+[2025-09-13 16:04:36] Response: {"id":"8aee82e2-3ec3-4e31-bd4c-da515839655e","name":"E2E Test Corp","email":"e2e@test.com","phone":"+1234567890","address":"123 Test St, Test City","customerType":"Wholesale","classification":"Corporate","taxId":null,"creditLimit":"100000.00","paymentTerms":"Net 30","isActive":true,"createdAt":"2025-09-13T16:04:36.152Z","updatedAt":"2025-09-13T16:04:36.152Z"}
+[2025-09-13 16:04:36] ---
+[2025-09-13 16:04:36] Customer ID: 8aee82e2-3ec3-4e31-bd4c-da515839655e
+8aee82e2-3ec3-4e31-bd4c-da515839655e
+[2025-09-13 16:04:36] STEP 2: ENQUIRY MANAGEMENT
+[2025-09-13 16:04:36] Testing: 8aee82e2-3ec3-4e31-bd4c-da515839655e",
+  "source": "Email",
+  "targetDeliveryDate": "2025-10-30T00:00:00.000Z",
+  "notes": "E2E Test enquiry for promotional materials"
+}
+[2025-09-13 16:04:36] Request: POST /api/enquiries
+[2025-09-13 16:04:36] Response: {"message":"Unterminated string in JSON at position 55 (line 2 column 54)"}
+[2025-09-13 16:04:36] ---
+[2025-09-13 16:04:36] Enquiry ID: 
+[2025-09-13 16:04:36] STEP 3: ENQUIRY ITEMS
+[2025-09-13 16:04:36] Testing: Adding enquiry item
+[2025-09-13 16:04:36] Request: POST /api/enquiry-items
+[2025-09-13 16:04:36] Response: {"message":"Invalid enquiry item data","errors":[{"validation":"uuid","code":"invalid_string","message":"Invalid uuid","path":["enquiryId"]}]}
+[2025-09-13 16:04:36] ---
+[2025-09-13 16:04:36] Enquiry Item ID: 
+[2025-09-13 16:04:36] Testing: Retrieving enquiry items
+[2025-09-13 16:04:36] Request: GET /api/enquiries//items
+[2025-09-13 16:04:36] Response: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <script type="module">
+import { createHotContext } from "/@vite/client";
+const hot = createHotContext("/__dummy__runtime-error-plugin");
+
+function sendError(error) {
+  if (!(error instanceof Error)) {
+    error = new Error("(unknown runtime error)");
+  }
+  const serialized = {
+    message: error.message,
+    stack: error.stack,
+  };
+  hot.send("runtime-error-plugin:error", serialized);
+}
+
+window.addEventListener("error", (evt) => {
+  sendError(evt.error);
+});
+
+window.addEventListener("unhandledrejection", (evt) => {
+  sendError(evt.reason);
+});
+</script>
+
+    <script type="module">
+import RefreshRuntime from "/@react-refresh"
+RefreshRuntime.injectIntoGlobalHook(window)
+window.$RefreshReg$ = () => {}
+window.$RefreshSig$ = () => (type) => type
+window.__vite_plugin_react_preamble_installed__ = true
+</script>
+
+    <script type="module" src="/@vite/client"></script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <title>Tradix - Golden Tag</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Fira+Code:wght@300..700&family=Geist+Mono:wght@100..900&family=Geist:wght@100..900&family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400..700;1,400..700&family=Merriweather:ital,opsz,wght@0,18..144,300..900;1,18..144,300..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Outfit:wght@100..900&family=Oxanium:wght@200..800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Roboto:ital,wght@0,100..900;1,100..900&family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&family=Space+Grotesk:wght@300..700&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx?v=Pr7iNKMoWxfSIeFiVC0TL"></script>
+    <!-- This is a replit script which adds a banner on the top of the page when opened in development mode outside the replit environment -->
+    <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>
+  </body>
+</html>
+[2025-09-13 16:04:36] ---
+[2025-09-13 16:04:36] STEP 4: QUOTATION GENERATION
+[2025-09-13 16:04:36] Testing: Generating quotation from enquiry
+[2025-09-13 16:04:36] Request: POST /api/quotations/generate/
+[2025-09-13 16:04:36] Response: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <script type="module">
+import { createHotContext } from "/@vite/client";
+const hot = createHotContext("/__dummy__runtime-error-plugin");
+
+function sendError(error) {
+  if (!(error instanceof Error)) {
+    error = new Error("(unknown runtime error)");
+  }
+  const serialized = {
+    message: error.message,
+    stack: error.stack,
+  };
+  hot.send("runtime-error-plugin:error", serialized);
+}
+
+window.addEventListener("error", (evt) => {
+  sendError(evt.error);
+});
+
+window.addEventListener("unhandledrejection", (evt) => {
+  sendError(evt.reason);
+});
+</script>
+
+    <script type="module">
+import RefreshRuntime from "/@react-refresh"
+RefreshRuntime.injectIntoGlobalHook(window)
+window.$RefreshReg$ = () => {}
+window.$RefreshSig$ = () => (type) => type
+window.__vite_plugin_react_preamble_installed__ = true
+</script>
+
+    <script type="module" src="/@vite/client"></script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <title>Tradix - Golden Tag</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Fira+Code:wght@300..700&family=Geist+Mono:wght@100..900&family=Geist:wght@100..900&family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400..700;1,400..700&family=Merriweather:ital,opsz,wght@0,18..144,300..900;1,18..144,300..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Outfit:wght@100..900&family=Oxanium:wght@200..800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Roboto:ital,wght@0,100..900;1,100..900&family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&family=Space+Grotesk:wght@300..700&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx?v=eq9VHIhdP4WmPkUsBeLOV"></script>
+    <!-- This is a replit script which adds a banner on the top of the page when opened in development mode outside the replit environment -->
+    <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>
+  </body>
+</html>
+[2025-09-13 16:04:36] ---
+[2025-09-13 16:04:36] Quotation ID: 
+[2025-09-13 16:04:36] Testing: Retrieving quotation items
+[2025-09-13 16:04:36] Request: GET /api/quotations//items
+[2025-09-13 16:04:36] Response: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <script type="module">
+import { createHotContext } from "/@vite/client";
+const hot = createHotContext("/__dummy__runtime-error-plugin");
+
+function sendError(error) {
+  if (!(error instanceof Error)) {
+    error = new Error("(unknown runtime error)");
+  }
+  const serialized = {
+    message: error.message,
+    stack: error.stack,
+  };
+  hot.send("runtime-error-plugin:error", serialized);
+}
+
+window.addEventListener("error", (evt) => {
+  sendError(evt.error);
+});
+
+window.addEventListener("unhandledrejection", (evt) => {
+  sendError(evt.reason);
+});
+</script>
+
+    <script type="module">
+import RefreshRuntime from "/@react-refresh"
+RefreshRuntime.injectIntoGlobalHook(window)
+window.$RefreshReg$ = () => {}
+window.$RefreshSig$ = () => (type) => type
+window.__vite_plugin_react_preamble_installed__ = true
+</script>
+
+    <script type="module" src="/@vite/client"></script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <title>Tradix - Golden Tag</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Fira+Code:wght@300..700&family=Geist+Mono:wght@100..900&family=Geist:wght@100..900&family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400..700;1,400..700&family=Merriweather:ital,opsz,wght@0,18..144,300..900;1,18..144,300..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Outfit:wght@100..900&family=Oxanium:wght@200..800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Roboto:ital,wght@0,100..900;1,100..900&family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&family=Space+Grotesk:wght@300..700&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx?v=pHQD2KISjiuaABB4sM3zX"></script>
+    <!-- This is a replit script which adds a banner on the top of the page when opened in development mode outside the replit environment -->
+    <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>
+  </body>
+</html>
+[2025-09-13 16:04:36] ---
+[2025-09-13 16:04:36] Testing: Retrieving quotation details
+[2025-09-13 16:04:36] Request: GET /api/quotations/
+[2025-09-13 16:04:36] Response: [{"id":"1cf5ee30-6fc0-4a26-81b4-01392699146b","quoteNumber":"QT-058110JHC9","revision":1,"parentQuotationId":null,"revisionReason":null,"supersededAt":null,"supersededBy":null,"isSuperseded":false,"enquiryId":"47f4a58c-ebbd-4290-975c-ce66c915ae90","customerId":"93cfb48d-570c-4b11-a4a9-f96aaea01d96","customerType":"Wholesale","status":"Draft","quoteDate":"2025-09-13T15:57:38.716Z","validUntil":"2025-10-13T15:57:38.110Z","subtotal":"0.00","discountPercentage":"0.00","discountAmount":"0.00","taxAmount":"0.00","totalAmount":"0.00","terms":null,"notes":"Generated from enquiry ENQ-2024-002","approvalStatus":"Pending","requiredApprovalLevel":null,"approvedBy":null,"approvedAt":null,"rejectionReason":null,"createdBy":"e459998e-0a4d-4652-946e-44b2ba161d16","createdAt":"2025-09-13T15:57:38.407Z","updatedAt":"2025-09-13T15:57:38.407Z"},{"id":"93dd17fb-c515-4ca3-9385-405a77043275","quoteNumber":"QT-009294T0VT","revision":1,"parentQuotationId":null,"revisionReason":null,"supersededAt":null,"supersededBy":null,"isSuperseded":false,"enquiryId":"47f4a58c-ebbd-4290-975c-ce66c915ae90","customerId":"93cfb48d-570c-4b11-a4a9-f96aaea01d96","customerType":"Wholesale","status":"Draft","quoteDate":"2025-09-13T15:56:49.906Z","validUntil":"2025-10-13T15:56:49.294Z","subtotal":"0.00","discountPercentage":"0.00","discountAmount":"0.00","taxAmount":"0.00","totalAmount":"0.00","terms":null,"notes":"Generated from enquiry ENQ-2024-002","approvalStatus":"Pending","requiredApprovalLevel":null,"approvedBy":null,"approvedAt":null,"rejectionReason":null,"createdBy":"e459998e-0a4d-4652-946e-44b2ba161d16","createdAt":"2025-09-13T15:56:49.593Z","updatedAt":"2025-09-13T15:56:49.593Z"},{"id":"4395ce21-40ae-4178-a76e-b27fba890d14","quoteNumber":"QT-940555V7G4","revision":1,"parentQuotationId":null,"revisionReason":null,"supersededAt":null,"supersededBy":null,"isSuperseded":false,"enquiryId":"47f4a58c-ebbd-4290-975c-ce66c915ae90","customerId":"93cfb48d-570c-4b11-a4a9-f96aaea01d96","customerType":"Wholesale","status":"Draft","quoteDate":"2025-09-13T15:55:41.140Z","validUntil":"2025-10-13T15:55:40.555Z","subtotal":"0.00","discountPercentage":"0.00","discountAmount":"0.00","taxAmount":"0.00","totalAmount":"0.00","terms":null,"notes":"Generated from enquiry ENQ-2024-002","approvalStatus":"Pending","requiredApprovalLevel":null,"approvedBy":null,"approvedAt":null,"rejectionReason":null,"createdBy":"e459998e-0a4d-4652-946e-44b2ba161d16","createdAt":"2025-09-13T15:55:40.841Z","updatedAt":"2025-09-13T15:55:40.841Z"},{"id":"7e13fc4c-8a0d-49fd-9fa7-9b3ba53af25a","quoteNumber":"QT-87646667Q4","revision":1,"parentQuotationId":null,"revisionReason":null,"supersededAt":null,"supersededBy":null,"isSuperseded":false,"enquiryId":"47f4a58c-ebbd-4290-975c-ce66c915ae90","customerId":"93cfb48d-570c-4b11-a4a9-f96aaea01d96","customerType":"Wholesale","status":"Draft","quoteDate":"2025-09-13T15:54:37.068Z","validUntil":"2025-10-13T15:54:36.466Z","subtotal":"0.00","discountPercentage":"0.00","discountAmount":"0.00","taxAmount":"0.00","totalAmount":"0.00","terms":null,"notes":"Generated from enquiry ENQ-2024-002","approvalStatus":"Pending","requiredApprovalLevel":null,"approvedBy":null,"approvedAt":null,"rejectionReason":null,"createdBy":"e459998e-0a4d-4652-946e-44b2ba161d16","createdAt":"2025-09-13T15:54:36.760Z","updatedAt":"2025-09-13T15:54:36.760Z"},{"id":"9d75048a-2989-4052-a5fc-54e37af32020","quoteNumber":"QT-849062S8ZL","revision":1,"parentQuotationId":null,"revisionReason":null,"supersededAt":null,"supersededBy":null,"isSuperseded":false,"enquiryId":"47f4a58c-ebbd-4290-975c-ce66c915ae90","customerId":"93cfb48d-570c-4b11-a4a9-f96aaea01d96","customerType":"Wholesale","status":"Draft","quoteDate":"2025-09-13T15:54:09.673Z","validUntil":"2025-10-13T15:54:09.061Z","subtotal":"0.00","discountPercentage":"0.00","discountAmount":"0.00","taxAmount":"0.00","totalAmount":"0.00","terms":null,"notes":"Generated from enquiry ENQ-2024-002","approvalStatus":"Pending","requiredApprovalLevel":null,"approvedBy":null,"approvedAt":null,"rejectionReason":null,"createdBy":"e459998e-0a4d-4652-946e-44b2ba161d16","createdAt":"2025-09-13T15:54:09.366Z","updatedAt":"2025-09-13T15:54:09.366Z"},{"id":"dbd7317c-853a-4753-94c0-187adbd8740b","quoteNumber":"QT-203099VBUR","revision":2,"parentQuotationId":"d1700bac-246f-45c2-840c-5e61549c6b55","revisionReason":"rwt","supersededAt":null,"supersededBy":null,"isSuperseded":false,"enquiryId":"6456da2d-30bf-4894-9d94-bf2680e8d0d3","customerId":"93ed6644-ebae-4071-acc8-55af52fd24ba","customerType":"Wholesale","status":"Draft","quoteDate":"2025-09-13T15:41:33.960Z","validUntil":"2025-10-13T15:41:33.354Z","subtotal":"0.00","discountPercentage":"0.00","discountAmount":"0.00","taxAmount":"0.00","totalAmount":"0.00","terms":null,"notes":"Generated from enquiry ENQ-2024-001","approvalStatus":"Pending","requiredApprovalLevel":null,"approvedBy":null,"approvedAt":null,"rejectionReason":null,"createdBy":"e459998e-0a4d-4652-946e-44b2ba161d16","createdAt":"2025-09-13T15:43:23.389Z","updatedAt":"2025-09-13T15:43:23.389Z"},{"id":"d1700bac-246f-45c2-840c-5e61549c6b55","quoteNumber":"QT-093354B92G","revision":1,"parentQuotationId":null,"revisionReason":null,"supersededAt":null,"supersededBy":null,"isSuperseded":false,"enquiryId":"6456da2d-30bf-4894-9d94-bf2680e8d0d3","customerId":"93ed6644-ebae-4071-acc8-55af52fd24ba","customerType":"Wholesale","status":"Draft","quoteDate":"2025-09-13T15:41:33.960Z","validUntil":"2025-10-13T15:41:33.354Z","subtotal":"0.00","discountPercentage":"0.00","discountAmount":"0.00","taxAmount":"0.00","totalAmount":"0.00","terms":null,"notes":"Generated from enquiry ENQ-2024-001","approvalStatus":"Pending","requiredApprovalLevel":null,"approvedBy":null,"approvedAt":null,"rejectionReason":null,"createdBy":"e459998e-0a4d-4652-946e-44b2ba161d16","createdAt":"2025-09-13T15:41:33.655Z","updatedAt":"2025-09-13T15:41:33.655Z"},{"id":"05dc97f1-d8ab-4223-aff5-af2a51592177","quoteNumber":"QT-17744531CI","revision":1,"parentQuotationId":null,"revisionReason":null,"supersededAt":null,"supersededBy":null,"isSuperseded":false,"enquiryId":"6456da2d-30bf-4894-9d94-bf2680e8d0d3","customerId":"93ed6644-ebae-4071-acc8-55af52fd24ba","customerType":"Wholesale","status":"Draft","quoteDate":"2025-09-13T15:26:18.043Z","validUntil":"2025-10-13T15:26:17.444Z","subtotal":"0.00","discountPercentage":"0.00","discountAmount":"0.00","taxAmount":"0.00","totalAmount":"0.00","terms":null,"notes":"Generated from enquiry ENQ-2024-001","approvalStatus":"Pending","requiredApprovalLevel":null,"approvedBy":null,"approvedAt":null,"rejectionReason":null,"createdBy":"e459998e-0a4d-4652-946e-44b2ba161d16","createdAt":"2025-09-13T15:26:17.751Z","updatedAt":"2025-09-13T15:26:17.751Z"}]
+[2025-09-13 16:04:36] ---
+[2025-09-13 16:04:36] STEP 5: QUOTATION VERIFICATION
+[2025-09-13 16:04:36] Testing: Listing all quotations
+[2025-09-13 16:04:36] Request: GET /api/quotations
+[2025-09-13 16:04:37] Response: [{"id":"1cf5ee30-6fc0-4a26-81b4-01392699146b","quoteNumber":"QT-058110JHC9","revision":1,"parentQuotationId":null,"revisionReason":null,"supersededAt":null,"supersededBy":null,"isSuperseded":false,"enquiryId":"47f4a58c-ebbd-4290-975c-ce66c915ae90","customerId":"93cfb48d-570c-4b11-a4a9-f96aaea01d96","customerType":"Wholesale","status":"Draft","quoteDate":"2025-09-13T15:57:38.716Z","validUntil":"2025-10-13T15:57:38.110Z","subtotal":"0.00","discountPercentage":"0.00","discountAmount":"0.00","taxAmount":"0.00","totalAmount":"0.00","terms":null,"notes":"Generated from enquiry ENQ-2024-002","approvalStatus":"Pending","requiredApprovalLevel":null,"approvedBy":null,"approvedAt":null,"rejectionReason":null,"createdBy":"e459998e-0a4d-4652-946e-44b2ba161d16","createdAt":"2025-09-13T15:57:38.407Z","updatedAt":"2025-09-13T15:57:38.407Z"},{"id":"93dd17fb-c515-4ca3-9385-405a77043275","quoteNumber":"QT-009294T0VT","revision":1,"parentQuotationId":null,"revisionReason":null,"supersededAt":null,"supersededBy":null,"isSuperseded":false,"enquiryId":"47f4a58c-ebbd-4290-975c-ce66c915ae90","customerId":"93cfb48d-570c-4b11-a4a9-f96aaea01d96","customerType":"Wholesale","status":"Draft","quoteDate":"2025-09-13T15:56:49.906Z","validUntil":"2025-10-13T15:56:49.294Z","subtotal":"0.00","discountPercentage":"0.00","discountAmount":"0.00","taxAmount":"0.00","totalAmount":"0.00","terms":null,"notes":"Generated from enquiry ENQ-2024-002","approvalStatus":"Pending","requiredApprovalLevel":null,"approvedBy":null,"approvedAt":null,"rejectionReason":null,"createdBy":"e459998e-0a4d-4652-946e-44b2ba161d16","createdAt":"2025-09-13T15:56:49.593Z","updatedAt":"2025-09-13T15:56:49.593Z"},{"id":"4395ce21-40ae-4178-a76e-b27fba890d14","quoteNumber":"QT-940555V7G4","revision":1,"parentQuotationId":null,"revisionReason":null,"supersededAt":null,"supersededBy":null,"isSuperseded":false,"enquiryId":"47f4a58c-ebbd-4290-975c-ce66c915ae90","customerId":"93cfb48d-570c-4b11-a4a9-f96aaea01d96","customerType":"Wholesale","status":"Draft","quoteDate":"2025-09-13T15:55:41.140Z","validUntil":"2025-10-13T15:55:40.555Z","subtotal":"0.00","discountPercentage":"0.00","discountAmount":"0.00","taxAmount":"0.00","totalAmount":"0.00","terms":null,"notes":"Generated from enquiry ENQ-2024-002","approvalStatus":"Pending","requiredApprovalLevel":null,"approvedBy":null,"approvedAt":null,"rejectionReason":null,"createdBy":"e459998e-0a4d-4652-946e-44b2ba161d16","createdAt":"2025-09-13T15:55:40.841Z","updatedAt":"2025-09-13T15:55:40.841Z"},{"id":"7e13fc4c-8a0d-49fd-9fa7-9b3ba53af25a","quoteNumber":"QT-87646667Q4","revision":1,"parentQuotationId":null,"revisionReason":null,"supersededAt":null,"supersededBy":null,"isSuperseded":false,"enquiryId":"47f4a58c-ebbd-4290-975c-ce66c915ae90","customerId":"93cfb48d-570c-4b11-a4a9-f96aaea01d96","customerType":"Wholesale","status":"Draft","quoteDate":"2025-09-13T15:54:37.068Z","validUntil":"2025-10-13T15:54:36.466Z","subtotal":"0.00","discountPercentage":"0.00","discountAmount":"0.00","taxAmount":"0.00","totalAmount":"0.00","terms":null,"notes":"Generated from enquiry ENQ-2024-002","approvalStatus":"Pending","requiredApprovalLevel":null,"approvedBy":null,"approvedAt":null,"rejectionReason":null,"createdBy":"e459998e-0a4d-4652-946e-44b2ba161d16","createdAt":"2025-09-13T15:54:36.760Z","updatedAt":"2025-09-13T15:54:36.760Z"},{"id":"9d75048a-2989-4052-a5fc-54e37af32020","quoteNumber":"QT-849062S8ZL","revision":1,"parentQuotationId":null,"revisionReason":null,"supersededAt":null,"supersededBy":null,"isSuperseded":false,"enquiryId":"47f4a58c-ebbd-4290-975c-ce66c915ae90","customerId":"93cfb48d-570c-4b11-a4a9-f96aaea01d96","customerType":"Wholesale","status":"Draft","quoteDate":"2025-09-13T15:54:09.673Z","validUntil":"2025-10-13T15:54:09.061Z","subtotal":"0.00","discountPercentage":"0.00","discountAmount":"0.00","taxAmount":"0.00","totalAmount":"0.00","terms":null,"notes":"Generated from enquiry ENQ-2024-002","approvalStatus":"Pending","requiredApprovalLevel":null,"approvedBy":null,"approvedAt":null,"rejectionReason":null,"createdBy":"e459998e-0a4d-4652-946e-44b2ba161d16","createdAt":"2025-09-13T15:54:09.366Z","updatedAt":"2025-09-13T15:54:09.366Z"},{"id":"dbd7317c-853a-4753-94c0-187adbd8740b","quoteNumber":"QT-203099VBUR","revision":2,"parentQuotationId":"d1700bac-246f-45c2-840c-5e61549c6b55","revisionReason":"rwt","supersededAt":null,"supersededBy":null,"isSuperseded":false,"enquiryId":"6456da2d-30bf-4894-9d94-bf2680e8d0d3","customerId":"93ed6644-ebae-4071-acc8-55af52fd24ba","customerType":"Wholesale","status":"Draft","quoteDate":"2025-09-13T15:41:33.960Z","validUntil":"2025-10-13T15:41:33.354Z","subtotal":"0.00","discountPercentage":"0.00","discountAmount":"0.00","taxAmount":"0.00","totalAmount":"0.00","terms":null,"notes":"Generated from enquiry ENQ-2024-001","approvalStatus":"Pending","requiredApprovalLevel":null,"approvedBy":null,"approvedAt":null,"rejectionReason":null,"createdBy":"e459998e-0a4d-4652-946e-44b2ba161d16","createdAt":"2025-09-13T15:43:23.389Z","updatedAt":"2025-09-13T15:43:23.389Z"},{"id":"d1700bac-246f-45c2-840c-5e61549c6b55","quoteNumber":"QT-093354B92G","revision":1,"parentQuotationId":null,"revisionReason":null,"supersededAt":null,"supersededBy":null,"isSuperseded":false,"enquiryId":"6456da2d-30bf-4894-9d94-bf2680e8d0d3","customerId":"93ed6644-ebae-4071-acc8-55af52fd24ba","customerType":"Wholesale","status":"Draft","quoteDate":"2025-09-13T15:41:33.960Z","validUntil":"2025-10-13T15:41:33.354Z","subtotal":"0.00","discountPercentage":"0.00","discountAmount":"0.00","taxAmount":"0.00","totalAmount":"0.00","terms":null,"notes":"Generated from enquiry ENQ-2024-001","approvalStatus":"Pending","requiredApprovalLevel":null,"approvedBy":null,"approvedAt":null,"rejectionReason":null,"createdBy":"e459998e-0a4d-4652-946e-44b2ba161d16","createdAt":"2025-09-13T15:41:33.655Z","updatedAt":"2025-09-13T15:41:33.655Z"},{"id":"05dc97f1-d8ab-4223-aff5-af2a51592177","quoteNumber":"QT-17744531CI","revision":1,"parentQuotationId":null,"revisionReason":null,"supersededAt":null,"supersededBy":null,"isSuperseded":false,"enquiryId":"6456da2d-30bf-4894-9d94-bf2680e8d0d3","customerId":"93ed6644-ebae-4071-acc8-55af52fd24ba","customerType":"Wholesale","status":"Draft","quoteDate":"2025-09-13T15:26:18.043Z","validUntil":"2025-10-13T15:26:17.444Z","subtotal":"0.00","discountPercentage":"0.00","discountAmount":"0.00","taxAmount":"0.00","totalAmount":"0.00","terms":null,"notes":"Generated from enquiry ENQ-2024-001","approvalStatus":"Pending","requiredApprovalLevel":null,"approvedBy":null,"approvedAt":null,"rejectionReason":null,"createdBy":"e459998e-0a4d-4652-946e-44b2ba161d16","createdAt":"2025-09-13T15:26:17.751Z","updatedAt":"2025-09-13T15:26:17.751Z"}]
+[2025-09-13 16:04:37] ---
+[2025-09-13 16:04:37] E2E Test Summary:
+[2025-09-13 16:04:37] Customer ID: 8aee82e2-3ec3-4e31-bd4c-da515839655e
+8aee82e2-3ec3-4e31-bd4c-da515839655e
+[2025-09-13 16:04:37] Enquiry ID: 
+[2025-09-13 16:04:37] Enquiry Item ID: 
+[2025-09-13 16:04:37] Quotation ID: 
+[2025-09-13 16:04:37] Full test log saved to: e2e_test_results.log

@@ -16,6 +16,7 @@ import {
   type InsertQuotationApproval,
 } from "@shared/schema";
 import { BaseStorage } from './base.js';
+import { validateUserIdOrDefault, SYSTEM_USER_ID } from "@shared/utils/uuid";
 
 export class QuotationStorage extends BaseStorage {
   
@@ -210,6 +211,14 @@ export class QuotationStorage extends BaseStorage {
         customer: { id: enquiry.customer.id, name: enquiry.customer.name, customerType: enquiry.customer.customerType }
       });
 
+      // Get enquiry items to copy to quotation
+      const enquiryItems = await db
+        .select()
+        .from(enquiryItems)
+        .where(eq(enquiryItems.enquiryId, enquiryId));
+
+      console.log("Retrieved enquiry items:", enquiryItems.length, "items");
+
       // Calculate markup based on customer type
       const markup = enquiry.customer.customerType === "Retail" ? 0.7 : 0.4;
       console.log("Calculated markup:", markup);
@@ -227,7 +236,7 @@ export class QuotationStorage extends BaseStorage {
         taxAmount: "0",
         totalAmount: "0", // Will be calculated from items
         notes: `Generated from enquiry ${enquiry.enquiryNumber}`,
-        createdBy: userId,
+        createdBy: validateUserIdOrDefault(userId),
       };
 
       console.log("Creating quotation with data:", quotationData);
@@ -236,6 +245,42 @@ export class QuotationStorage extends BaseStorage {
       const quotation = await this.createQuotation(quotationData as unknown as InsertQuotation, userId);
 
       console.log("Successfully created quotation:", quotation);
+
+      // Copy enquiry items to quotation items
+      if (enquiryItems.length > 0) {
+        let totalAmount = 0;
+        
+        for (const enquiryItem of enquiryItems) {
+          // Calculate price with markup
+          const basePrice = parseFloat(enquiryItem.unitPrice || "0");
+          const quotedPrice = basePrice * (1 + markup);
+          const totalPrice = quotedPrice * enquiryItem.quantity;
+          totalAmount += totalPrice;
+
+          const quotationItemData = {
+            quotationId: quotation.id,
+            description: enquiryItem.description,
+            quantity: enquiryItem.quantity,
+            unitPrice: quotedPrice.toFixed(4),
+            lineTotal: totalPrice.toFixed(2),
+            notes: enquiryItem.notes || "",
+          };
+
+          console.log("Creating quotation item:", quotationItemData);
+          await this.createQuotationItem(quotationItemData as unknown as InsertQuotationItem);
+        }
+
+        // Update quotation totals
+        const updatedQuotation = {
+          subtotal: totalAmount.toFixed(2),
+          totalAmount: totalAmount.toFixed(2),
+        };
+
+        console.log("Updating quotation totals:", updatedQuotation);
+        await this.updateQuotation(quotation.id, updatedQuotation);
+      }
+
+      console.log("Successfully generated quotation with items from enquiry");
       return quotation;
     } catch (error) {
       console.error("Error generating quotation from enquiry:", error);
@@ -256,7 +301,7 @@ export class QuotationStorage extends BaseStorage {
       parentQuotationId: originalId,
       revision: (original.revision || 0) + 1,
       status: "Draft",
-      createdBy: userId,
+      createdBy: validateUserIdOrDefault(userId),
       ...revisionData,
     };
 
@@ -291,27 +336,26 @@ export class QuotationStorage extends BaseStorage {
   }
 
   async createQuotationItem(item: InsertQuotationItem) {
-    const id = this.generateId();
-    const now = this.getCurrentTimestamp();
+    console.log("DEBUG: createQuotationItem called with:", item);
+    try {
+      const id = this.generateId();
+      const now = this.getCurrentTimestamp();
 
-    const newItem = {
-      ...item,
-      id,
-      createdAt: now,
-    };
+      const newItem = {
+        ...item,
+        id,
+        createdAt: now,
+      };
 
-    await db.insert(quotationItems).values(newItem);
+      console.log("DEBUG: About to insert with data:", newItem);
+      const result = await db.insert(quotationItems).values(newItem).returning();
+      console.log("DEBUG: Insert successful, result:", result);
 
-    await this.logAuditEvent(
-      "quotation_item",
-      id,
-      "created",
-      "system", // Use system as fallback since createdBy doesn't exist in InsertQuotationItem
-      null,
-      newItem
-    );
-
-    return { ...newItem } as QuotationItem;
+      return { ...newItem } as QuotationItem;
+    } catch (error) {
+      console.error("DEBUG: Database insert error:", error);
+      throw error;
+    }
   }
 
   async updateQuotationItem(id: string, item: Partial<InsertQuotationItem>) {

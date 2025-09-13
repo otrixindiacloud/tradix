@@ -1,7 +1,7 @@
 import { db } from "../db";
 import { salesOrders, salesOrderItems, quotations, quotationItems } from "@shared/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
-import { nanoid } from "nanoid";
+import { generateNanoId, validateUUID, SYSTEM_USER_ID } from "@shared/utils/uuid";
 import { ISalesOrderStorage } from "./interfaces";
 import { BaseStorage } from "./base";
 
@@ -61,12 +61,12 @@ export class SalesOrderStorage extends BaseStorage implements ISalesOrderStorage
   async createSalesOrder(salesOrder: any) {
     const orderNumber = `SO-${new Date().getFullYear()}-${String(await this.getNextSequenceNumber()).padStart(3, '0')}`;
     
-    const newSalesOrder = {
-      ...salesOrder,
-      id: nanoid(),
+    const salesOrderId = generateNanoId();
+    
+    const newSalesOrderItem = {
+      id: generateNanoId(),
       orderNumber,
-      orderDate: new Date(),
-      status: 'Draft',
+      ...salesOrder,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -112,7 +112,7 @@ export class SalesOrderStorage extends BaseStorage implements ISalesOrderStorage
 
     // Create the sales order
     const salesOrderData = {
-      id: nanoid(),
+      id: generateNanoId(),
       orderNumber,
       quotationId,
       customerId: quotationData.customerId,
@@ -136,7 +136,7 @@ export class SalesOrderStorage extends BaseStorage implements ISalesOrderStorage
     // Create sales order items from quotation items
     if (quotationItemsData.length > 0) {
       const salesOrderItemsData = quotationItemsData.map(item => ({
-        id: nanoid(),
+        id: generateNanoId(),
         salesOrderId: createdSalesOrder.id,
         itemId: item.itemId,
         itemName: item.itemName,
@@ -166,7 +166,7 @@ export class SalesOrderStorage extends BaseStorage implements ISalesOrderStorage
     const amendedOrderNumber = `${parentOrder.orderNumber}-A${String(await this.getNextSequenceNumber()).padStart(3, '0')}`;
     
     const amendedSalesOrder = {
-      id: nanoid(),
+      id: generateNanoId(),
       orderNumber: amendedOrderNumber,
       parentOrderId,
       customerId: parentOrder.customerId,
@@ -229,7 +229,7 @@ export class SalesOrderStorage extends BaseStorage implements ISalesOrderStorage
   async createSalesOrderItem(item: any) {
     const newItem = {
       ...item,
-      id: nanoid(),
+      id: generateNanoId(),
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -260,7 +260,7 @@ export class SalesOrderStorage extends BaseStorage implements ISalesOrderStorage
   async bulkCreateSalesOrderItems(items: any[]) {
     const itemsWithIds = items.map(item => ({
       ...item,
-      id: nanoid(),
+      id: generateNanoId(),
       createdAt: new Date(),
       updatedAt: new Date(),
     }));

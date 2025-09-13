@@ -29,6 +29,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { SYSTEM_USER_ID } from "@shared/utils/uuid";
 import { Link } from "wouter";
 import QuotationItemsManager from "@/components/quotation/quotation-items-manager";
 
@@ -154,7 +155,7 @@ export default function QuotationDetailPage() {
       const response = await fetch(`/api/quotations/${id}/revisions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...revisionData, userId: "default-user-id" }),
+        body: JSON.stringify({ ...revisionData, userId: SYSTEM_USER_ID }),
       });
       if (!response.ok) throw new Error("Failed to create quotation revision");
       return response.json();
@@ -487,21 +488,21 @@ export default function QuotationDetailPage() {
                   <div className="space-y-3">
                     <div className="flex justify-between text-sm">
                       <span>Subtotal:</span>
-                      <span>${parseFloat(quotation.subtotal || "0").toFixed(2)}</span>
+                      <span>{parseFloat(quotation.subtotal || "0").toFixed(2)}</span>
                     </div>
                     
                     {parseFloat(quotation.discountPercentage || "0") > 0 && (
                       <div className="flex justify-between text-sm">
                         <span>Discount ({quotation.discountPercentage}%):</span>
                         <span className="text-green-600">
-                          -${parseFloat(quotation.discountAmount || "0").toFixed(2)}
+                          -{parseFloat(quotation.discountAmount || "0").toFixed(2)}
                         </span>
                       </div>
                     )}
                     
                     <div className="flex justify-between text-sm">
                       <span>Tax:</span>
-                      <span>${parseFloat(quotation.taxAmount || "0").toFixed(2)}</span>
+                      <span>{parseFloat(quotation.taxAmount || "0").toFixed(2)}</span>
                     </div>
                     
                     <Separator />
@@ -600,7 +601,7 @@ export default function QuotationDetailPage() {
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-4">
                         <span>Status: <Badge variant="outline">{revision.status}</Badge></span>
-                        <span>Total: <strong>${revision.totalAmount}</strong></span>
+                        <span>Total: <strong>{revision.totalAmount}</strong></span>
                       </div>
                       {revision.id !== quotation.id && (
                         <Link href={`/quotations/${revision.id}`}>

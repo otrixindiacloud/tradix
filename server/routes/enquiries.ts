@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { storage } from "../storage";
-import { insertEnquirySchema, insertEnquiryItemSchema } from "@shared/schema";
+import { insertEnquirySchema, updateEnquirySchema, insertEnquiryItemSchema } from "@shared/schema";
 import { z } from "zod";
 
 export function registerEnquiryRoutes(app: Express) {
@@ -67,11 +67,12 @@ export function registerEnquiryRoutes(app: Express) {
 
   app.put("/api/enquiries/:id", async (req, res) => {
     try {
-      const enquiryData = insertEnquirySchema.partial().parse(req.body);
+      const enquiryData = updateEnquirySchema.parse(req.body);
       const enquiry = await storage.updateEnquiry(req.params.id, enquiryData);
       res.json(enquiry);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.log("Validation error:", error.errors);
         return res.status(400).json({ message: "Invalid enquiry data", errors: error.errors });
       }
       console.error("Error updating enquiry:", error);
