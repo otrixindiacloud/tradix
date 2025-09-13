@@ -1,0 +1,83 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+10:46:40 AM [express] serving on port 5000
+Error generating quotation: error: terminating connection due to administrator command
+    at file:///workspaces/gt-erp/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async NeonPreparedQuery.execute (/workspaces/gt-erp/node_modules/src/neon-serverless/session.ts:102:18)
+    at async DatabaseStorage.generateQuotationFromEnquiry (/workspaces/gt-erp/server/storage.ts:1058:26)
+    at async <anonymous> (/workspaces/gt-erp/server/routes.ts:400:25) {
+  length: 116,
+  severity: 'FATAL',
+  code: '57P01',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'postgres.c',
+  line: '3289',
+  routine: 'ProcessInterrupts'
+}
+10:46:52 AM [express] POST /api/quotations/generate/e8d7c686-1b20-4f61-a202-e1d942e9798f 500 in 1255m…
+10:47:09 AM [express] GET /api/enquiries 200 in 1286ms :: [{"id":"a7220c27-2b5c-46b3-bc56-5b46cbcda0e…
+10:47:22 AM [express] POST /api/quotations 400 in 3ms :: {"message":"Invalid quotation data","errors"…
+Error generating quotation: error: column "parent_quotation_id" of relation "quotations" does not exist
+    at file:///workspaces/gt-erp/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async NeonPreparedQuery.execute (/workspaces/gt-erp/node_modules/src/neon-serverless/session.ts:102:18)
+    at async DatabaseStorage.generateQuotationFromEnquiry (/workspaces/gt-erp/server/storage.ts:1081:25)
+    at async <anonymous> (/workspaces/gt-erp/server/routes.ts:400:25) {
+  length: 142,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '61',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_target.c',
+  line: '1066',
+  routine: 'checkInsertTargets'
+}
+10:48:42 AM [express] POST /api/quotations/generate/e8d7c686-1b20-4f61-a202-e1d942e9798f 500 in 4197m…
+Error generating quotation: error: column "parent_quotation_id" of relation "quotations" does not exist
+    at file:///workspaces/gt-erp/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async NeonPreparedQuery.execute (/workspaces/gt-erp/node_modules/src/neon-serverless/session.ts:102:18)
+    at async DatabaseStorage.generateQuotationFromEnquiry (/workspaces/gt-erp/server/storage.ts:1081:25)
+    at async <anonymous> (/workspaces/gt-erp/server/routes.ts:400:25) {
+  length: 142,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '61',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_target.c',
+  line: '1066',
+  routine: 'checkInsertTargets'
+}
+10:49:24 AM [express] POST /api/quotations/generate/e8d7c686-1b20-4f61-a202-e1d942e9798f 500 in 1873m…

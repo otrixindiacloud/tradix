@@ -1,0 +1,78 @@
+Golden Tag WLL – ERP Requirements Specification
+
+Platform: Oracle APEX
+
+Scope: End-to-end automation from customer enquiry to invoicing, including inventory, supplier, and customer management.
+
+1. Process Flow Overview
+• Customer Enquiry → Quotation → Customer Acceptance (Partial/Full) → Customer PO Upload → Sales Order → Supplier LPO → Goods Receipt → Inventory Update → Customer Delivery → Invoice
+2. Enquiry Management
+• Multi-channel Capture: Email, phone, web form (auto-import/manual entry).
+• Fields: Customer details, enquiry date, item descriptions (linked to supplier codes), customer type (Retail/Wholesale), Enquiry Source, quantity, target delivery date, notes.
+• Status Tracking: New, In Progress, Quoted, Closed.
+• Attachments: Specifications, images, reference documents.
+• Audit Trail: Timestamped logs of enquiry updates and user actions.
+3. Quotation Management
+• Quote Generation: From enquiry or manual; versioning with audit trail.
+• Pricing Logic: Auto-selected based on customer type using markup rules (Retail: 70%, Wholesale: 40%).
+• Quote Fields: Quote ID, revision, customer details, item lines (supplier code, barcode, description, quantity, unit price, total), taxes, discounts, validity, terms.
+• Item-Level Control: Accept/reject items with reason logging; rejected items archived.
+• Implement a pricing approval hierarchy: Define roles (e.g., Sales Rep → Manager → Finance) with configurable approval levels based on quote value, discount percentage, or custom rules and pricing type(retail/wholesale)
+ 
+4. Customer Acceptance & PO Upload
+• Acceptance Options: Full or partial acceptance of quoted items.
+• Status Update: Accepted items flagged for conversion; rejected items archived.
+• Confirmation Log: Timestamped acceptance confirmation with user identity.
+• Mandatory Step: Required before Sales Order creation.
+• Upload Capability: PDF/image upload of PO document.
+• Validation: PO number, item match, quantity check against quote.
+• Linkage: PO linked to quote and stored for audit/reference.
+5. Sales Order Management
+• Auto/Manual Creation: From accepted quotes and uploaded PO.
+• Fields: Order ID, customer details, order date, item lines (supplier code, barcode, quantity, unit price, total), payment terms, delivery instructions.
+• Barcode Enforcement: Mandatory for each item.
+• Version Control: For amendments and partial orders.
+• Customer LPO Validation: Mandatory field; document upload and linkage.
+6. Supplier LPO Management
+• Auto-generation: Grouped by supplier from Sales Order with Multiple supplier option
+• Fields: LPO ID, supplier details, item lines (supplier code, barcode), expected delivery date, cost price, terms.
+• Amendments & Cancellations: With approval workflow.
+• Backlog Reporting: For both customer and supplier orders.
+7. Inventory Management
+• Supplier-coded Items: With barcode association.
+• Fields: Supplier code, barcode, description, category, unit of measure, cost price, markup rules, supplier details.
+• Variants Support: Color, size, etc.
+• Goods Receipt: Barcode-based against supplier LPOs. Support partial receipt also.
+• Fields: LPO ID, barcode, supplier code, quantity, receipt date, storage location.
+• Discrepancy Handling: Damaged/short shipments flagged.
+• Bulk Scanning: For high-volume receipts.
+• Supplier Returns: Debit note generation and tracking.
+8. Delivery & Invoicing
+• Delivery Notes: Generated post goods receipt.
+• Barcode Picking: Match stored items to Sales Order.
+• Partial Deliveries: Supported with status updates.
+• Auto-generation: Upon delivery confirmation.
+• Fields: Invoice ID, date, sales order reference, item lines (with barcodes), taxes (e.g., VAT), discounts, total amount.
+• Delivery note upload option
+• Proforma Invoices: From quotes/orders.
+• Multi-currency Support: For international transactions.
+• Returns & Credit Notes: Barcode-linked and auditable.
+9. Pricing & Costing Engine
+• Retail Price = Supplier Cost / (1 - Retail Markup %)
+• Wholesale Price = Supplier Cost / (1 - Wholesale Markup %)
+• Markup Configuration: System-wide, category-level, item-level.
+• Dynamic Updates: Auto-recalculation on supplier cost change.
+• Manual Override: For exceptions and customer-specific pricing.
+• Downloadable Price Lists: Retail and wholesale formats.
+10. Tally Integration
+• Modules Integrated: Supplier, Customer, Purchase, Sales, Inventory, Purchase Return, Sales Return
+11. Additional Requirements
+• Role-Based Access Control: Ensure data security and process integrity.
+• Notification System: Email alerts for approvals etc.
+• Customer classification in the master, Internal, Corporate, Individual, Family, ministry
+• Dashboard & KPIs: Real-time visibility into enquiries, orders, inventory, and financials.
+• Audit Logs: For all critical transactions and user actions.
+• API Readiness: For future integrations with suppliers and logistics partners.
+• Data Backup & Recovery: Scheduled backups and failover strategy.
+ 
+ 

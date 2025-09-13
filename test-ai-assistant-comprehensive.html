@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant Comprehensive Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+            display: flex;
+        }
+        
+        .sidebar {
+            width: 250px;
+            background: white;
+            border-right: 1px solid #e5e5e5;
+            padding: 20px;
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            z-index: 40;
+            overflow-y: auto;
+        }
+        
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin: 4px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            color: #374151;
+            position: relative;
+        }
+        
+        .sidebar-item:hover {
+            background-color: #f3f4f6;
+        }
+        
+        .sidebar-item-active {
+            background-color: #3b82f6;
+            color: white;
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+            flex: 1;
+        }
+        
+        .floating-button {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border: 2px solid white;
+            cursor: pointer;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: all 0.3s;
+        }
+        
+        .floating-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+        }
+        
+        .status {
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        
+        .success {
+            background-color: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+        
+        .error {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+        
+        .info {
+            background-color: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+        
+        .test-section {
+            background: #f8fafc;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .test-button {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: all 0.2s;
+        }
+        
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        .badge {
+            background: #8b5cf6;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-left: auto;
+        }
+        
+        .icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+        }
+        
+        .results {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .result-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .result-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="sidebar">
+            <h3 style="margin-top: 0; color: #374151;">Navigation</h3>
+            <a href="#" class="sidebar-item" onclick="testClick('Dashboard', 'sidebar')">
+                <div class="icon">🏠</div>
+                <span>Dashboard</span>
+            </a>
+            <a href="#" class="sidebar-item" onclick="testClick('Enquiries', 'sidebar')">
+                <div class="icon">❓</div>
+                <span>Enquiries</span>
+            </a>
+            <a href="#" class="sidebar-item" onclick="testClick('Quotations', 'sidebar')">
+                <div class="icon">📄</div>
+                <span>Quotations</span>
+            </a>
+            <a href="#" class="sidebar-item" onclick="testClick('AI Assistant', 'sidebar')">
+                <div class="icon">🤖</div>
+                <span>AI Assistant</span>
+                <div class="badge">NEW</div>
+            </a>
+            <a href="#" class="sidebar-item" onclick="testClick('Analytics', 'sidebar')">
+                <div class="icon">📊</div>
+                <span>Analytics</span>
+            </a>
+        </div>
+        
+        <div class="main-content">
+            <h1>AI Assistant Comprehensive Test</h1>
+            
+            <div id="status" class="status info">
+                🧪 Test Ready - Click the AI Assistant button in the sidebar or the floating button to test clickability
+            </div>
+            
+            <div class="test-section">
+                <h2>Test Instructions</h2>
+                <ol>
+                    <li><strong>Sidebar Test:</strong> Click the "AI Assistant" button in the left sidebar</li>
+                    <li><strong>Floating Button Test:</strong> Click the floating purple button in the bottom-right corner</li>
+                    <li><strong>Other Buttons:</strong> Click other sidebar items to compare behavior</li>
+                    <li><strong>Console Check:</strong> Open browser console (F12) to see debug messages</li>
+                </ol>
+            </div>
+            
+            <div class="test-section">
+                <h2>Manual Test Buttons</h2>
+                <button class="test-button" onclick="testClick('Manual Test 1', 'manual')">
+                    Manual Test Button 1
+                </button>
+                <button class="test-button" onclick="testClick('Manual Test 2', 'manual')">
+                    Manual Test Button 2
+                </button>
+                <button class="test-button" onclick="testClick('AI Assistant Test', 'manual')">
+                    AI Assistant Test
+                </button>
+            </div>
+            
+            <div class="test-section">
+                <h2>Test Results</h2>
+                <div id="results" class="results">
+                    <p style="color: #6b7280; font-style: italic;">No clicks detected yet...</p>
+                </div>
+            </div>
+            
+            <div class="test-section">
+                <h2>Debug Information</h2>
+                <div id="debug-info">
+                    <p><strong>Page Loaded:</strong> <span id="load-time"></span></p>
+                    <p><strong>Total Clicks:</strong> <span id="click-count">0</span></p>
+                    <p><strong>Last Click:</strong> <span id="last-click">None</span></p>
+                    <p><strong>JavaScript Errors:</strong> <span id="error-count">0</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating AI Assistant Button -->
+    <div class="floating-button" onclick="testClick('Floating AI Assistant', 'floating')" title="AI Assistant - Ask me anything!">
+        <div style="color: white; font-size: 24px;">🤖</div>
+    </div>
+
+    <script>
+        let clickCount = 0;
+        let errorCount = 0;
+        
+        // Set load time
+        document.getElementById('load-time').textContent = new Date().toLocaleTimeString();
+        
+        function testClick(source, type) {
+            clickCount++;
+            const timestamp = new Date().toLocaleTimeString();
+            
+            // Update status
+            const status = document.getElementById('status');
+            status.innerHTML = `✅ Click detected from: <strong>${source}</strong> (${type}) at ${timestamp}`;
+            status.className = 'status success';
+            
+            // Update debug info
+            document.getElementById('click-count').textContent = clickCount;
+            document.getElementById('last-click').textContent = `${source} (${type}) at ${timestamp}`;
+            
+            // Add to results
+            const results = document.getElementById('results');
+            if (clickCount === 1) {
+                results.innerHTML = ''; // Clear the "No clicks detected" message
+            }
+            
+            const newResult = document.createElement('div');
+            newResult.className = 'result-item';
+            newResult.innerHTML = `
+                <strong>${clickCount}.</strong> 
+                <span style="color: #3b82f6;">${source}</span> 
+                <span style="color: #6b7280;">(${type})</span> 
+                <span style="color: #9ca3af; font-size: 14px;">at ${timestamp}</span>
+            `;
+            results.appendChild(newResult);
+            
+            // Scroll to bottom of results
+            results.scrollTop = results.scrollHeight;
+            
+            // Log to console
+            console.log(`✅ Click detected from: ${source} (${type})`, {
+                timestamp,
+                clickCount,
+                source,
+                type
+            });
+            
+            // Prevent default link behavior
+            if (event) {
+                event.preventDefault();
+            }
+            return false;
+        }
+        
+        // Test for JavaScript errors
+        window.addEventListener('error', function(e) {
+            errorCount++;
+            console.error('❌ JavaScript Error:', e.error);
+            document.getElementById('error-count').textContent = errorCount;
+            
+            const status = document.getElementById('status');
+            status.innerHTML = `❌ JavaScript Error: ${e.error.message}`;
+            status.className = 'status error';
+        });
+        
+        // Test for unhandled promise rejections
+        window.addEventListener('unhandledrejection', function(e) {
+            errorCount++;
+            console.error('❌ Promise Rejection:', e.reason);
+            document.getElementById('error-count').textContent = errorCount;
+            
+            const status = document.getElementById('status');
+            status.innerHTML = `❌ Promise Rejection: ${e.reason}`;
+            status.className = 'status error';
+        });
+        
+        // Test for any click events that might be blocked
+        document.addEventListener('click', function(e) {
+            console.log('🔍 Global click detected on:', e.target);
+        });
+        
+        console.log('🚀 AI Assistant Comprehensive Test Page Loaded');
+        console.log('📝 Instructions:');
+        console.log('   1. Click the AI Assistant button in the sidebar');
+        console.log('   2. Click the floating AI Assistant button');
+        console.log('   3. Check this console for debug messages');
+        console.log('   4. Verify all clicks are registered in the results section');
+    </script>
+</body>
+</html>

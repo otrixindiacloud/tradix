@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Recent Activities</title>
+</head>
+<body>
+    <h1>Recent Activities API Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        async function testRecentActivities() {
+            try {
+                console.log('Testing Recent Activities API...');
+                
+                // Test main activities endpoint
+                const activitiesResponse = await fetch('http://localhost:5000/api/recent-activities');
+                const activitiesData = await activitiesResponse.json();
+                console.log('Activities API Response:', activitiesData);
+                
+                // Test stats endpoint
+                const statsResponse = await fetch('http://localhost:5000/api/recent-activities/stats');
+                const statsData = await statsResponse.json();
+                console.log('Stats API Response:', statsData);
+                
+                // Display results
+                document.getElementById('results').innerHTML = `
+                    <h2>API Test Results</h2>
+                    <p><strong>Activities Count:</strong> ${activitiesData.activities?.length || 0}</p>
+                    <p><strong>Total Activities:</strong> ${statsData.total || 0}</p>
+                    <p><strong>Today's Activities:</strong> ${statsData.today || 0}</p>
+                    <p><strong>Status:</strong> ✅ APIs are working correctly</p>
+                `;
+                
+            } catch (error) {
+                console.error('Error testing Recent Activities:', error);
+                document.getElementById('results').innerHTML = `
+                    <h2>API Test Results</h2>
+                    <p><strong>Status:</strong> ❌ Error: ${error.message}</p>
+                `;
+            }
+        }
+        
+        // Run test when page loads
+        window.onload = testRecentActivities;
+    </script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[dotenv@17.2.1] injecting env (0) from .env -- tip: 📡 auto-backup env with Radar: https://dotenvx.com/radar
+10:44:54 AM [express] serving on port 5000
+Error generating quotation: TypeError: value.toISOString is not a function
+    at PgTimestamp.mapToDriverValue (/workspaces/gt-erp/node_modules/src/pg-core/columns/timestamp.ts:66:16)
+    at <anonymous> (/workspaces/gt-erp/node_modules/src/sql/sql.ts:223:69)
+    at Array.map (<anonymous>)
+    at SQL.buildQueryFromSourceParams (/workspaces/gt-erp/node_modules/src/sql/sql.ts:148:30)
+    at <anonymous> (/workspaces/gt-erp/node_modules/src/sql/sql.ts:170:17)
+    at Array.map (<anonymous>)
+    at SQL.buildQueryFromSourceParams (/workspaces/gt-erp/node_modules/src/sql/sql.ts:148:30)
+    at <anonymous> (/workspaces/gt-erp/node_modules/src/sql/sql.ts:174:17)
+    at Array.map (<anonymous>)
+    at SQL.buildQueryFromSourceParams (/workspaces/gt-erp/node_modules/src/sql/sql.ts:148:30)
+10:45:07 AM [express] POST /api/quotations/generate/e8d7c686-1b20-4f61-a202-e1d942e9798f 500 in 1683m…
+Error generating quotation: TypeError: value.toISOString is not a function
+    at PgTimestamp.mapToDriverValue (/workspaces/gt-erp/node_modules/src/pg-core/columns/timestamp.ts:66:16)
+    at <anonymous> (/workspaces/gt-erp/node_modules/src/sql/sql.ts:223:69)
+    at Array.map (<anonymous>)
+    at SQL.buildQueryFromSourceParams (/workspaces/gt-erp/node_modules/src/sql/sql.ts:148:30)
+    at <anonymous> (/workspaces/gt-erp/node_modules/src/sql/sql.ts:170:17)
+    at Array.map (<anonymous>)
+    at SQL.buildQueryFromSourceParams (/workspaces/gt-erp/node_modules/src/sql/sql.ts:148:30)
+    at <anonymous> (/workspaces/gt-erp/node_modules/src/sql/sql.ts:174:17)
+    at Array.map (<anonymous>)
+    at SQL.buildQueryFromSourceParams (/workspaces/gt-erp/node_modules/src/sql/sql.ts:148:30)
+10:45:41 AM [express] POST /api/quotations/generate/e8d7c686-1b20-4f61-a202-e1d942e9798f 500 in 1579m…

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Button Debug Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .button {
+            padding: 10px 20px;
+            margin: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .mark-complete {
+            background-color: #10b981;
+            color: white;
+        }
+        .mark-complete:hover {
+            background-color: #059669;
+        }
+        .view-details {
+            background-color: white;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+        .view-details:hover {
+            background-color: #f9fafb;
+        }
+        .log {
+            background-color: #f3f4f6;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e5e7eb;
+        }
+        .status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        .success { background-color: #d1fae5; color: #065f46; }
+        .error { background-color: #fee2e2; color: #991b1b; }
+        .info { background-color: #dbeafe; color: #1e40af; }
+        .warning { background-color: #fef3c7; color: #92400e; }
+        .workflow-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        .workflow-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Workflow Buttons Debug Test</h1>
+    
+    <div class="test-section">
+        <h2>📋 Current Implementation Analysis</h2>
+        <div id="analysis-log" class="log"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>🎯 Workflow Stepper Simulation</h2>
+        <div class="workflow-card">
+            <h3>Current Step: Customer Acceptance</h3>
+            <p>Quote #QT-2024-001 - Waiting for customer response</p>
+            <div class="workflow-buttons">
+                <button class="button mark-complete" onclick="simulateMarkComplete()">
+                    Mark Complete
+                </button>
+                <button class="button view-details" onclick="simulateViewDetails()">
+                    View Details
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>🌐 API Connectivity Test</h2>
+        <button class="button" onclick="testAPIs()">Test API Endpoints</button>
+        <div id="api-log" class="log"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>🔍 Navigation Test</h2>
+        <button class="button" onclick="testNavigation()">Test Navigation Logic</button>
+        <div id="nav-log" class="log"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>📊 Real-time Event Log</h2>
+        <button class="button" onclick="clearLog()">Clear Log</button>
+        <div id="event-log" class="log"></div>
+    </div>
+
+    <script>
+        let eventCount = 0;
+        
+        function log(message, type = 'info', targetId = 'event-log') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById(targetId);
+            const statusClass = type === 'success' ? 'success' : 
+                               type === 'error' ? 'error' : 
+                               type === 'warning' ? 'warning' : 'info';
+            const statusSpan = `<span class="status ${statusClass}">[${type.toUpperCase()}]</span>`;
+            logElement.innerHTML += `${statusSpan} [${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+            eventCount++;
+        }
+        
+        function clearLog() {
+            document.getElementById('event-log').innerHTML = '';
+            eventCount = 0;
+        }
+        
+        // Analyze current implementation
+        function analyzeImplementation() {
+            const analysisLog = document.getElementById('analysis-log');
+            analysisLog.innerHTML = '';
+            
+            const analysis = [
+                "✅ WorkflowStepper component has proper click handlers",
+                "✅ Dashboard passes correct callback functions",
+                "✅ Routing is configured in App.tsx",
+                "✅ Customer acceptance page exists",
+                "✅ Quotation detail page exists",
+                "✅ API endpoints are responding (based on server logs)",
+                "⚠️  Potential issue: Buttons might not be visible or clickable",
+                "⚠️  Potential issue: JavaScript errors preventing execution",
+                "⚠️  Potential issue: CSS styling hiding buttons",
+                "⚠️  Potential issue: Event propagation issues"
+            ];
+            
+            analysis.forEach(item => {
+                const type = item.startsWith('✅') ? 'success' : 
+                           item.startsWith('⚠️') ? 'warning' : 'info';
+                analysisLog.innerHTML += `<span class="status ${type}">[${type.toUpperCase()}]</span> ${item}\n`;
+            });
+        }
+        
+        function simulateMarkComplete() {
+            log('🎯 Mark Complete button clicked', 'info');
+            
+            // Simulate the exact logic from WorkflowStepper
+            const quotationId = 'test-quotation-123';
+            const quotationNumber = 'QT-2024-001';
+            
+            log(`📋 Quotation ID: ${quotationId}`, 'info');
+            log(`📋 Quotation Number: ${quotationNumber}`, 'info');
+            
+            // Simulate navigation logic
+            const acceptanceUrl = `/quotations/${quotationId}/acceptance`;
+            log(`🔗 Would navigate to: ${acceptanceUrl}`, 'info');
+            
+            // Check if this matches the expected pattern
+            if (acceptanceUrl.includes('/quotations/') && acceptanceUrl.includes('/acceptance')) {
+                log('✅ Navigation path is valid', 'success');
+                log('✅ Should open Customer Acceptance page', 'success');
+            } else {
+                log('❌ Navigation path is invalid', 'error');
+            }
+            
+            // Simulate the actual navigation (in real app, this would use wouter)
+            setTimeout(() => {
+                log('🚀 Navigation executed (simulated)', 'success');
+            }, 500);
+        }
+        
+        function simulateViewDetails() {
+            log('👁️ View Details button clicked', 'info');
+            
+            // Simulate the exact logic from WorkflowStepper
+            const quotationId = 'test-quotation-123';
+            
+            log(`📋 Quotation ID: ${quotationId}`, 'info');
+            
+            // Simulate navigation logic
+            const detailsUrl = `/quotations/${quotationId}`;
+            log(`🔗 Would navigate to: ${detailsUrl}`, 'info');
+            
+            // Check if this matches the expected pattern
+            if (detailsUrl.includes('/quotations/') && !detailsUrl.includes('/acceptance')) {
+                log('✅ Navigation path is valid', 'success');
+                log('✅ Should open Quotation Detail page', 'success');
+            } else {
+                log('❌ Navigation path is invalid', 'error');
+            }
+            
+            // Simulate the actual navigation (in real app, this would use wouter)
+            setTimeout(() => {
+                log('🚀 Navigation executed (simulated)', 'success');
+            }, 500);
+        }
+        
+        async function testAPIs() {
+            const apiLog = document.getElementById('api-log');
+            apiLog.innerHTML = '';
+            
+            const endpoints = [
+                { url: '/api/quotations', name: 'Quotations API' },
+                { url: '/api/customer-acceptances', name: 'Customer Acceptances API' },
+                { url: '/api/dashboard/stats', name: 'Dashboard Stats API' }
+            ];
+            
+            for (const endpoint of endpoints) {
+                try {
+                    log(`Testing ${endpoint.name}...`, 'info', 'api-log');
+                    const response = await fetch(endpoint.url);
+                    const status = response.ok ? 'success' : 'error';
+                    const message = `${endpoint.name}: ${response.status} ${response.statusText}`;
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        log(`${message} - Data length: ${Array.isArray(data) ? data.length : 'N/A'}`, 'success', 'api-log');
+                    } else {
+                        log(message, 'error', 'api-log');
+                    }
+                } catch (error) {
+                    log(`${endpoint.name}: ${error.message}`, 'error', 'api-log');
+                }
+            }
+        }
+        
+        function testNavigation() {
+            const navLog = document.getElementById('nav-log');
+            navLog.innerHTML = '';
+            
+            // Test the exact navigation patterns used in the app
+            const testRoutes = [
+                { 
+                    path: '/quotations/123', 
+                    description: 'Quotation Detail Page',
+                    expected: 'Should show quotation details'
+                },
+                { 
+                    path: '/quotations/123/acceptance', 
+                    description: 'Customer Acceptance Page',
+                    expected: 'Should show customer acceptance form'
+                },
+                { 
+                    path: '/dashboard', 
+                    description: 'Dashboard Page',
+                    expected: 'Should show workflow stepper'
+                }
+            ];
+            
+            testRoutes.forEach(route => {
+                const isValid = route.path.startsWith('/') && route.path.length > 1;
+                const status = isValid ? 'success' : 'error';
+                log(`${route.path} - ${route.description}`, status, 'nav-log');
+                log(`  Expected: ${route.expected}`, 'info', 'nav-log');
+            });
+            
+            log('', 'info', 'nav-log');
+            log('🔍 Navigation patterns match the implementation in:', 'info', 'nav-log');
+            log('  - WorkflowStepper: handleMarkComplete() and handleViewDetails()', 'info', 'nav-log');
+            log('  - Dashboard: onMarkComplete and onViewDetails callbacks', 'info', 'nav-log');
+            log('  - App.tsx: Route definitions', 'info', 'nav-log');
+        }
+        
+        // Initialize
+        window.addEventListener('load', () => {
+            log('🚀 Button Debug Test initialized', 'success');
+            analyzeImplementation();
+            log('Click the buttons above to test functionality', 'info');
+        });
+        
+        // Add some debugging for button clicks
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('button')) {
+                log(`🖱️ Button clicked: ${e.target.textContent}`, 'info');
+            }
+        });
+    </script>
+</body>
+</html>

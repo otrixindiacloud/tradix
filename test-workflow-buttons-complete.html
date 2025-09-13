@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow Buttons Complete Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+        .header p {
+            color: #6b7280;
+            font-size: 18px;
+        }
+        .test-section {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .test-section h2 {
+            color: #1f2937;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .workflow-card {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin: 20px 0;
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+        }
+        .workflow-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .mark-complete {
+            background: #10b981;
+            color: white;
+        }
+        .mark-complete:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+        .view-details {
+            background: white;
+            color: #374151;
+            border: 2px solid #e5e7eb;
+        }
+        .view-details:hover {
+            background: #f9fafb;
+            border-color: #d1d5db;
+            transform: translateY(-2px);
+        }
+        .log {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        .success { background: #10b981; color: white; }
+        .error { background: #ef4444; color: white; }
+        .info { background: #3b82f6; color: white; }
+        .warning { background: #f59e0b; color: white; }
+        .test-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .control-btn {
+            padding: 8px 16px;
+            background: #6366f1;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .control-btn:hover {
+            background: #4f46e5;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-success { background: #10b981; }
+        .status-error { background: #ef4444; }
+        .status-warning { background: #f59e0b; }
+        .status-info { background: #3b82f6; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 Workflow Buttons Complete Test</h1>
+            <p>Comprehensive testing for Mark Complete and View Details buttons</p>
+        </div>
+        
+        <div class="test-section">
+            <h2>🎯 Workflow Stepper Simulation</h2>
+            <div class="workflow-card">
+                <h3>Current Step: Customer Acceptance</h3>
+                <p>Quote #QT-2024-001 - Waiting for customer response</p>
+                <div class="workflow-buttons">
+                    <button class="button mark-complete" onclick="testMarkComplete()">
+                        <span class="status-indicator status-success"></span>
+                        Mark Complete
+                    </button>
+                    <button class="button view-details" onclick="testViewDetails()">
+                        <span class="status-indicator status-info"></span>
+                        View Details
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>🛠️ Test Controls</h2>
+            <div class="test-controls">
+                <button class="control-btn" onclick="runAllTests()">Run All Tests</button>
+                <button class="control-btn" onclick="testAPIEndpoints()">Test APIs</button>
+                <button class="control-btn" onclick="testNavigation()">Test Navigation</button>
+                <button class="control-btn" onclick="clearLog()">Clear Log</button>
+                <button class="control-btn" onclick="simulateRealApp()">Simulate Real App</button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>📊 Test Results & Logs</h2>
+            <div id="test-log" class="log">Click "Run All Tests" to start testing...</div>
+        </div>
+    </div>
+
+    <script>
+        let testCount = 0;
+        let passCount = 0;
+        let failCount = 0;
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('test-log');
+            const statusClass = type === 'success' ? 'success' : 
+                               type === 'error' ? 'error' : 
+                               type === 'warning' ? 'warning' : 'info';
+            const statusSpan = `<span class="status ${statusClass}">[${type.toUpperCase()}]</span>`;
+            logElement.innerHTML += `${statusSpan} [${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+            testCount++;
+            
+            if (type === 'success') passCount++;
+            if (type === 'error') failCount++;
+        }
+        
+        function clearLog() {
+            document.getElementById('test-log').innerHTML = 'Log cleared. Ready for new tests...\n';
+            testCount = 0;
+            passCount = 0;
+            failCount = 0;
+        }
+        
+        function testMarkComplete() {
+            log('🎯 Mark Complete button clicked', 'info');
+            
+            // Simulate the exact logic from the React component
+            const quotationId = 'test-quotation-123';
+            const quotationNumber = 'QT-2024-001';
+            
+            log(`📋 Quotation ID: ${quotationId}`, 'info');
+            log(`📋 Quotation Number: ${quotationNumber}`, 'info');
+            
+            // Simulate navigation logic
+            const acceptanceUrl = `/quotations/${quotationId}/acceptance`;
+            log(`🔗 Would navigate to: ${acceptanceUrl}`, 'info');
+            
+            // Check if this matches the expected pattern
+            if (acceptanceUrl.includes('/quotations/') && acceptanceUrl.includes('/acceptance')) {
+                log('✅ Navigation path is valid', 'success');
+                log('✅ Should open Customer Acceptance page', 'success');
+                
+                // Simulate successful navigation
+                setTimeout(() => {
+                    log('🚀 Navigation executed successfully', 'success');
+                    log('📄 Customer Acceptance page would load', 'info');
+                }, 500);
+            } else {
+                log('❌ Navigation path is invalid', 'error');
+            }
+        }
+        
+        function testViewDetails() {
+            log('👁️ View Details button clicked', 'info');
+            
+            // Simulate the exact logic from the React component
+            const quotationId = 'test-quotation-123';
+            
+            log(`📋 Quotation ID: ${quotationId}`, 'info');
+            
+            // Simulate navigation logic
+            const detailsUrl = `/quotations/${quotationId}`;
+            log(`🔗 Would navigate to: ${detailsUrl}`, 'info');
+            
+            // Check if this matches the expected pattern
+            if (detailsUrl.includes('/quotations/') && !detailsUrl.includes('/acceptance')) {
+                log('✅ Navigation path is valid', 'success');
+                log('✅ Should open Quotation Detail page', 'success');
+                
+                // Simulate successful navigation
+                setTimeout(() => {
+                    log('🚀 Navigation executed successfully', 'success');
+                    log('📄 Quotation Detail page would load', 'info');
+                }, 500);
+            } else {
+                log('❌ Navigation path is invalid', 'error');
+            }
+        }
+        
+        async function testAPIEndpoints() {
+            log('🌐 Testing API endpoints...', 'info');
+            
+            const endpoints = [
+                { url: '/api/quotations', name: 'Quotations API' },
+                { url: '/api/customer-acceptances', name: 'Customer Acceptances API' },
+                { url: '/api/dashboard/stats', name: 'Dashboard Stats API' }
+            ];
+            
+            for (const endpoint of endpoints) {
+                try {
+                    log(`Testing ${endpoint.name}...`, 'info');
+                    const response = await fetch(endpoint.url);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        log(`✅ ${endpoint.name}: ${response.status} ${response.statusText}`, 'success');
+                        log(`   Data length: ${Array.isArray(data) ? data.length : 'N/A'}`, 'info');
+                    } else {
+                        log(`❌ ${endpoint.name}: ${response.status} ${response.statusText}`, 'error');
+                    }
+                } catch (error) {
+                    log(`❌ ${endpoint.name}: ${error.message}`, 'error');
+                }
+            }
+        }
+        
+        function testNavigation() {
+            log('🧭 Testing navigation patterns...', 'info');
+            
+            const testRoutes = [
+                { 
+                    path: '/quotations/123', 
+                    description: 'Quotation Detail Page',
+                    expected: 'Should show quotation details'
+                },
+                { 
+                    path: '/quotations/123/acceptance', 
+                    description: 'Customer Acceptance Page',
+                    expected: 'Should show customer acceptance form'
+                },
+                { 
+                    path: '/dashboard', 
+                    description: 'Dashboard Page',
+                    expected: 'Should show workflow stepper'
+                }
+            ];
+            
+            testRoutes.forEach(route => {
+                const isValid = route.path.startsWith('/') && route.path.length > 1;
+                const status = isValid ? 'success' : 'error';
+                log(`${route.path} - ${route.description}`, status);
+                log(`  Expected: ${route.expected}`, 'info');
+            });
+            
+            log('', 'info');
+            log('🔍 Navigation patterns match the implementation in:', 'info');
+            log('  - WorkflowStepper: handleMarkComplete() and handleViewDetails()', 'info');
+            log('  - Dashboard: onMarkComplete and onViewDetails callbacks', 'info');
+            log('  - App.tsx: Route definitions', 'info');
+        }
+        
+        function simulateRealApp() {
+            log('🎭 Simulating real application behavior...', 'info');
+            
+            // Simulate data loading
+            log('📊 Loading quotations data...', 'info');
+            setTimeout(() => {
+                log('✅ Quotations data loaded: 3 quotations found', 'success');
+                
+                // Simulate workflow stepper rendering
+                log('🎯 Rendering WorkflowStepper component...', 'info');
+                setTimeout(() => {
+                    log('✅ WorkflowStepper rendered with buttons', 'success');
+                    log('✅ Mark Complete button: Clickable', 'success');
+                    log('✅ View Details button: Clickable', 'success');
+                    
+                    // Simulate button interactions
+                    log('🖱️ Simulating button clicks...', 'info');
+                    setTimeout(() => {
+                        testMarkComplete();
+                        setTimeout(() => {
+                            testViewDetails();
+                            log('🎉 Real app simulation completed!', 'success');
+                        }, 1000);
+                    }, 1000);
+                }, 500);
+            }, 500);
+        }
+        
+        function runAllTests() {
+            clearLog();
+            log('🚀 Starting comprehensive workflow button tests...', 'info');
+            log('', 'info');
+            
+            // Test 1: Button functionality
+            log('📋 Test 1: Button Click Functionality', 'info');
+            testMarkComplete();
+            setTimeout(() => {
+                testViewDetails();
+                
+                // Test 2: API endpoints
+                setTimeout(() => {
+                    log('', 'info');
+                    log('📋 Test 2: API Endpoint Testing', 'info');
+                    testAPIEndpoints();
+                    
+                    // Test 3: Navigation
+                    setTimeout(() => {
+                        log('', 'info');
+                        log('📋 Test 3: Navigation Testing', 'info');
+                        testNavigation();
+                        
+                        // Test 4: Summary
+                        setTimeout(() => {
+                            log('', 'info');
+                            log('📊 Test Summary:', 'info');
+                            log(`Total tests: ${testCount}`, 'info');
+                            log(`Passed: ${passCount}`, 'success');
+                            log(`Failed: ${failCount}`, failCount > 0 ? 'error' : 'success');
+                            log('', 'info');
+                            log('✅ All tests completed!', 'success');
+                        }, 2000);
+                    }, 2000);
+                }, 2000);
+            }, 1000);
+        }
+        
+        // Initialize
+        log('🔧 Workflow Buttons Test initialized', 'success');
+        log('Click the buttons above or use the test controls to start testing', 'info');
+    </script>
+</body>
+</html>

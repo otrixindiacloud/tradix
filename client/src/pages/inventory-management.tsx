@@ -1,0 +1,1170 @@
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { 
+  Package, 
+  Search, 
+  Plus, 
+  Edit, 
+  Trash2, 
+  BarChart3, 
+  AlertTriangle, 
+  CheckCircle, 
+  XCircle,
+  ScanLine,
+  Truck,
+  FileText,
+  History,
+  Filter
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import type { 
+  Item,
+  InventoryLevel, 
+  GoodsReceiptHeader,
+  StockMovement 
+} from "@shared/schema";
+
+// Form schemas
+const inventoryItemSchema = z.object({
+  supplierCode: z.string().min(1, "Supplier code is required"),
+  description: z.string().min(1, "Description is required"),
+  category: z.string().min(1, "Category is required"),
+  unitOfMeasure: z.string().min(1, "Unit of measure is required"),
+  supplierId: z.string().min(1, "Supplier is required"),
+  barcode: z.string().optional(),
+  weight: z.number().optional(),
+  dimensions: z.string().optional(),
+  isActive: z.boolean().default(true),
+});
+
+const inventoryVariantSchema = z.object({
+  inventoryItemId: z.string().min(1, "Item is required"),
+  variantName: z.string().min(1, "Variant name is required"),
+  variantValue: z.string().min(1, "Variant value is required"),
+  additionalCost: z.number().optional(),
+  barcode: z.string().optional(),
+});
+
+const goodsReceiptSchema = z.object({
+  receiptNumber: z.string().min(1, "Receipt number is required"),
+  supplierLpoId: z.string().min(1, "Supplier LPO is required"),
+  receiptDate: z.string().min(1, "Receipt date is required"),
+  receivedBy: z.string().min(1, "Received by is required"),
+  status: z.enum(["Draft", "Completed", "Partially Received"]),
+  notes: z.string().optional(),
+});
+
+const supplierReturnSchema = z.object({
+  returnNumber: z.string().min(1, "Return number is required"),
+  supplierId: z.string().min(1, "Supplier is required"),
+  returnDate: z.string().min(1, "Return date is required"),
+  reason: z.string().min(1, "Return reason is required"),
+  status: z.enum(["Draft", "Pending", "Approved", "Completed"]),
+  totalAmount: z.number().min(0, "Total amount must be positive"),
+  notes: z.string().optional(),
+});
+
+type InventoryItemForm = z.infer<typeof inventoryItemSchema>;
+type InventoryVariantForm = z.infer<typeof inventoryVariantSchema>;
+type GoodsReceiptForm = z.infer<typeof goodsReceiptSchema>;
+type SupplierReturnForm = z.infer<typeof supplierReturnSchema>;
+
+function InventoryItemsTab() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [showInactiveItems, setShowInactiveItems] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [editingItem, setEditingItem] = useState<any | null>(null);
+
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const form = useForm<InventoryItemForm>({
+    resolver: zodResolver(inventoryItemSchema),
+    defaultValues: {
+      supplierCode: "",
+      description: "",
+      category: "",
+      unitOfMeasure: "",
+      supplierId: "",
+      barcode: "",
+      weight: undefined,
+      dimensions: "",
+      isActive: true,
+    },
+  });
+
+  // Fetch inventory items
+  const { data: inventoryItems = [], isLoading, error: itemsError } = useQuery({
+    queryKey: ["/api/inventory-items", { 
+      search: searchQuery, 
+      category: selectedCategory === "all" ? undefined : selectedCategory,
+      isActive: !showInactiveItems ? true : undefined 
+    }],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (searchQuery) params.append('search', searchQuery);
+      if (selectedCategory && selectedCategory !== 'all') params.append('category', selectedCategory);
+      if (!showInactiveItems) params.append('isActive', 'true');
+      
+      const url = `/api/inventory-items${params.toString() ? '?' + params.toString() : ''}`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch inventory items: ${response.statusText}`);
+      }
+      return response.json();
+    },
+    enabled: true,
+  });
+
+  // Fetch suppliers for the form
+  const { data: suppliers = [], error: suppliersError } = useQuery({
+    queryKey: ["/api/suppliers"],
+    queryFn: async () => {
+      const response = await fetch("/api/suppliers");
+      if (!response.ok) {
+        throw new Error(`Failed to fetch suppliers: ${response.statusText}`);
+      }
+      return response.json();
+    },
+    enabled: true,
+  }) as { data: any[] };
+
+  // Create inventory item mutation
+  const createItemMutation = useMutation({
+    mutationFn: async (data: InventoryItemForm) => {
+      const response = await apiRequest("POST", "/api/inventory-items", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory-items"] });
+      setShowCreateDialog(false);
+      form.reset();
+      toast({ title: "Success", description: "Inventory item created successfully" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Update inventory item mutation
+  const updateItemMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<InventoryItemForm> }) => {
+      const response = await apiRequest("PUT", `/api/inventory-items/${id}`, data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory-items"] });
+      setEditingItem(null);
+      form.reset();
+      toast({ title: "Success", description: "Inventory item updated successfully" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Delete inventory item mutation
+  const deleteItemMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/inventory-items/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory-items"] });
+      toast({ title: "Success", description: "Inventory item deleted successfully" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const onSubmit = (data: InventoryItemForm) => {
+    if (editingItem) {
+      updateItemMutation.mutate({ id: editingItem.id, data });
+    } else {
+      createItemMutation.mutate(data);
+    }
+  };
+
+  const handleEdit = (item: any) => {
+    setEditingItem(item);
+    form.reset({
+      supplierCode: item.supplierCode,
+      description: item.description,
+      category: item.category,
+      unitOfMeasure: item.unitOfMeasure,
+      supplierId: item.supplierId,
+      barcode: item.barcode || "",
+      weight: item.weight || undefined,
+      dimensions: item.dimensions || "",
+      isActive: item.isActive,
+    });
+  };
+
+  const handleDelete = (id: string) => {
+    if (confirm("Are you sure you want to delete this inventory item?")) {
+      deleteItemMutation.mutate(id);
+    }
+  };
+
+  // Get unique categories for filter
+  const categories = Array.from(new Set((inventoryItems as any[]).map((item: any) => item.category).filter(Boolean)));
+
+  return (
+    <div className="space-y-6" data-testid="inventory-items-tab">
+      {/* Filters and Search */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Search by supplier code, description, or barcode..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+              data-testid="input-search-items"
+            />
+          </div>
+        </div>
+        
+        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+          <SelectTrigger className="w-48" data-testid="select-category-filter">
+            <Filter className="h-4 w-4 mr-2" />
+            <SelectValue placeholder="Filter by category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {categories.map((category) => (
+              <SelectItem key={category} value={category}>
+                {category}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="showInactive"
+            checked={showInactiveItems}
+            onChange={(e) => setShowInactiveItems(e.target.checked)}
+            data-testid="checkbox-show-inactive"
+          />
+          <Label htmlFor="showInactive">Show inactive items</Label>
+        </div>
+
+        <Dialog open={showCreateDialog || !!editingItem} onOpenChange={(open) => {
+          if (!open) {
+            setShowCreateDialog(false);
+            setEditingItem(null);
+            form.reset();
+          }
+        }}>
+          <DialogTrigger asChild>
+            <Button onClick={() => setShowCreateDialog(true)} data-testid="button-create-item">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Inventory Item
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>
+                {editingItem ? "Edit Inventory Item" : "Create New Inventory Item"}
+              </DialogTitle>
+              <DialogDescription>
+                {editingItem ? "Update the inventory item details." : "Add a new item to your inventory."}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="supplierCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Supplier Code</FormLabel>
+                        <FormControl>
+                          <Input {...field} data-testid="input-supplier-code" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="barcode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Barcode (Optional)</FormLabel>
+                        <FormControl>
+                          <Input {...field} data-testid="input-barcode" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Input {...field} data-testid="input-description" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="category"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Category</FormLabel>
+                        <FormControl>
+                          <Input {...field} data-testid="input-category" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="unitOfMeasure"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Unit of Measure</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="e.g., kg, pcs, m" data-testid="input-unit-measure" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="supplierId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Supplier</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-supplier">
+                            <SelectValue placeholder="Select a supplier" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {suppliers.map((supplier: any) => (
+                            <SelectItem key={supplier.id} value={supplier.id}>
+                              {supplier.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="weight"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Weight (Optional)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            step="0.01"
+                            {...field} 
+                            onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                            value={field.value || ""}
+                            data-testid="input-weight"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="dimensions"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Dimensions (Optional)</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="e.g., 10x20x30 cm" data-testid="input-dimensions" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="isActive"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center space-x-2">
+                      <FormControl>
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={field.onChange}
+                          data-testid="checkbox-is-active"
+                        />
+                      </FormControl>
+                      <FormLabel>Active Item</FormLabel>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex justify-end space-x-2">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => {
+                      setShowCreateDialog(false);
+                      setEditingItem(null);
+                      form.reset();
+                    }}
+                    data-testid="button-cancel"
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={createItemMutation.isPending || updateItemMutation.isPending}
+                    data-testid="button-save"
+                  >
+                    {editingItem ? "Update Item" : "Create Item"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Items Grid */}
+      {itemsError || suppliersError ? (
+        <div className="text-center py-8">
+          <p className="text-red-600 mb-4">
+            Error loading data: {itemsError?.message || suppliersError?.message}
+          </p>
+          <Button onClick={() => {
+            queryClient.invalidateQueries({ queryKey: ["/api/inventory-items"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
+          }}>
+            Retry
+          </Button>
+        </div>
+      ) : isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader>
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="h-3 bg-gray-200 rounded"></div>
+                  <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {(inventoryItems as any[]).map((item: any) => (
+            <Card key={item.id} className="hover:shadow-md transition-shadow" data-testid={`card-item-${item.id}`}>
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <CardTitle className="text-sm font-medium">{item.supplierCode}</CardTitle>
+                    <CardDescription className="text-xs mt-1">{item.description}</CardDescription>
+                  </div>
+                  <Badge variant={item.isActive ? "default" : "secondary"}>
+                    {item.isActive ? "Active" : "Inactive"}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Category:</span>
+                    <span>{item.category}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Unit:</span>
+                    <span>{item.unitOfMeasure}</span>
+                  </div>
+                  {item.barcode && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Barcode:</span>
+                      <span className="font-mono">{item.barcode}</span>
+                    </div>
+                  )}
+                  {item.weight && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Weight:</span>
+                      <span>{item.weight} kg</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-end space-x-2 mt-4">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleEdit(item)}
+                    data-testid={`button-edit-${item.id}`}
+                  >
+                    <Edit className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleDelete(item.id)}
+                    className="text-red-600 hover:text-red-700"
+                    data-testid={`button-delete-${item.id}`}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {inventoryItems.length === 0 && !isLoading && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <Package className="h-12 w-12 text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No inventory items found</h3>
+            <p className="text-gray-600 text-center mb-4">
+              Get started by adding your first inventory item to the system.
+            </p>
+            <Button onClick={() => setShowCreateDialog(true)} data-testid="button-create-first-item">
+              <Plus className="h-4 w-4 mr-2" />
+              Add First Item
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function StockLevelsTab() {
+  const [selectedLocation, setSelectedLocation] = useState("");
+  const [showLowStock, setShowLowStock] = useState(false);
+
+  const { data: stockLevels = [], isLoading } = useQuery({
+    queryKey: ["/api/inventory-levels", { location: selectedLocation, lowStock: showLowStock }],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (selectedLocation) params.append('location', selectedLocation);
+      if (showLowStock) params.append('lowStock', 'true');
+      
+      const url = `/api/inventory-levels${params.toString() ? '?' + params.toString() : ''}`;
+      const response = await fetch(url);
+      if (!response.ok) return [];
+      return response.json();
+    },
+    enabled: true,
+  });
+
+  const locations = Array.from(new Set((stockLevels as any[]).map((level: any) => level.storageLocation).filter(Boolean)));
+
+  return (
+    <div className="space-y-6" data-testid="stock-levels-tab">
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+          <SelectTrigger className="w-48" data-testid="select-location-filter">
+            <SelectValue placeholder="Filter by location" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Locations</SelectItem>
+            {locations.map((location) => (
+              <SelectItem key={location} value={location}>
+                {location}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="showLowStock"
+            checked={showLowStock}
+            onChange={(e) => setShowLowStock(e.target.checked)}
+            data-testid="checkbox-low-stock"
+          />
+          <Label htmlFor="showLowStock">Show only low stock items</Label>
+        </div>
+      </div>
+
+      {/* Stock Levels Grid */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader>
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="h-3 bg-gray-200 rounded"></div>
+                  <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {(stockLevels as any[]).map((level: any) => {
+            const isLowStock = level.quantityAvailable < level.reorderLevel;
+            
+            return (
+              <Card key={level.id} className="hover:shadow-md transition-shadow" data-testid={`card-stock-${level.id}`}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <CardTitle className="text-sm font-medium">Item: {level.itemId}</CardTitle>
+                    {isLowStock && (
+                      <Badge variant="destructive" className="text-xs">
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        Low Stock
+                      </Badge>
+                    )}
+                  </div>
+                  <CardDescription className="text-xs">{level.storageLocation}</CardDescription>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-2 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">On Hand:</span>
+                      <span className="font-medium">{level.quantityOnHand}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Available:</span>
+                      <span className="font-medium text-green-600">{level.quantityAvailable}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Reserved:</span>
+                      <span className="font-medium text-orange-600">{level.quantityReserved}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Reorder Level:</span>
+                      <span className="font-medium">{level.reorderLevel}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Max Level:</span>
+                      <span className="font-medium">{level.maxLevel}</span>
+                    </div>
+                  </div>
+
+                  {/* Stock Status Indicator */}
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between text-xs">
+                      <span>Stock Status</span>
+                      {isLowStock ? (
+                        <span className="text-red-600 flex items-center">
+                          <XCircle className="h-3 w-3 mr-1" />
+                          Low Stock
+                        </span>
+                      ) : (
+                        <span className="text-green-600 flex items-center">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Good Stock
+                        </span>
+                      )}
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                      <div
+                        className={`h-2 rounded-full ${
+                          isLowStock ? "bg-red-500" : "bg-green-500"
+                        }`}
+                        style={{
+                          width: `${Math.min((level.quantityAvailable / level.maxLevel) * 100, 100)}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {(stockLevels as any[]).length === 0 && !isLoading && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <BarChart3 className="h-12 w-12 text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No stock levels found</h3>
+            <p className="text-gray-600 text-center">
+              Stock levels will appear here once you have inventory items and stock movements.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function GoodsReceiptsTab() {
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  const { data: goodsReceipts = [], isLoading } = useQuery({
+    queryKey: ["/api/goods-receipt-headers", { status: statusFilter }],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (statusFilter && statusFilter !== "all") params.append('status', statusFilter);
+      
+      const url = `/api/goods-receipt-headers${params.toString() ? '?' + params.toString() : ''}`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        if (response.status === 404) return [];
+        throw new Error('Failed to fetch goods receipts');
+      }
+      return response.json();
+    },
+    enabled: true,
+  });
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "Completed":
+        return <Badge variant="default" className="bg-green-500">{status}</Badge>;
+      case "Partially Received":
+        return <Badge variant="secondary" className="bg-yellow-500 text-white">{status}</Badge>;
+      case "Draft":
+        return <Badge variant="outline">{status}</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
+  return (
+    <div className="space-y-6" data-testid="goods-receipts-tab">
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-48" data-testid="select-status-filter">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="Draft">Draft</SelectItem>
+            <SelectItem value="Completed">Completed</SelectItem>
+            <SelectItem value="Partially Received">Partially Received</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Button data-testid="button-create-receipt">
+          <Plus className="h-4 w-4 mr-2" />
+          New Goods Receipt
+        </Button>
+      </div>
+
+      {/* Goods Receipts List */}
+      {isLoading ? (
+        <div className="space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardContent className="p-6">
+                <div className="space-y-2">
+                  <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {goodsReceipts.map((receipt: GoodsReceiptHeader) => (
+            <Card key={receipt.id} className="hover:shadow-md transition-shadow" data-testid={`card-receipt-${receipt.id}`}>
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-3">
+                      <h3 className="font-medium">{receipt.receiptNumber}</h3>
+                      {getStatusBadge(receipt.status)}
+                    </div>
+                    <div className="text-sm text-gray-600 space-y-1">
+                      <div>Receipt Date: {new Date(receipt.receiptDate).toLocaleDateString()}</div>
+                      <div>Received By: {receipt.receivedBy}</div>
+                      {receipt.notes && <div>Notes: {receipt.notes}</div>}
+                    </div>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button size="sm" variant="outline" data-testid={`button-view-receipt-${receipt.id}`}>
+                      <FileText className="h-4 w-4 mr-1" />
+                      View
+                    </Button>
+                    <Button size="sm" variant="outline" data-testid={`button-scan-receipt-${receipt.id}`}>
+                      <ScanLine className="h-4 w-4 mr-1" />
+                      Scan Items
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {goodsReceipts.length === 0 && !isLoading && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <Truck className="h-12 w-12 text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No goods receipts found</h3>
+            <p className="text-gray-600 text-center mb-4">
+              Goods receipts will appear here when you receive items from suppliers.
+            </p>
+            <Button data-testid="button-create-first-receipt">
+              <Plus className="h-4 w-4 mr-2" />
+              Create First Receipt
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function SupplierReturnsTab() {
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  const { data: supplierReturns = [], isLoading } = useQuery({
+    queryKey: ["/api/supplier-returns", { status: statusFilter }],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (statusFilter && statusFilter !== "all") params.append('status', statusFilter);
+      
+      const url = `/api/supplier-returns${params.toString() ? '?' + params.toString() : ''}`;
+      const response = await fetch(url);
+      if (!response.ok) return [];
+      return response.json();
+    },
+    enabled: true,
+  });
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "Completed":
+        return <Badge variant="default" className="bg-green-500">{status}</Badge>;
+      case "Approved":
+        return <Badge variant="default" className="bg-blue-500">{status}</Badge>;
+      case "Pending":
+        return <Badge variant="secondary" className="bg-yellow-500 text-white">{status}</Badge>;
+      case "Draft":
+        return <Badge variant="outline">{status}</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
+  return (
+    <div className="space-y-6" data-testid="supplier-returns-tab">
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-48" data-testid="select-return-status-filter">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="Draft">Draft</SelectItem>
+            <SelectItem value="Pending">Pending</SelectItem>
+            <SelectItem value="Approved">Approved</SelectItem>
+            <SelectItem value="Completed">Completed</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Button data-testid="button-create-return">
+          <Plus className="h-4 w-4 mr-2" />
+          New Supplier Return
+        </Button>
+      </div>
+
+      {/* Supplier Returns List */}
+      {isLoading ? (
+        <div className="space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardContent className="p-6">
+                <div className="space-y-2">
+                  <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {(supplierReturns as any[]).map((supplierReturn: any) => (
+            <Card key={supplierReturn.id} className="hover:shadow-md transition-shadow" data-testid={`card-return-${supplierReturn.id}`}>
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-3">
+                      <h3 className="font-medium">{supplierReturn.returnNumber}</h3>
+                      {getStatusBadge(supplierReturn.status)}
+                    </div>
+                    <div className="text-sm text-gray-600 space-y-1">
+                      <div>Return Date: {new Date(supplierReturn.returnDate).toLocaleDateString()}</div>
+                      <div>Reason: {supplierReturn.reason}</div>
+                      <div>Total Amount: ${supplierReturn.totalAmount.toFixed(2)}</div>
+                      {supplierReturn.notes && <div>Notes: {supplierReturn.notes}</div>}
+                    </div>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button size="sm" variant="outline" data-testid={`button-view-return-${supplierReturn.id}`}>
+                      <FileText className="h-4 w-4 mr-1" />
+                      View
+                    </Button>
+                    <Button size="sm" variant="outline" data-testid={`button-edit-return-${supplierReturn.id}`}>
+                      <Edit className="h-4 w-4 mr-1" />
+                      Edit
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {(supplierReturns as any[]).length === 0 && !isLoading && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <Truck className="h-12 w-12 text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No supplier returns found</h3>
+            <p className="text-gray-600 text-center mb-4">
+              Supplier returns will appear here when you need to return items to suppliers.
+            </p>
+            <Button data-testid="button-create-first-return">
+              <Plus className="h-4 w-4 mr-2" />
+              Create First Return
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function StockMovementsTab() {
+  const [movementTypeFilter, setMovementTypeFilter] = useState("all");
+
+  const { data: stockMovements = [], isLoading } = useQuery({
+    queryKey: ["/api/stock-movements", { movementType: movementTypeFilter }],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (movementTypeFilter && movementTypeFilter !== "all") params.append('movementType', movementTypeFilter);
+      
+      const url = `/api/stock-movements${params.toString() ? '?' + params.toString() : ''}`;
+      const response = await fetch(url);
+      if (!response.ok) return [];
+      return response.json();
+    },
+    enabled: true,
+  });
+
+  const getMovementTypeIcon = (type: string) => {
+    switch (type) {
+      case "Receipt":
+        return <div className="w-2 h-2 bg-green-500 rounded-full" />;
+      case "Issue":
+        return <div className="w-2 h-2 bg-red-500 rounded-full" />;
+      case "Transfer":
+        return <div className="w-2 h-2 bg-blue-500 rounded-full" />;
+      case "Adjustment":
+        return <div className="w-2 h-2 bg-yellow-500 rounded-full" />;
+      default:
+        return <div className="w-2 h-2 bg-gray-500 rounded-full" />;
+    }
+  };
+
+  return (
+    <div className="space-y-6" data-testid="stock-movements-tab">
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <Select value={movementTypeFilter} onValueChange={setMovementTypeFilter}>
+          <SelectTrigger className="w-48" data-testid="select-movement-type-filter">
+            <SelectValue placeholder="Filter by movement type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Movement Types</SelectItem>
+            <SelectItem value="Receipt">Receipt</SelectItem>
+            <SelectItem value="Issue">Issue</SelectItem>
+            <SelectItem value="Transfer">Transfer</SelectItem>
+            <SelectItem value="Adjustment">Adjustment</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Stock Movements List */}
+      {isLoading ? (
+        <div className="space-y-4">
+          {[...Array(8)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardContent className="p-4">
+                <div className="space-y-2">
+                  <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {(stockMovements as any[]).map((movement: any) => (
+            <Card key={movement.id} className="hover:shadow-md transition-shadow" data-testid={`card-movement-${movement.id}`}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    {getMovementTypeIcon(movement.movementType)}
+                    <div>
+                      <div className="font-medium text-sm">
+                        {movement.movementType} - Item: {movement.itemId}
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        {movement.storageLocation} • {movement.createdAt ? new Date(movement.createdAt).toLocaleString() : 'Unknown date'}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-medium">
+                      Qty: {movement.quantityMoved}
+                    </div>
+                    <div className="text-xs text-gray-600">
+                      {movement.quantityBefore} → {movement.quantityAfter}
+                    </div>
+                  </div>
+                </div>
+                
+                {movement.notes && (
+                  <div className="mt-2 text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                    {movement.notes}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {(stockMovements as any[]).length === 0 && !isLoading && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <History className="h-12 w-12 text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No stock movements found</h3>
+            <p className="text-gray-600 text-center">
+              Stock movements will appear here when inventory levels change.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+export default function InventoryManagementPage() {
+  return (
+    <div className="container mx-auto py-6" data-testid="inventory-management-page">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Inventory Management</h1>
+        <p className="text-gray-600 mt-1">
+          Manage your inventory items, stock levels, goods receipts, and supplier returns
+        </p>
+      </div>
+
+      <Tabs defaultValue="items" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="items" data-testid="tab-items">
+            <Package className="h-4 w-4 mr-2" />
+            Items
+          </TabsTrigger>
+          <TabsTrigger value="stock" data-testid="tab-stock">
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Stock Levels
+          </TabsTrigger>
+          <TabsTrigger value="receipts" data-testid="tab-receipts">
+            <Truck className="h-4 w-4 mr-2" />
+            Goods Receipts
+          </TabsTrigger>
+          <TabsTrigger value="returns" data-testid="tab-returns">
+            <FileText className="h-4 w-4 mr-2" />
+            Supplier Returns
+          </TabsTrigger>
+          <TabsTrigger value="movements" data-testid="tab-movements">
+            <History className="h-4 w-4 mr-2" />
+            Stock Movements
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="items">
+          <InventoryItemsTab />
+        </TabsContent>
+
+        <TabsContent value="stock">
+          <StockLevelsTab />
+        </TabsContent>
+
+        <TabsContent value="receipts">
+          <GoodsReceiptsTab />
+        </TabsContent>
+
+        <TabsContent value="returns">
+          <SupplierReturnsTab />
+        </TabsContent>
+
+        <TabsContent value="movements">
+          <StockMovementsTab />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

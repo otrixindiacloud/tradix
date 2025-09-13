@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Enquiry to Quotation Conversion</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .result { padding: 20px; margin: 20px 0; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 20px; margin: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        pre { background: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test Enquiry to Quotation Conversion</h1>
+        
+        <h2>With Test Storage (Mock Data)</h2>
+        <button onclick="testWithTestStorage()">Test with Test Storage</button>
+        <div id="testStorageResult"></div>
+        
+        <h2>With Database Storage</h2>
+        <button onclick="testWithDatabase()">Test with Database</button>
+        <div id="databaseResult"></div>
+        
+        <h2>Check Enquiries List</h2>
+        <button onclick="listEnquiries()">List All Enquiries</button>
+        <div id="enquiriesResult"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        
+        async function testWithTestStorage() {
+            try {
+                // First, restart server with test storage
+                const resultDiv = document.getElementById('testStorageResult');
+                resultDiv.innerHTML = '<p>Testing with test storage...</p>';
+                
+                const response = await fetch(`${API_BASE}/quotations/generate/enq-1`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ userId: 'test-user' })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h3>✅ Success!</h3>
+                        <p>Quotation generated successfully:</p>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `
+                        <h3>❌ Error</h3>
+                        <p>${result.message}</p>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                const resultDiv = document.getElementById('testStorageResult');
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <h3>❌ Network Error</h3>
+                    <p>${error.message}</p>
+                `;
+            }
+        }
+        
+        async function testWithDatabase() {
+            try {
+                const resultDiv = document.getElementById('databaseResult');
+                resultDiv.innerHTML = '<p>Testing with database storage...</p>';
+                
+                // Try to get the first enquiry from the database
+                const enquiriesResponse = await fetch(`${API_BASE}/enquiries`);
+                const enquiries = await enquiriesResponse.json();
+                
+                if (enquiries.length === 0) {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `
+                        <h3>⚠️ No Enquiries Found</h3>
+                        <p>No enquiries found in the database to convert.</p>
+                    `;
+                    return;
+                }
+                
+                const firstEnquiry = enquiries[0];
+                
+                const response = await fetch(`${API_BASE}/quotations/generate/${firstEnquiry.id}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ userId: 'test-user' })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h3>✅ Success!</h3>
+                        <p>Converted enquiry: ${firstEnquiry.enquiryNumber || firstEnquiry.id}</p>
+                        <p>Generated quotation:</p>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `
+                        <h3>❌ Error</h3>
+                        <p>${result.message}</p>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                const resultDiv = document.getElementById('databaseResult');
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <h3>❌ Network Error</h3>
+                    <p>${error.message}</p>
+                `;
+            }
+        }
+        
+        async function listEnquiries() {
+            try {
+                const resultDiv = document.getElementById('enquiriesResult');
+                resultDiv.innerHTML = '<p>Loading enquiries...</p>';
+                
+                const response = await fetch(`${API_BASE}/enquiries`);
+                const enquiries = await response.json();
+                
+                resultDiv.className = 'result';
+                resultDiv.innerHTML = `
+                    <h3>📋 Enquiries List (${enquiries.length} found)</h3>
+                    <pre>${JSON.stringify(enquiries, null, 2)}</pre>
+                `;
+            } catch (error) {
+                const resultDiv = document.getElementById('enquiriesResult');
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <h3>❌ Error</h3>
+                    <p>${error.message}</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

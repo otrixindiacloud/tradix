@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Page Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 3px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Analytics Page Test</h1>
+        <p>This page tests the analytics API endpoints to ensure they're working properly.</p>
+        
+        <div class="test-section info">
+            <h3>Test Instructions</h3>
+            <p>1. Make sure the backend server is running on port 5000</p>
+            <p>2. Make sure the frontend dev server is running</p>
+            <p>3. Click the test buttons below to verify API endpoints</p>
+        </div>
+
+        <div class="test-section">
+            <h3>API Endpoint Tests</h3>
+            <button onclick="testDashboardAPI()">Test Dashboard API</button>
+            <button onclick="testSalesTrendsAPI()">Test Sales Trends API</button>
+            <button onclick="testAllAPIs()">Test All APIs</button>
+            <div id="results" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Frontend Test</h3>
+            <button onclick="openAnalyticsPage()">Open Analytics Page</button>
+            <p>This will open the analytics page in a new tab to test the frontend.</p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api/analytics';
+        const resultsDiv = document.getElementById('results');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            resultsDiv.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+        }
+
+        async function testAPI(endpoint, name) {
+            try {
+                log(`Testing ${name}...`);
+                const response = await fetch(`${API_BASE}${endpoint}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                log(`✅ ${name} - Success! Data received: ${JSON.stringify(data).substring(0, 100)}...`, 'success');
+                return true;
+            } catch (error) {
+                log(`❌ ${name} - Error: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function testDashboardAPI() {
+            resultsDiv.innerHTML = '';
+            await testAPI('/dashboard', 'Dashboard API');
+        }
+
+        async function testSalesTrendsAPI() {
+            resultsDiv.innerHTML = '';
+            await testAPI('/sales/trends?period=day', 'Sales Trends API');
+        }
+
+        async function testAllAPIs() {
+            resultsDiv.innerHTML = '';
+            log('Starting comprehensive API test...');
+            
+            const endpoints = [
+                { path: '/dashboard', name: 'Dashboard' },
+                { path: '/sales/trends?period=day', name: 'Sales Trends' },
+                { path: '/customers/top', name: 'Top Customers' },
+                { path: '/products/top', name: 'Top Products' },
+                { path: '/conversion/funnel', name: 'Conversion Funnel' },
+                { path: '/inventory', name: 'Inventory Analytics' },
+                { path: '/suppliers', name: 'Supplier Analytics' },
+                { path: '/financial', name: 'Financial Analytics' },
+                { path: '/audit-trail', name: 'Audit Trail' },
+                { path: '/enquiry-sources', name: 'Enquiry Sources' }
+            ];
+
+            let successCount = 0;
+            for (const endpoint of endpoints) {
+                const success = await testAPI(endpoint.path, endpoint.name);
+                if (success) successCount++;
+            }
+
+            log(`\n📊 Test Summary: ${successCount}/${endpoints.length} APIs working`, 
+                successCount === endpoints.length ? 'success' : 'error');
+        }
+
+        function openAnalyticsPage() {
+            const frontendUrl = 'http://localhost:5173/analytics';
+            window.open(frontendUrl, '_blank');
+            log(`Opening analytics page: ${frontendUrl}`, 'info');
+        }
+    </script>
+</body>
+</html>
