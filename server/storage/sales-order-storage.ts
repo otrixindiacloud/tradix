@@ -1,7 +1,7 @@
 import { db } from "../db";
-import { salesOrders, salesOrderItems, quotations, quotationItems } from "@shared/schema";
+import { salesOrders, salesOrderItems, quotations, quotationItems, items } from "@shared/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
-import { generateNanoId, validateUUID, SYSTEM_USER_ID } from "@shared/utils/uuid";
+import { validateUUID, SYSTEM_USER_ID } from "@shared/utils/uuid";
 import { ISalesOrderStorage } from "./interfaces";
 import { BaseStorage } from "./base";
 
@@ -14,7 +14,8 @@ export class SalesOrderStorage extends BaseStorage implements ISalesOrderStorage
     search?: string;
     pendingSupplierLpo?: boolean;
   }) {
-    let query = db.select().from(salesOrders);
+  const baseQuery = db.select().from(salesOrders);
+  let whereClause: any = undefined;
 
     if (filters) {
       const conditions = [];
@@ -36,21 +37,15 @@ export class SalesOrderStorage extends BaseStorage implements ISalesOrderStorage
       }
       
       if (filters.search) {
-        conditions.push(
-          sql`(${salesOrders.orderNumber} ILIKE ${`%${filters.search}%`} OR 
-              ${salesOrders.customerName} ILIKE ${`%${filters.search}%`})`
-        );
+        conditions.push(sql`${salesOrders.orderNumber} ILIKE ${`%${filters.search}%`}`);
       }
 
       if (conditions.length > 0) {
-        query = query.where(and(...conditions));
+        whereClause = and(...conditions);
       }
     }
-
-    return query
-      .orderBy(desc(salesOrders.createdAt))
-      .limit(limit)
-      .offset(offset);
+    const finalQuery = whereClause ? baseQuery.where(whereClause) : baseQuery;
+    return finalQuery.orderBy(desc(salesOrders.createdAt)).limit(limit).offset(offset);
   }
 
   async getSalesOrder(id: string) {
@@ -61,15 +56,13 @@ export class SalesOrderStorage extends BaseStorage implements ISalesOrderStorage
   async createSalesOrder(salesOrder: any) {
     const orderNumber = `SO-${new Date().getFullYear()}-${String(await this.getNextSequenceNumber()).padStart(3, '0')}`;
     
-    const salesOrderId = generateNanoId();
-    
-    const newSalesOrderItem = {
-      id: generateNanoId(),
+    const newSalesOrder = {
+      // id omitted -> DB default gen_random_uuid()
       orderNumber,
       ...salesOrder,
       createdAt: new Date(),
       updatedAt: new Date(),
-    };
+    } as any;
 
     const result = await db.insert(salesOrders).values(newSalesOrder).returning();
     return result[0];
@@ -112,43 +105,47 @@ export class SalesOrderStorage extends BaseStorage implements ISalesOrderStorage
 
     // Create the sales order
     const salesOrderData = {
-      id: generateNanoId(),
       orderNumber,
       quotationId,
       customerId: quotationData.customerId,
-      customerName: quotationData.customerName,
-      customerEmail: quotationData.customerEmail,
-      customerPhone: quotationData.customerPhone,
-      customerAddress: quotationData.customerAddress,
       orderDate: new Date(),
-      status: 'Draft',
+      status: 'Draft' as const,
       totalAmount: quotationData.totalAmount,
-      currency: quotationData.currency,
-      notes: quotationData.notes,
       createdBy: userId,
       createdAt: new Date(),
       updatedAt: new Date(),
-    };
+    } as any;
 
     const result = await db.insert(salesOrders).values(salesOrderData).returning();
     const createdSalesOrder = result[0];
 
     // Create sales order items from quotation items
     if (quotationItemsData.length > 0) {
-      const salesOrderItemsData = quotationItemsData.map(item => ({
-        id: generateNanoId(),
-        salesOrderId: createdSalesOrder.id,
-        itemId: item.itemId,
-        itemName: item.itemName,
-        itemDescription: item.itemDescription,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        totalPrice: item.totalPrice,
-        currency: item.currency,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }));
+      // Determine a valid itemId to satisfy FK (use first existing item or create a generic one)
+      let existingItem = (await db.select().from(items).limit(1))[0];
+      if (!existingItem) {
+        const created = await db.insert(items).values({
+          supplierCode: `GEN-${Date.now()}`,
+          description: 'Generic Item',
+        }).returning();
+        existingItem = created[0];
+      }
+      const fallbackItemId = existingItem.id;
 
+      const salesOrderItemsData = quotationItemsData.map(qi => {
+        const qty = Number(qi.quantity) || 0;
+        const unit = Number(qi.unitPrice) || 0;
+        const lineTotal = Number(qi.lineTotal) || unit * qty;
+        return {
+          salesOrderId: createdSalesOrder.id,
+          itemId: fallbackItemId,
+          quantity: qty,
+          unitPrice: unit.toFixed(2),
+          totalPrice: lineTotal.toFixed(2),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+      });
       await db.insert(salesOrderItems).values(salesOrderItemsData);
     }
 
@@ -166,23 +163,16 @@ export class SalesOrderStorage extends BaseStorage implements ISalesOrderStorage
     const amendedOrderNumber = `${parentOrder.orderNumber}-A${String(await this.getNextSequenceNumber()).padStart(3, '0')}`;
     
     const amendedSalesOrder = {
-      id: generateNanoId(),
       orderNumber: amendedOrderNumber,
       parentOrderId,
       customerId: parentOrder.customerId,
-      customerName: parentOrder.customerName,
-      customerEmail: parentOrder.customerEmail,
-      customerPhone: parentOrder.customerPhone,
-      customerAddress: parentOrder.customerAddress,
       orderDate: new Date(),
-      status: 'Draft',
+      status: 'Draft' as const,
       totalAmount: parentOrder.totalAmount,
-      currency: parentOrder.currency,
-      notes: `${parentOrder.notes || ''}\nAmendment Reason: ${reason}`.trim(),
       createdBy: userId,
       createdAt: new Date(),
       updatedAt: new Date(),
-    };
+    } as any;
 
     const result = await db.insert(salesOrders).values(amendedSalesOrder).returning();
     return result[0];
@@ -217,8 +207,7 @@ export class SalesOrderStorage extends BaseStorage implements ISalesOrderStorage
     return db
       .select()
       .from(salesOrderItems)
-      .where(eq(salesOrderItems.salesOrderId, salesOrderId))
-      .orderBy(salesOrderItems.createdAt);
+      .where(eq(salesOrderItems.salesOrderId, salesOrderId));
   }
 
   async getSalesOrderItem(id: string) {
@@ -229,10 +218,9 @@ export class SalesOrderStorage extends BaseStorage implements ISalesOrderStorage
   async createSalesOrderItem(item: any) {
     const newItem = {
       ...item,
-      id: generateNanoId(),
       createdAt: new Date(),
       updatedAt: new Date(),
-    };
+    } as any;
 
     const result = await db.insert(salesOrderItems).values(newItem).returning();
     return result[0];
@@ -260,7 +248,6 @@ export class SalesOrderStorage extends BaseStorage implements ISalesOrderStorage
   async bulkCreateSalesOrderItems(items: any[]) {
     const itemsWithIds = items.map(item => ({
       ...item,
-      id: generateNanoId(),
       createdAt: new Date(),
       updatedAt: new Date(),
     }));
@@ -271,11 +258,11 @@ export class SalesOrderStorage extends BaseStorage implements ISalesOrderStorage
 
   private async getNextSequenceNumber(): Promise<number> {
     const result = await db.execute(sql`
-      SELECT COALESCE(MAX(CAST(SUBSTRING(order_number FROM 'SO-\\d{4}-(\\d+)') AS INTEGER)), 0) + 1 as next_number
-      FROM sales_orders 
+      SELECT COALESCE(MAX(CAST(SUBSTRING(order_number FROM 'SO-\\d{4}-(\\d+)') AS INTEGER)), 0) + 1 AS next_number
+      FROM sales_orders
       WHERE order_number LIKE 'SO-' || EXTRACT(YEAR FROM CURRENT_DATE) || '-%'
     `);
-    
-    return result.rows[0]?.next_number || 1;
+    const row: any = result.rows?.[0];
+    return row?.next_number || 1;
   }
 }

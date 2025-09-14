@@ -1,9 +1,6 @@
 import type { Express } from "express";
 import { storage } from "../storage";
-import { 
-  insertSupplierLpoSchema,
-  insertSupplierLpoItemSchema
-} from "@shared/schema";
+import { insertSupplierLpoSchema, insertSupplierLpoItemSchema } from "@shared/schema";
 import { z } from "zod";
 
 export function registerSupplierLpoRoutes(app: Express) {
@@ -12,7 +9,6 @@ export function registerSupplierLpoRoutes(app: Express) {
     try {
       const limit = parseInt(req.query.limit as string) || 50;
       const offset = parseInt(req.query.offset as string) || 0;
-      
       const filters = {
         status: req.query.status as string,
         supplierId: req.query.supplierId as string,
@@ -22,19 +18,35 @@ export function registerSupplierLpoRoutes(app: Express) {
         requiresApproval: req.query.requiresApproval === "true",
         pendingSupplierConfirmation: req.query.pendingSupplierConfirmation === "true",
       };
-      
-      // Remove undefined values
       Object.keys(filters).forEach(key => {
         if (filters[key as keyof typeof filters] === undefined) {
           delete filters[key as keyof typeof filters];
         }
       });
-
       const supplierLpos = await storage.getSupplierLpos(limit, offset, Object.keys(filters).length > 0 ? filters : undefined);
       res.json(supplierLpos);
     } catch (error) {
       console.error("Error fetching supplier LPOs:", error);
       res.status(500).json({ message: "Failed to fetch supplier LPOs" });
+    }
+  });
+
+  // Convenience: create Supplier LPO from a single sales order
+  app.post("/api/supplier-lpos/from-sales-order", async (req, res) => {
+    try {
+      const { salesOrderId, userId } = req.body;
+      if (!salesOrderId || !userId) {
+        return res.status(400).json({ message: "salesOrderId and userId required" });
+      }
+      // Use batch endpoint logic, but with one salesOrderId
+      const lpos = await storage.createSupplierLposFromSalesOrders([salesOrderId], "supplier", userId);
+      if (!lpos || lpos.length === 0) {
+        return res.status(500).json({ message: "No Supplier LPO created" });
+      }
+      res.status(201).json(lpos[0]);
+    } catch (error) {
+      console.error("Error creating supplier LPO from sales order:", error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to create supplier LPO from sales order" });
     }
   });
 
@@ -50,60 +62,6 @@ export function registerSupplierLpoRoutes(app: Express) {
       res.status(500).json({ message: "Failed to fetch supplier LPO" });
     }
   });
-
-  app.post("/api/supplier-lpos", async (req, res) => {
-    try {
-      const lpoData = insertSupplierLpoSchema.parse(req.body);
-      const supplierLpo = await storage.createSupplierLpo(lpoData);
-      res.status(201).json(supplierLpo);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid supplier LPO data", errors: error.errors });
-      }
-      console.error("Error creating supplier LPO:", error);
-      res.status(500).json({ message: "Failed to create supplier LPO" });
-    }
-  });
-
-  app.put("/api/supplier-lpos/:id", async (req, res) => {
-    try {
-      const lpoData = insertSupplierLpoSchema.partial().parse(req.body);
-      const supplierLpo = await storage.updateSupplierLpo(req.params.id, lpoData);
-      res.json(supplierLpo);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid supplier LPO data", errors: error.errors });
-      }
-      console.error("Error updating supplier LPO:", error);
-      res.status(500).json({ message: "Failed to update supplier LPO" });
-    }
-  });
-
-  app.delete("/api/supplier-lpos/:id", async (req, res) => {
-    try {
-      await storage.deleteSupplierLpo(req.params.id);
-      res.status(204).send();
-    } catch (error) {
-      console.error("Error deleting supplier LPO:", error);
-      res.status(500).json({ message: "Failed to delete supplier LPO" });
-    }
-  });
-
-  app.post("/api/supplier-lpos/from-sales-orders", async (req, res) => {
-    try {
-      const { salesOrderIds, groupBy, userId } = req.body;
-      if (!salesOrderIds || !Array.isArray(salesOrderIds) || salesOrderIds.length === 0) {
-        return res.status(400).json({ message: "At least one sales order ID is required" });
-      }
-
-      const supplierLpos = await storage.createSupplierLposFromSalesOrders(salesOrderIds, groupBy || "supplier", userId);
-      res.status(201).json(supplierLpos);
-    } catch (error) {
-      console.error("Error creating supplier LPOs from sales orders:", error);
-      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to create supplier LPOs from sales orders" });
-    }
-  });
-
   // Create amended LPO
   app.post("/api/supplier-lpos/:id/amend", async (req, res) => {
     try {
@@ -287,6 +245,8 @@ export function registerSupplierLpoRoutes(app: Express) {
       }
       console.error("Error bulk creating supplier LPO items:", error);
       res.status(500).json({ message: "Failed to bulk create supplier LPO items" });
-    }
-  });
+
+
+
 }
+

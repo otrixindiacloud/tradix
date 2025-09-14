@@ -1,3 +1,39 @@
+  // Batch create goods receipt header and items
+  app.post("/api/goods-receipts", async (req, res) => {
+    try {
+      // Expect { header, items } in body
+      const { header, items } = req.body;
+      const headerData = insertGoodsReceiptHeaderSchema.parse(header);
+      const itemsData = z.array(insertGoodsReceiptItemSchema).parse(items);
+      // Create header
+      const createdHeader = await storage.createGoodsReceiptHeader(headerData);
+      // Attach header id to items
+      const itemsWithHeaderId = itemsData.map(item => ({ ...item, goodsReceiptId: createdHeader.id }));
+      // Bulk create items
+      const createdItems = await storage.bulkCreateGoodsReceiptItems(itemsWithHeaderId);
+      // Update inventory quantities for each item
+      for (const item of createdItems) {
+        const qtyMoved = item.quantityReceived || item.quantityExpected || 0;
+        // TODO: Query inventory for actual quantityBefore and quantityAfter
+        await storage.createStockMovement({
+          movementType: "IN",
+          itemId: item.itemId,
+          quantityBefore: 0,
+          quantityMoved: qtyMoved,
+          quantityAfter: qtyMoved,
+          referenceType: "GoodsReceipt",
+          referenceId: createdHeader.id
+        });
+      }
+      res.status(201).json({ header: createdHeader, items: createdItems });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid goods receipt data", errors: error.errors });
+      }
+      console.error("Error creating goods receipt:", error);
+      res.status(500).json({ message: "Failed to create goods receipt" });
+    }
+  });
 import type { Express } from "express";
 import { storage } from "../storage";
 import { 

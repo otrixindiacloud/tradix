@@ -34,8 +34,10 @@ export function registerCustomerAcceptanceRoutes(app: Express) {
 
   app.post("/api/customer-acceptances", async (req, res) => {
     try {
+      console.log("[ACCEPTANCE] Create request body:", req.body);
       const acceptanceData = insertCustomerAcceptanceSchema.parse(req.body);
       const acceptance = await storage.createCustomerAcceptance(acceptanceData);
+      console.log("[ACCEPTANCE] Created acceptance:", acceptance);
       res.status(201).json(acceptance);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -98,11 +100,13 @@ export function registerCustomerAcceptanceRoutes(app: Express) {
 
   app.post("/api/customer-acceptances/:acceptanceId/item-acceptances", async (req, res) => {
     try {
+      console.log("[ITEM-ACCEPTANCE] Single create body:", req.body);
       const itemAcceptanceData = insertQuotationItemAcceptanceSchema.parse({
         ...req.body,
         customerAcceptanceId: req.params.acceptanceId,
       });
       const itemAcceptance = await storage.createQuotationItemAcceptance(itemAcceptanceData);
+      console.log("[ITEM-ACCEPTANCE] Created:", itemAcceptance);
       res.status(201).json(itemAcceptance);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -115,13 +119,16 @@ export function registerCustomerAcceptanceRoutes(app: Express) {
 
   app.post("/api/customer-acceptances/:acceptanceId/item-acceptances/bulk", async (req, res) => {
     try {
-      const itemAcceptances = req.body.map((item: any) => 
-        insertQuotationItemAcceptanceSchema.parse({
-          ...item,
-          customerAcceptanceId: req.params.acceptanceId,
-        })
-      );
+      console.log("[ITEM-ACCEPTANCE:BULK] Raw body:", req.body);
+      const prepared = req.body.map((item: any) => ({
+        ...item,
+        customerAcceptanceId: req.params.acceptanceId,
+        originalQuantity: item.originalQuantity ?? item.acceptedQuantity ?? item.rejectedQuantity ?? 0,
+      }));
+      console.log("[ITEM-ACCEPTANCE:BULK] Prepared payload:", prepared);
+      const itemAcceptances = prepared.map((item: any) => insertQuotationItemAcceptanceSchema.parse(item));
       const results = await storage.bulkCreateQuotationItemAcceptances(itemAcceptances);
+      console.log("[ITEM-ACCEPTANCE:BULK] Created records count=", results.length);
       res.status(201).json(results);
     } catch (error) {
       if (error instanceof z.ZodError) {

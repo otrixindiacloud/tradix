@@ -211,13 +211,13 @@ export class QuotationStorage extends BaseStorage {
         customer: { id: enquiry.customer.id, name: enquiry.customer.name, customerType: enquiry.customer.customerType }
       });
 
-      // Get enquiry items to copy to quotation
-      const enquiryItems = await db
+      // Get enquiry items to copy to quotation (rename variable to avoid shadowing table identifier)
+      const enquiryItemsList = await db
         .select()
         .from(enquiryItems)
         .where(eq(enquiryItems.enquiryId, enquiryId));
 
-      console.log("Retrieved enquiry items:", enquiryItems.length, "items");
+      console.log("Retrieved enquiry items:", enquiryItemsList.length, "items");
 
       // Calculate markup based on customer type
       const markup = enquiry.customer.customerType === "Retail" ? 0.7 : 0.4;
@@ -247,11 +247,11 @@ export class QuotationStorage extends BaseStorage {
       console.log("Successfully created quotation:", quotation);
 
       // Copy enquiry items to quotation items
-      if (enquiryItems.length > 0) {
+      if (enquiryItemsList.length > 0) {
         let totalAmount = 0;
         const createdItems: QuotationItem[] = [];
 
-        for (const enquiryItem of enquiryItems) {
+        for (const enquiryItem of enquiryItemsList) {
           const basePrice = parseFloat(enquiryItem.unitPrice || "0");
           const quotedPrice = basePrice * (1 + markup);
           const totalPrice = quotedPrice * enquiryItem.quantity;
@@ -312,8 +312,47 @@ export class QuotationStorage extends BaseStorage {
     delete (revisionQuotation as any).id;
     delete (revisionQuotation as any).createdAt;
     delete (revisionQuotation as any).updatedAt;
+    // Persist new quotation header
+    const newQuotation = await this.createQuotation(revisionQuotation, userId);
 
-    return await this.createQuotation(revisionQuotation, userId);
+    try {
+      // Fetch original items
+      const originalItems = await this.getQuotationItems(originalId);
+      if (originalItems.length) {
+        let subtotal = 0;
+        const duplicated: InsertQuotationItem[] = originalItems.map(it => {
+          const qty = Number(it.quantity) || 0;
+            const unit = parseFloat(it.unitPrice as any || '0');
+          const lineTotal = parseFloat(it.lineTotal as any || (qty * unit).toFixed(2));
+          subtotal += lineTotal;
+          return {
+            quotationId: newQuotation.id,
+            description: it.description,
+            quantity: qty,
+            costPrice: it.costPrice as any,
+            markup: it.markup as any,
+            unitPrice: it.unitPrice as any,
+            lineTotal: lineTotal as any,
+            isAccepted: true, // fresh revision assumes active items
+            notes: it.notes as any || undefined,
+          } as InsertQuotationItem;
+        });
+        // Insert sequentially (small counts) or could batch
+        for (const dup of duplicated) {
+          await this.createQuotationItem(dup);
+        }
+        // Update totals on new quotation
+        await this.updateQuotation(newQuotation.id, {
+          subtotal: subtotal.toFixed(2),
+          totalAmount: subtotal.toFixed(2),
+        });
+      }
+    } catch (dupErr) {
+      console.error("Failed duplicating quotation items for revision", dupErr);
+    }
+
+    // Return refreshed quotation (with updated totals if any)
+    return await this.getQuotation(newQuotation.id) || newQuotation;
   }
 
   async getQuotationRevisions(originalId: string) {

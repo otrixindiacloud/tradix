@@ -840,12 +840,47 @@ export const createQuotationRevisionSchema = z.object({
     notes: z.string().optional(),
   })).optional(),
 });
-export const insertQuotationItemSchema = createInsertSchema(quotationItems).omit({ id: true, createdAt: true });
+// Quotation Item insert schema with numeric coercion for decimal fields
+export const insertQuotationItemSchema = z.object({
+  quotationId: z.string().uuid(),
+  description: z.string().min(1, 'Description is required'),
+  quantity: z.number().int().min(1, 'Quantity must be at least 1'),
+  costPrice: z.union([
+    z.number(),
+    z.string().min(1).transform(v => parseFloat(v))
+  ]).optional().transform(v => (v === undefined || v === null || (typeof v === 'number' && isNaN(v))) ? undefined : v),
+  markup: z.union([
+    z.number(),
+    z.string().min(1).transform(v => parseFloat(v))
+  ]).optional().transform(v => (v === undefined || v === null || (typeof v === 'number' && isNaN(v))) ? undefined : v),
+  unitPrice: z.union([
+    z.number(),
+    z.string().min(1).transform(v => parseFloat(v))
+  ]).transform(v => (typeof v === 'string' ? parseFloat(v) : v)),
+  lineTotal: z.union([
+    z.number(),
+    z.string().min(1).transform(v => parseFloat(v))
+  ]).optional(),
+  isAccepted: z.boolean().optional(),
+  rejectionReason: z.string().optional(),
+  notes: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.lineTotal === undefined) {
+    if (typeof data.quantity === 'number' && typeof data.unitPrice === 'number') {
+      (data as any).lineTotal = parseFloat((data.quantity * data.unitPrice).toFixed(2));
+    } else {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Cannot compute lineTotal without numeric quantity and unitPrice' });
+    }
+  }
+});
 export const insertApprovalRuleSchema = createInsertSchema(approvalRules).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertQuotationApprovalSchema = createInsertSchema(quotationApprovals).omit({ id: true, createdAt: true });
 export const insertCustomerAcceptanceSchema = createInsertSchema(customerAcceptances).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertPurchaseOrderSchema = createInsertSchema(purchaseOrders, {
-  poDate: z.string(),
+  poDate: z.union([
+    z.string().min(1).transform(v => new Date(v)),
+    z.date()
+  ]).transform(v => (v instanceof Date ? v : new Date(v as any)))
 }).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertQuotationItemAcceptanceSchema = createInsertSchema(quotationItemAcceptances).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertPoLineItemSchema = createInsertSchema(poLineItems).omit({ id: true, createdAt: true, updatedAt: true });

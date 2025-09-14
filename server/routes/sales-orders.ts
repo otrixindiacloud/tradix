@@ -95,7 +95,8 @@ export function registerSalesOrderRoutes(app: Express) {
         return res.status(400).json({ message: "Quotation ID and User ID are required" });
       }
 
-      const salesOrder = await storage.createSalesOrderFromQuotation(quotationId, undefined, userId);
+  // storage.createSalesOrderFromQuotation signature: (quotationId, userId?)
+  const salesOrder = await storage.createSalesOrderFromQuotation(quotationId, userId);
       res.status(201).json(salesOrder);
     } catch (error) {
       console.error("Error creating sales order from quotation:", error);

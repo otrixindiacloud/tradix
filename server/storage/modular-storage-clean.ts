@@ -8,6 +8,9 @@ import { AuditStorage } from './audit-storage.js';
 import { QuotationStorage } from './quotation-storage.js';
 import { DeliveryStorage } from './delivery-storage.js';
 import { SalesOrderStorage } from './sales-order-storage.js';
+import { PurchaseOrderStorage } from './purchase-order-storage.js';
+import { AcceptanceStorage } from './acceptance-storage.js';
+import { GoodsReceiptStorage } from './goods-receipt-storage.js';
 
 // Import the existing DatabaseStorage as a fallback for operations
 // not yet modularized
@@ -27,6 +30,9 @@ export class ModularStorage extends BaseStorage implements IStorage {
   private quotationStorage: QuotationStorage;
   private deliveryStorage: DeliveryStorage;
   private salesOrderStorage: SalesOrderStorage;
+  private purchaseOrderStorage: PurchaseOrderStorage;
+  private acceptanceStorage: AcceptanceStorage;
+  private goodsReceiptStorage: GoodsReceiptStorage;
 
   constructor() {
     super();
@@ -39,6 +45,9 @@ export class ModularStorage extends BaseStorage implements IStorage {
     this.quotationStorage = new QuotationStorage();
     this.deliveryStorage = new DeliveryStorage();
     this.salesOrderStorage = new SalesOrderStorage();
+    this.purchaseOrderStorage = new PurchaseOrderStorage();
+    this.acceptanceStorage = new AcceptanceStorage();
+    this.goodsReceiptStorage = new GoodsReceiptStorage();
 
     // Create proxy to forward any missing methods with helpful error messages
     return new Proxy(this, {
@@ -157,6 +166,61 @@ export class ModularStorage extends BaseStorage implements IStorage {
 
   async deleteEnquiryItem(id: string) {
     return this.enquiryStorage.deleteEnquiryItem(id);
+  }
+
+  // Customer Acceptance operations - delegate to AcceptanceStorage
+  async getCustomerAcceptances(quotationId?: string) {
+    return this.acceptanceStorage.getCustomerAcceptances(quotationId);
+  }
+
+  async getCustomerAcceptance(id: string) {
+    return this.acceptanceStorage.getCustomerAcceptance(id);
+  }
+
+  async createCustomerAcceptance(acceptance: Parameters<AcceptanceStorage['createCustomerAcceptance']>[0]) {
+    return this.acceptanceStorage.createCustomerAcceptance(acceptance);
+  }
+
+  async updateCustomerAcceptance(id: string, acceptance: Parameters<AcceptanceStorage['updateCustomerAcceptance']>[1]) {
+    return this.acceptanceStorage.updateCustomerAcceptance(id, acceptance);
+  }
+
+  async deleteCustomerAcceptance(id: string) {
+    return this.acceptanceStorage.deleteCustomerAcceptance(id);
+  }
+
+  async supersedeActiveAcceptances(quotationId: string) {
+    return this.acceptanceStorage.supersedeActiveAcceptances(quotationId);
+  }
+
+  // Quotation Item Acceptance operations
+  async getQuotationItemAcceptances(customerAcceptanceId: string) {
+    return this.acceptanceStorage.getQuotationItemAcceptances(customerAcceptanceId);
+  }
+
+  async getQuotationItemAcceptance(id: string) {
+    return this.acceptanceStorage.getQuotationItemAcceptance(id);
+  }
+
+  async createQuotationItemAcceptance(itemAcceptance: Parameters<AcceptanceStorage['createQuotationItemAcceptance']>[0]) {
+    return this.acceptanceStorage.createQuotationItemAcceptance(itemAcceptance);
+  }
+
+  async updateQuotationItemAcceptance(id: string, itemAcceptance: Parameters<AcceptanceStorage['updateQuotationItemAcceptance']>[1]) {
+    return this.acceptanceStorage.updateQuotationItemAcceptance(id, itemAcceptance);
+  }
+
+  async bulkCreateQuotationItemAcceptances(itemAcceptances: Parameters<AcceptanceStorage['bulkCreateQuotationItemAcceptances']>[0]) {
+    return this.acceptanceStorage.bulkCreateQuotationItemAcceptances(itemAcceptances);
+  }
+
+  // Acceptance Confirmations
+  async getAcceptanceConfirmations(customerAcceptanceId: string) {
+    return this.acceptanceStorage.getAcceptanceConfirmations(customerAcceptanceId);
+  }
+
+  async createAcceptanceConfirmation(confirmation: Parameters<AcceptanceStorage['createAcceptanceConfirmation']>[0]) {
+    return this.acceptanceStorage.createAcceptanceConfirmation(confirmation);
   }
 
   async bulkCreateEnquiryItems(enquiryItems: Parameters<EnquiryStorage['bulkCreateEnquiryItems']>[0]) {
@@ -299,82 +363,6 @@ export class ModularStorage extends BaseStorage implements IStorage {
     return [];
   }
 
-  async getCustomerAcceptances(quotationId?: string) {
-    console.warn('getCustomerAcceptances: Using stub implementation - should be moved to AcceptanceStorage');
-    return [];
-  }
-
-  async getCustomerAcceptance(id: string) {
-    console.warn('getCustomerAcceptance: Using stub implementation - should be moved to AcceptanceStorage');
-    return undefined;
-  }
-
-  async createCustomerAcceptance(acceptance: any) {
-    console.warn('createCustomerAcceptance: Using stub implementation - should be moved to AcceptanceStorage');
-    return {
-      id: this.generateId(),
-      ...acceptance,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-  }
-
-  async updateCustomerAcceptance(id: string, acceptance: any) {
-    console.warn('updateCustomerAcceptance: Using stub implementation - should be moved to AcceptanceStorage');
-    return {
-      id,
-      ...acceptance,
-      updatedAt: new Date(),
-    };
-  }
-
-  async deleteCustomerAcceptance(id: string) {
-    console.warn('deleteCustomerAcceptance: Using stub implementation - should be moved to AcceptanceStorage');
-  }
-
-  async supersedeActiveAcceptances(quotationId: string) {
-    console.warn('supersedeActiveAcceptances: Using stub implementation - should be moved to AcceptanceStorage');
-    // In a real implementation, this would update all active acceptances for the quotation to "Superseded" status
-  }
-
-  async getQuotationItemAcceptances(customerAcceptanceId: string) {
-    console.warn('getQuotationItemAcceptances: Using stub implementation - should be moved to AcceptanceStorage');
-    return [];
-  }
-
-  async getQuotationItemAcceptance(id: string) {
-    console.warn('getQuotationItemAcceptance: Using stub implementation - should be moved to AcceptanceStorage');
-    return undefined;
-  }
-
-  async createQuotationItemAcceptance(itemAcceptance: any) {
-    console.warn('createQuotationItemAcceptance: Using stub implementation - should be moved to AcceptanceStorage');
-    return {
-      id: this.generateId(),
-      ...itemAcceptance,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-  }
-
-  async updateQuotationItemAcceptance(id: string, itemAcceptance: any) {
-    console.warn('updateQuotationItemAcceptance: Using stub implementation - should be moved to AcceptanceStorage');
-    return {
-      id,
-      ...itemAcceptance,
-      updatedAt: new Date(),
-    };
-  }
-
-  async bulkCreateQuotationItemAcceptances(itemAcceptances: any[]) {
-    console.warn('bulkCreateQuotationItemAcceptances: Using stub implementation - should be moved to AcceptanceStorage');
-    return itemAcceptances.map(item => ({
-      id: this.generateId(),
-      ...item,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }));
-  }
 
   async getSupplierLpos(...args: any[]) {
     console.warn('getSupplierLpos: Using stub implementation - should be moved to SupplierLpoStorage');
@@ -382,8 +370,43 @@ export class ModularStorage extends BaseStorage implements IStorage {
   }
 
   async getPurchaseOrders(quotationId?: string) {
-    console.warn('getPurchaseOrders: Using stub implementation - should be moved to PurchaseOrderStorage');
-    return [];
+    return this.purchaseOrderStorage.getPurchaseOrders(50, 0, quotationId ? { quotationId } : {});
+  }
+
+  async getPurchaseOrder(id: string) {
+    return this.purchaseOrderStorage.getPurchaseOrder(id);
+  }
+
+  async createPurchaseOrder(po: any) {
+    return this.purchaseOrderStorage.createPurchaseOrder(po);
+  }
+
+  async updatePurchaseOrder(id: string, po: any) {
+    return this.purchaseOrderStorage.updatePurchaseOrder(id, po);
+  }
+
+  async deletePurchaseOrder(id: string) {
+    return this.purchaseOrderStorage.deletePurchaseOrder(id);
+  }
+
+  async validatePurchaseOrder(id: string, validation: any) {
+    return this.purchaseOrderStorage.validatePurchaseOrder(id, validation);
+  }
+
+  async getPoLineItems(purchaseOrderId: string) {
+    return this.purchaseOrderStorage.getPoLineItems(purchaseOrderId);
+  }
+
+  async createPoLineItem(lineItem: any) {
+    return this.purchaseOrderStorage.createPoLineItem(lineItem);
+  }
+
+  async updatePoLineItem(id: string, lineItem: any) {
+    return this.purchaseOrderStorage.updatePoLineItem(id, lineItem);
+  }
+
+  async bulkCreatePoLineItems(lineItems: any[]) {
+    return this.purchaseOrderStorage.bulkCreatePoLineItems(lineItems);
   }
 
   async getInventoryItems(...args: any[]) {
@@ -391,9 +414,16 @@ export class ModularStorage extends BaseStorage implements IStorage {
     return [];
   }
 
-  async getGoodsReceiptHeaders(...args: any[]) {
-    console.warn('getGoodsReceiptHeaders: Using stub implementation - should be moved to GoodsReceiptStorage');
-    return [];
+  async getGoodsReceiptHeaders(filters?: any) {
+    return this.goodsReceiptStorage.getGoodsReceiptHeaders?.(filters) ?? [];
+  }
+
+  async createGoodsReceiptHeader(receipt: any) {
+    return this.goodsReceiptStorage.createGoodsReceiptHeader(receipt);
+  }
+
+  async createGoodsReceiptItem(item: any) {
+    return this.goodsReceiptStorage.createGoodsReceiptItem(item);
   }
 
   // Delivery Storage Methods

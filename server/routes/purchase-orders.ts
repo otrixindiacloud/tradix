@@ -15,7 +15,8 @@ export function registerPurchaseOrderRoutes(app: Express) {
       const offset = parseInt(req.query.offset as string) || 0;
       const quotationId = req.query.quotationId as string;
       const filters = quotationId ? { quotationId } : {};
-      const orders = await storage.getPurchaseOrders(limit, offset, filters);
+      // Current storage API only supports optional quotationId filtering
+      const orders = await storage.getPurchaseOrders(quotationId);
       res.json(orders);
     } catch (error) {
       console.error("Error fetching purchase orders:", error);
@@ -38,15 +39,43 @@ export function registerPurchaseOrderRoutes(app: Express) {
 
   app.post("/api/purchase-orders", async (req, res) => {
     try {
-      const orderData = insertPurchaseOrderSchema.parse(req.body);
+      console.log('[PO] Create payload raw:', req.body);
+  const parsed = insertPurchaseOrderSchema.parse(req.body);
+  const orderData = { ...parsed, poDate: new Date(parsed.poDate) } as any;
+      console.log('[PO] Parsed orderData:', orderData);
+
+      // Validation: quotation must exist & be Accepted
+      const quotation = await storage.getQuotation(orderData.quotationId);
+      if (!quotation) {
+        return res.status(400).json({ message: "Quotation not found for purchase order" });
+      }
+      if (quotation.status !== 'Accepted') {
+        return res.status(400).json({ message: "Quotation must be Accepted before creating a Purchase Order" });
+      }
+
+      // Ensure at least one accepted quotation item exists
+      let hasAcceptedItem = false;
+      const acceptances = await storage.getCustomerAcceptances(orderData.quotationId);
+      for (const acc of acceptances) {
+        const itemAcceptances = await storage.getQuotationItemAcceptances(acc.id);
+        if (itemAcceptances.some((i: any) => i.isAccepted)) {
+          hasAcceptedItem = true;
+          break;
+        }
+      }
+      if (!hasAcceptedItem) {
+        return res.status(400).json({ message: "No accepted quotation items found; cannot create Purchase Order" });
+      }
+
       const order = await storage.createPurchaseOrder(orderData);
+      console.log('[PO] Created order id:', order.id);
       res.status(201).json(order);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid purchase order data", errors: error.errors });
       }
       console.error("Error creating purchase order:", error);
-      res.status(500).json({ message: "Failed to create purchase order" });
+      res.status(500).json({ message: "Failed to create purchase order", error: (error as any)?.message });
     }
   });
 
@@ -144,20 +173,54 @@ export function registerPurchaseOrderRoutes(app: Express) {
   // PO Upload route
   app.post("/api/po-upload", async (req, res) => {
     try {
-      const { poNumber, quotationId } = req.body;
-      
-      if (!poNumber || !quotationId) {
-        return res.status(400).json({ message: "PO number and quotation ID are required" });
+      const { quotationId, poNumber, documentPath, documentName, documentType, uploadedBy, poDate, currency, paymentTerms, deliveryTerms, specialInstructions } = req.body;
+
+      const missing: string[] = [];
+      if (!quotationId) missing.push('quotationId');
+      if (!poNumber) missing.push('poNumber');
+      if (!documentPath) missing.push('documentPath');
+      if (!documentName) missing.push('documentName');
+      if (!documentType) missing.push('documentType');
+      if (!uploadedBy) missing.push('uploadedBy');
+      if (missing.length) {
+        return res.status(400).json({ message: `Missing required fields: ${missing.join(', ')}` });
       }
 
-      // Update quotation with PO number and document
-      const quotation = await storage.updateQuotation(quotationId, {
-        customerPoNumber: poNumber,
-        customerPoDocument: req.file ? req.file.filename : null,
-        status: "Accepted"
+      const quotation = await storage.getQuotation(quotationId);
+      if (!quotation) {
+        return res.status(400).json({ message: 'Quotation not found' });
+      }
+      if (quotation.status !== 'Accepted') {
+        return res.status(400).json({ message: 'Quotation must be Accepted before PO upload' });
+      }
+
+      // Basic accepted items check (same as create route)
+      let hasAcceptedItem = false;
+      const acceptances = await storage.getCustomerAcceptances(quotationId);
+      for (const acc of acceptances) {
+        const itemAcceptances = await storage.getQuotationItemAcceptances(acc.id);
+        if (itemAcceptances.some((i: any) => i.isAccepted)) { hasAcceptedItem = true; break; }
+      }
+      if (!hasAcceptedItem) {
+        return res.status(400).json({ message: 'No accepted quotation items found; cannot upload PO' });
+      }
+
+      const poPayload = insertPurchaseOrderSchema.parse({
+        quotationId,
+        poNumber,
+        poDate: poDate ? new Date(poDate) : new Date(),
+        documentPath,
+        documentName,
+        documentType,
+        uploadedBy,
+        currency: currency || 'USD',
+        paymentTerms: paymentTerms || undefined,
+        deliveryTerms: deliveryTerms || undefined,
+        specialInstructions: specialInstructions || undefined
       });
 
-      res.status(201).json(quotation);
+      const purchaseOrder = await storage.createPurchaseOrder(poPayload);
+      res.status(201).json(purchaseOrder);
     } catch (error) {
       console.error("Error uploading PO:", error);
       res.status(500).json({ message: "Failed to upload PO" });

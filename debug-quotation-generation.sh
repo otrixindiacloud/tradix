@@ -1,4 +1,4 @@
-#!/bin/bash
+3366236#!/bin/bash
 
 # Direct debug of quotation generation issue
 API_BASE="http://localhost:5000"
