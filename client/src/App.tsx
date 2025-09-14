@@ -15,7 +15,7 @@ import Quotations from "@/pages/quotations";
 import QuotationDetailPage from "@/pages/quotation-detail";
 import QuotationNewPage from "@/pages/quotation-new";
 import CustomerAcceptance from "@/pages/customer-acceptance";
-import PoUpload from "@/pages/po-upload";
+import CustomerPoUpload from "@/pages/customer-po-upload";
 import SalesOrders from "@/pages/sales-orders";
 import SupplierLpo from "@/pages/supplier-lpo";
 import GoodsReceipt from "@/pages/goods-receipt";
@@ -26,6 +26,8 @@ import Delivery from "@/pages/delivery";
 import Invoicing from "@/pages/invoicing";
 import PricingManagement from "@/pages/pricing-management";
 import MainLayout from "@/components/layout/main-layout";
+import { AuthProvider, useAuth } from "@/components/auth/auth-context";
+import LoginPage from "@/pages/login";
 import Suppliers from "@/pages/suppliers";
 import Notifications from "@/pages/notifications";
 import RecentActivities from "@/pages/recent-activities";
@@ -40,12 +42,20 @@ import NotificationSettings from "@/pages/notification-settings";
 import BlueThemeTest from "@/pages/blue-theme-test";
 import ProcessFlowDetails from "@/pages/process-flow-details";
 
-function Router() {
+function ProtectedRoutes() {
+  const { user, loading } = useAuth();
+  if (loading) {
+    return <div className="p-8 text-center">Loading...</div>;
+  }
+  if (!user) {
+    return <LoginPage />;
+  }
   return (
     <MainLayout>
       <ErrorBoundary>
         <Switch>
           <Route path="/" component={Dashboard} />
+          <Route path="/login" component={LoginPage} />
           <Route path="/ai-demo" component={AIDemoPage} />
           <Route path="/enquiries" component={Enquiries} />
           <Route path="/enquiries/:id" component={EnquiryDetail} />
@@ -53,7 +63,7 @@ function Router() {
           <Route path="/quotations/new" component={QuotationNewPage} />
           <Route path="/quotations/:id" component={QuotationDetailPage} />
           <Route path="/quotations/:id/acceptance" component={CustomerAcceptance} />
-          <Route path="/po-upload" component={PoUpload} />
+          <Route path="/customer-po-upload" component={CustomerPoUpload} />
           <Route path="/sales-orders" component={SalesOrders} />
           <Route path="/supplier-lpo" component={SupplierLpo} />
           <Route path="/goods-receipt" component={GoodsReceipt} />
@@ -90,7 +100,9 @@ function App() {
         <NotificationProvider>
           <AIProvider>
             <Toaster />
-            <Router />
+            <AuthProvider>
+              <ProtectedRoutes />
+            </AuthProvider>
           </AIProvider>
         </NotificationProvider>
       </TooltipProvider>

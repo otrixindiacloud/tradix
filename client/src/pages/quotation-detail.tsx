@@ -31,6 +31,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { SYSTEM_USER_ID } from "@shared/utils/uuid";
+import { useUserId } from "@/hooks/useUserId";
 import { Link } from "wouter";
 import QuotationItemsManager from "@/components/quotation/quotation-items-manager";
 
@@ -75,6 +76,7 @@ interface QuotationItem {
 import { useParams, useLocation } from "wouter";
 // ...existing code...
 export default function QuotationDetailPage() {
+  const userId = useUserId();
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("overview");
@@ -156,7 +158,7 @@ export default function QuotationDetailPage() {
       const response = await fetch(`/api/quotations/${id}/revisions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...revisionData, userId: SYSTEM_USER_ID }),
+  body: JSON.stringify({ ...revisionData, userId }),
       });
       if (!response.ok) throw new Error("Failed to create quotation revision");
       return response.json();

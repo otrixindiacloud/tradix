@@ -36,6 +36,10 @@ export const users = pgTable("users", {
   firstName: varchar("first_name", { length: 100 }),
   lastName: varchar("last_name", { length: 100 }),
   role: varchar("role", { length: 50 }).notNull().default("user"),
+  // Authentication fields
+  passwordHash: varchar("password_hash", { length: 255 }),
+  isActive: boolean("is_active").default(true),
+  lastLoginAt: timestamp("last_login_at"),
   profileImageUrl: varchar("profile_image_url", { length: 500 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -956,8 +960,9 @@ export const inventoryLevels = pgTable("inventory_levels", {
 });
 
 // Goods Receipt Management
+// UPDATED: goods receipt IDs migrated from nanoid(text) to uuid for consistency.
 export const goodsReceiptHeaders = pgTable("goods_receipt_headers", {
-  id: text("id").primaryKey().$defaultFn(() => nanoid()),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   receiptNumber: text("receipt_number").notNull().unique(),
   supplierLpoId: uuid("supplier_lpo_id").references(() => supplierLpos.id),
   supplierId: uuid("supplier_id").notNull().references(() => suppliers.id),
@@ -976,8 +981,8 @@ export const goodsReceiptHeaders = pgTable("goods_receipt_headers", {
 });
 
 export const goodsReceiptItems = pgTable("goods_receipt_items", {
-  id: text("id").primaryKey().$defaultFn(() => nanoid()),
-  receiptHeaderId: text("receipt_header_id").notNull().references(() => goodsReceiptHeaders.id, { onDelete: "cascade" }),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  receiptHeaderId: uuid("receipt_header_id").notNull().references(() => goodsReceiptHeaders.id, { onDelete: "cascade" }),
   lpoItemId: uuid("lpo_item_id").references(() => supplierLpoItems.id),
   itemId: uuid("item_id").references(() => inventoryItems.id),
   variantId: uuid("variant_id").references(() => inventoryVariants.id),

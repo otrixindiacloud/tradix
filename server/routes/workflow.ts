@@ -22,10 +22,10 @@ export function registerWorkflowRoutes(app: Express) {
           message = canProceed ? "Can proceed to acceptance" : "Quotation must be sent to customer";
           break;
         
-        case "po-upload":
+        case "customer-po-upload":
           const acceptedQuote = await storage.getQuotation(entityId);
           canProceed = acceptedQuote?.status === "Accepted";
-          message = canProceed ? "Can proceed to PO upload" : "Quote must be accepted by customer";
+          message = canProceed ? "Can proceed to customer PO upload" : "Quote must be accepted by customer";
           break;
         
         case "sales-order":

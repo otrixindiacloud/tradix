@@ -190,7 +190,7 @@ export default function CustomerAcceptancePage() {
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="acceptance">Customer Acceptance</TabsTrigger>
-          <TabsTrigger value="po-upload">PO Upload</TabsTrigger>
+          <TabsTrigger value="customer-po">Customer PO</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
         </TabsList>
 
@@ -265,7 +265,7 @@ export default function CustomerAcceptancePage() {
                     </p>
                     <div className="mt-6">
                       <Button 
-                        onClick={() => setActiveTab("po-upload")}
+                        onClick={() => setActiveTab("customer-po")}
                         size="sm"
                         disabled={!hasActiveAcceptance}
                       >
@@ -290,7 +290,7 @@ export default function CustomerAcceptancePage() {
                       <Button 
                         variant="outline" 
                         className="w-full"
-                        onClick={() => setActiveTab("po-upload")}
+                        onClick={() => setActiveTab("customer-po")}
                       >
                         View All ({purchaseOrders.length})
                       </Button>
@@ -348,7 +348,7 @@ export default function CustomerAcceptancePage() {
           />
         </TabsContent>
 
-        <TabsContent value="po-upload" className="space-y-6">
+        <TabsContent value="customer-po" className="space-y-6">
           <PurchaseOrderUpload 
             quotationId={quotationId} 
             customerAcceptance={latestAcceptance}

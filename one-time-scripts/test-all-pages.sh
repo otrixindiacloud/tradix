@@ -17,7 +17,7 @@ declare -a routes=(
     "/enquiries"
     "/quotations"
     "/quotations/new"
-    "/po-upload"
+    "/customer-po-upload"
     "/sales-orders"
     "/supplier-lpo"
     "/goods-receipt"

@@ -1,4 +1,5 @@
 import { Link, useLocation } from "wouter";
+import { useAuth } from "@/components/auth/auth-context";
 import { cn } from "@/lib/utils";
 import { WORKFLOW_STEPS } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
@@ -65,11 +66,22 @@ import {
   FaChartBar as FaChartBarAlt,
   FaDownload as FaDownloadAlt,
   FaSync as FaSyncAlt,
-  FaChartLine as FaActivityAlt
+  FaChartLine as FaActivityAlt,
+  FaSignOutAlt
 } from "react-icons/fa";
 
 export default function Sidebar() {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (e) {
+      console.error('Logout failed', e);
+    }
+  };
 
   const isActive = (path: string) => location === path;
 
@@ -131,18 +143,18 @@ export default function Sidebar() {
                 <Badge variant="secondary" className="ml-auto bg-green-100 text-green-800">8</Badge>
               </a>
             </Link>
-            <Link href="/po-upload">
+            <Link href="/customer-po-upload">
               <a
                 className={cn(
                   "sidebar-item",
-                  isActive("/po-upload")
+                  isActive("/customer-po-upload")
                     ? "sidebar-item-active"
                     : "text-gray-700"
                 )}
-                data-testid="link-po-upload"
+                data-testid="link-customer-po-upload"
               >
                 <FaUpload className="h-5 w-5 text-purple-500" />
-                <span className="font-medium">PO Upload</span>
+                <span className="font-medium">Customer PO Upload</span>
               </a>
             </Link>
             <Link href="/sales-orders">
@@ -388,6 +400,25 @@ export default function Sidebar() {
           </div>
         </div>
       </nav>
+      {/* User / Logout Section */}
+      <div className="p-4 border-t border-gray-200 bg-white/80 backdrop-blur-sm">
+        {user && (
+          <div className="flex items-center justify-between text-sm mb-3">
+            <div className="truncate">
+              <div className="font-medium text-gray-800 truncate" title={user.username}>{user.username}</div>
+              <div className="text-gray-500 text-xs uppercase tracking-wide">{user.role}</div>
+            </div>
+          </div>
+        )}
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-700 transition-colors border border-transparent hover:border-red-200"
+          data-testid="button-logout"
+        >
+          <FaSignOutAlt className="h-4 w-4 text-red-600" />
+          <span>Logout</span>
+        </button>
+      </div>
     </aside>
   );
 }

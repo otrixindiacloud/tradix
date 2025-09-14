@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useUserId } from "@/hooks/useUserId";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,7 @@ const approvalStatusColors = {
 };
 
 export default function SupplierLpoPage() {
+  const userId = useUserId();
   const [filters, setFilters] = useState<LpoFilters>({});
   const [selectedLpo, setSelectedLpo] = useState<SupplierLpo | null>(null);
   const [showFilters, setShowFilters] = useState(false);
@@ -84,7 +86,7 @@ export default function SupplierLpoPage() {
   // Mutation for sending LPO to supplier
   const sendToSupplierMutation = useMutation({
     mutationFn: async (lpoId: string) => {
-      const response = await apiRequest("POST", `/api/supplier-lpos/${lpoId}/send-to-supplier`, { userId: "current-user-id" });
+      const response = await apiRequest("POST", `/api/supplier-lpos/${lpoId}/send-to-supplier`, { userId });
       return response.json();
     },
     onSuccess: () => {
@@ -103,7 +105,7 @@ export default function SupplierLpoPage() {
   // Mutation for approving LPO
   const approveLpoMutation = useMutation({
     mutationFn: async ({ lpoId, notes }: { lpoId: string; notes?: string }) => {
-      const response = await apiRequest("POST", `/api/supplier-lpos/${lpoId}/approve`, { userId: "current-user-id", notes });
+      const response = await apiRequest("POST", `/api/supplier-lpos/${lpoId}/approve`, { userId, notes });
       return response.json();
     },
     onSuccess: () => {

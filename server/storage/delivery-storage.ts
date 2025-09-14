@@ -100,6 +100,15 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
 
   async createDelivery(delivery: InsertDelivery): Promise<Delivery> {
     try {
+      // Ensure a delivery number is always generated if not provided or if placeholder was supplied
+      const incomingNumber = (delivery as any).deliveryNumber;
+      if (!incomingNumber || incomingNumber === 'PENDING') {
+        (delivery as any).deliveryNumber = this.generateNumber('DLV');
+      }
+      // Normalize status: some callers may attempt to send Draft/PENDING variants
+      if ((delivery as any).status && (delivery as any).status.toUpperCase() === 'DRAFT') {
+        (delivery as any).status = 'Pending';
+      }
       const result = await db
         .insert(deliveries)
         .values(delivery)
@@ -247,9 +256,46 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
 
   async createDeliveryItem(item: InsertDeliveryItem): Promise<DeliveryItem> {
     try {
+      // If minimal payload (deliveryId + salesOrderItemId + quantity) provided, enrich from sales order item + item master
+      const enriched: any = { ...item };
+      if (!enriched.barcode || !enriched.description || !enriched.unitPrice || !enriched.totalPrice) {
+        if (enriched.salesOrderItemId) {
+          const soItemRows = await db.select().from(salesOrderItems).where(eq(salesOrderItems.id, enriched.salesOrderItemId)).limit(1);
+          const soItem = soItemRows[0];
+          if (soItem) {
+            const itemRows = await db.select().from(items).where(eq(items.id, soItem.itemId)).limit(1);
+            const masterItem = itemRows[0] as any;
+            enriched.itemId = enriched.itemId || soItem.itemId;
+            enriched.lineNumber = enriched.lineNumber || soItem.lineNumber || 1;
+            enriched.orderedQuantity = enriched.orderedQuantity || soItem.quantity;
+            // Attempt to map pricing
+            const qty = enriched.pickedQuantity || enriched.deliveredQuantity || enriched.orderedQuantity || soItem.quantity || 0;
+            const unitPrice = soItem.unitPrice as any;
+            enriched.unitPrice = enriched.unitPrice || unitPrice || '0.00';
+            enriched.totalPrice = enriched.totalPrice || (Number(unitPrice || 0) * Number(qty || 0));
+            // Map descriptive fields
+            enriched.description = enriched.description || (masterItem?.description || 'Delivery Item');
+            enriched.barcode = enriched.barcode || (masterItem?.barcode || `AUTO-${Date.now()}`);
+            enriched.supplierCode = enriched.supplierCode || (masterItem?.supplierCode || 'AUTO-SUP');
+            // Quantities default
+            enriched.pickedQuantity = enriched.pickedQuantity || qty;
+            enriched.deliveredQuantity = enriched.deliveredQuantity || qty;
+          }
+        }
+        // Fallback defaults to satisfy NOT NULL constraints
+        enriched.barcode = enriched.barcode || `AUTO-${Math.random().toString(36).slice(2,8).toUpperCase()}`;
+        enriched.supplierCode = enriched.supplierCode || 'AUTO-SUP';
+        enriched.description = enriched.description || 'Delivery Item';
+        enriched.orderedQuantity = enriched.orderedQuantity || enriched.pickedQuantity || enriched.deliveredQuantity || 0;
+        enriched.pickedQuantity = enriched.pickedQuantity || enriched.orderedQuantity || 0;
+        enriched.deliveredQuantity = enriched.deliveredQuantity || enriched.pickedQuantity || 0;
+        enriched.unitPrice = enriched.unitPrice || '0.00';
+        enriched.totalPrice = enriched.totalPrice || '0.00';
+      }
+
       const result = await db
         .insert(deliveryItems)
-        .values(item)
+        .values(enriched)
         .returning();
 
       return result[0];

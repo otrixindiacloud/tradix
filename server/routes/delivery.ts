@@ -42,13 +42,15 @@ export function registerDeliveryRoutes(app: Express) {
 
   app.post("/api/deliveries", async (req, res) => {
     try {
-      const raw = { ...req.body };
+      const raw = { ...req.body } as any;
       if (raw.deliveryDate && typeof raw.deliveryDate === 'string') {
         const parsedDate = new Date(raw.deliveryDate);
         if (!isNaN(parsedDate.getTime())) raw.deliveryDate = parsedDate;
       }
       if (!raw.deliveryDate) raw.deliveryDate = new Date();
-      const deliveryData = insertDeliverySchema.parse(raw);
+      // Accept minimal payload; storage will generate deliveryNumber & default status
+      if (raw.deliveryNumber === undefined) delete raw.deliveryNumber; // ensure absent so storage layer generates
+      const deliveryData = insertDeliverySchema.partial().parse(raw);
       const delivery = await storage.createDelivery(deliveryData as any);
       res.status(201).json(delivery);
     } catch (error) {

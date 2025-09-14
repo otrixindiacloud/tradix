@@ -18,6 +18,12 @@ log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a $TEST_LOG
 }
 
+# Ensure IDs are single-line UUIDs without accidental duplication/newlines
+sanitize_id() {
+  # Take only the first line, strip CR, and trim whitespace
+  printf '%s' "$1" | tr -d '\r' | awk 'NR==1 {print}'
+}
+
 test_api() {
     local method=$1
     local endpoint=$2
@@ -27,10 +33,17 @@ test_api() {
     log "Testing: $description"
     log "Request: $method $endpoint"
     
-    if [ -n "$data" ]; then
-        response=$(curl -s -X $method "$API_BASE$endpoint" \
-            -H "Content-Type: application/json" \
-            -d "$data" 2>&1)
+  if [ -n "$data" ]; then
+    # Debug payload details before sending
+    local payload_length=${#data}
+    log "Payload length: $payload_length"
+    printf '%s' "$data" | head -c 200 | sed 's/\\/\\\\/g' | sed 's/\t/\\t/g' | sed 's/\r/\\r/g' | sed 's/\n/\\n/g' | while read -r line; do
+      log "Payload preview: $line"
+    done
+    printf '%s' "$data" | od -An -tx1 -N120 | sed 's/^/HEX: /' | while read -r hex; do log "$hex"; done
+    response=$(curl -s -X $method "$API_BASE$endpoint" \
+      -H "Content-Type: application/json" \
+      --data "$data" 2>&1)
     else
         response=$(curl -s -X $method "$API_BASE$endpoint" \
             -H "Content-Type: application/json" 2>&1)
@@ -54,33 +67,62 @@ CUSTOMER_RESPONSE=$(test_api "POST" "/api/customers" '{
   "paymentTerms": "Net 30"
 }' "Creating test customer")
 
-CUSTOMER_ID=$(echo "$CUSTOMER_RESPONSE" | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
+CUSTOMER_ID=$(echo "$CUSTOMER_RESPONSE" | grep -o '"id":"[^"]*"' | head -n1 | cut -d'"' -f4)
+CUSTOMER_ID=$(sanitize_id "$CUSTOMER_ID")
 log "Customer ID: $CUSTOMER_ID"
 
 # Step 2: Test Enquiry Creation
 log "STEP 2: ENQUIRY MANAGEMENT"
-ENQUIRY_RESPONSE=$(test_api "POST" "/api/enquiries" '{
-  "customerId": "'$CUSTOMER_ID'",
-  "source": "Email",
-  "targetDeliveryDate": "2025-10-30T00:00:00.000Z",
-  "notes": "E2E Test enquiry for promotional materials"
-}' "Creating test enquiry")
 
-ENQUIRY_ID=$(echo "$ENQUIRY_RESPONSE" | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
+# Build enquiry payload using jq (preferred) or fallback to compact JSON
+if command -v jq >/dev/null 2>&1; then
+  ENQUIRY_PAYLOAD=$(jq -n \
+    --arg customerId "$CUSTOMER_ID" \
+    --arg source "Email" \
+    --arg tdate "2025-10-30T00:00:00.000Z" \
+    --arg notes "E2E Test enquiry for promotional materials" \
+    '{customerId:$customerId, source:$source, targetDeliveryDate:$tdate, notes:$notes}')
+else
+  ENQUIRY_PAYLOAD={"customerId":"$CUSTOMER_ID","source":"Email","targetDeliveryDate":"2025-10-30T00:00:00.000Z","notes":"E2E Test enquiry for promotional materials"}
+fi
+
+ENQUIRY_RESPONSE=$(test_api "POST" "/api/enquiries" "$ENQUIRY_PAYLOAD" "Creating test enquiry")
+
+ENQUIRY_ID=$(echo "$ENQUIRY_RESPONSE" | grep -o '"id":"[^"]*"' | head -n1 | cut -d'"' -f4)
+ENQUIRY_ID=$(sanitize_id "$ENQUIRY_ID")
 log "Enquiry ID: $ENQUIRY_ID"
+
+if [ -z "$ENQUIRY_ID" ]; then
+  log "ERROR: Enquiry creation failed. Aborting remaining steps.";
+  echo "==========================================";
+  log "E2E Test Summary:";
+  log "Customer ID: $CUSTOMER_ID";
+  log "Enquiry ID: (creation failed)";
+  echo "==========================================";
+  exit 1;
+fi
 
 # Step 3: Add Enquiry Items
 log "STEP 3: ENQUIRY ITEMS"
-ITEM_RESPONSE=$(test_api "POST" "/api/enquiry-items" '{
-  "enquiryId": "'$ENQUIRY_ID'",
+
+read -r -d '' ENQUIRY_ITEM_PAYLOAD <<EOF
+{
+  "enquiryId": "$ENQUIRY_ID",
   "description": "E2E Test Promotional T-Shirts",
   "quantity": 500,
   "unitPrice": "20.00",
   "notes": "Various sizes - logo required"
-}' "Adding enquiry item")
+}
+EOF
 
-ITEM_ID=$(echo "$ITEM_RESPONSE" | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
+ITEM_RESPONSE=$(test_api "POST" "/api/enquiry-items" "$ENQUIRY_ITEM_PAYLOAD" "Adding enquiry item")
+
+ITEM_ID=$(echo "$ITEM_RESPONSE" | grep -o '"id":"[^"]*"' | head -n1 | cut -d'"' -f4)
 log "Enquiry Item ID: $ITEM_ID"
+
+if [ -z "$ITEM_ID" ]; then
+  log "WARNING: Enquiry item creation failed; continuing to quotation generation (may fail)."
+fi
 
 # Verify enquiry items
 test_api "GET" "/api/enquiries/$ENQUIRY_ID/items" "" "Retrieving enquiry items"
@@ -91,6 +133,10 @@ QUOTATION_RESPONSE=$(test_api "POST" "/api/quotations/generate/$ENQUIRY_ID" '{}'
 
 QUOTATION_ID=$(echo "$QUOTATION_RESPONSE" | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
 log "Quotation ID: $QUOTATION_ID"
+
+if [ -z "$QUOTATION_ID" ]; then
+  log "WARNING: Quotation generation failed; later verification steps will show existing quotations only.";
+fi
 
 # Verify quotation items
 test_api "GET" "/api/quotations/$QUOTATION_ID/items" "" "Retrieving quotation items"

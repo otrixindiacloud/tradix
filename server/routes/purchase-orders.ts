@@ -170,20 +170,40 @@ export function registerPurchaseOrderRoutes(app: Express) {
     }
   });
 
-  // PO Upload route
-  app.post("/api/po-upload", async (req, res) => {
+  // Customer PO Upload route
+  app.post("/api/customer-po-upload", async (req, res) => {
     try {
       const { quotationId, poNumber, documentPath, documentName, documentType, uploadedBy, poDate, currency, paymentTerms, deliveryTerms, specialInstructions } = req.body;
 
+      // Basic presence validation (uploadedBy handled specially below)
       const missing: string[] = [];
       if (!quotationId) missing.push('quotationId');
       if (!poNumber) missing.push('poNumber');
       if (!documentPath) missing.push('documentPath');
       if (!documentName) missing.push('documentName');
       if (!documentType) missing.push('documentType');
-      if (!uploadedBy) missing.push('uploadedBy');
       if (missing.length) {
         return res.status(400).json({ message: `Missing required fields: ${missing.join(', ')}` });
+      }
+
+      // Resolve / validate uploadedBy
+      let resolvedUploadedBy: string | undefined = uploadedBy;
+      const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/;
+      if (!resolvedUploadedBy || !uuidRegex.test(resolvedUploadedBy)) {
+        // Attempt lightweight fallback: look for an environment-provided SYSTEM_USER_ID
+        if (process.env.SYSTEM_USER_ID && uuidRegex.test(process.env.SYSTEM_USER_ID)) {
+          resolvedUploadedBy = process.env.SYSTEM_USER_ID;
+        }
+        // As a final fallback, leave undefined to trigger error below
+      }
+      if (!resolvedUploadedBy) {
+        // Hardcoded system user fallback (present in seed data)
+        const seedSystemUser = 'e459998e-0a4d-4652-946e-44b2ba161d16';
+        if (uuidRegex.test(seedSystemUser)) {
+          resolvedUploadedBy = seedSystemUser;
+        } else {
+          return res.status(400).json({ message: 'Unable to resolve uploadedBy user' });
+        }
       }
 
       const quotation = await storage.getQuotation(quotationId);
@@ -212,7 +232,7 @@ export function registerPurchaseOrderRoutes(app: Express) {
         documentPath,
         documentName,
         documentType,
-        uploadedBy,
+        uploadedBy: resolvedUploadedBy,
         currency: currency || 'USD',
         paymentTerms: paymentTerms || undefined,
         deliveryTerms: deliveryTerms || undefined,

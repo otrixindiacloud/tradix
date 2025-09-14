@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { storage } from "../storage";
 import { insertSupplierLpoSchema, insertSupplierLpoItemSchema } from "@shared/schema";
 import { z } from "zod";
+import { getAttributingUserId, getOptionalUserId } from '../utils/user';
 
 export function registerSupplierLpoRoutes(app: Express) {
   // Supplier LPO routes
@@ -34,12 +35,11 @@ export function registerSupplierLpoRoutes(app: Express) {
   // Convenience: create Supplier LPO from a single sales order
   app.post("/api/supplier-lpos/from-sales-order", async (req, res) => {
     try {
-      const { salesOrderId, userId } = req.body;
-      if (!salesOrderId || !userId) {
-        return res.status(400).json({ message: "salesOrderId and userId required" });
+      const { salesOrderId } = req.body;
+      if (!salesOrderId) {
+        return res.status(400).json({ message: "salesOrderId required" });
       }
-      // Use batch endpoint logic, but with one salesOrderId
-      const lpos = await storage.createSupplierLposFromSalesOrders([salesOrderId], "supplier", userId);
+      const lpos = await storage.createSupplierLposFromSalesOrders([salesOrderId], "supplier", getAttributingUserId(req));
       if (!lpos || lpos.length === 0) {
         return res.status(500).json({ message: "No Supplier LPO created" });
       }
@@ -58,11 +58,11 @@ export function registerSupplierLpoRoutes(app: Express) {
   // Batch: create Supplier LPOs from multiple sales orders
   app.post("/api/supplier-lpos/from-sales-orders", async (req, res) => {
     try {
-      const { salesOrderIds, groupBy = 'supplier', userId } = req.body;
+      const { salesOrderIds, groupBy = 'supplier' } = req.body;
       if (!Array.isArray(salesOrderIds) || salesOrderIds.length === 0) {
         return res.status(400).json({ message: "salesOrderIds array required" });
       }
-      const lpos = await storage.createSupplierLposFromSalesOrders(salesOrderIds, groupBy, userId);
+      const lpos = await storage.createSupplierLposFromSalesOrders(salesOrderIds, groupBy, getAttributingUserId(req));
       res.status(201).json(lpos);
     } catch (error) {
       console.error("[SUPPLIER-LPO:BATCH] Error creating supplier LPOs from sales orders. Payload=", req.body);
@@ -90,12 +90,11 @@ export function registerSupplierLpoRoutes(app: Express) {
   // Create amended LPO
   app.post("/api/supplier-lpos/:id/amend", async (req, res) => {
     try {
-      const { reason, amendmentType, userId } = req.body;
+      const { reason, amendmentType } = req.body;
       if (!reason || !amendmentType) {
         return res.status(400).json({ message: "Amendment reason and type are required" });
       }
-
-      const amendedLpo = await storage.createAmendedSupplierLpo(req.params.id, reason, amendmentType, userId);
+      const amendedLpo = await storage.createAmendedSupplierLpo(req.params.id, reason, amendmentType, getAttributingUserId(req));
       res.status(201).json(amendedLpo);
     } catch (error) {
       console.error("Error creating amended supplier LPO:", error);
@@ -106,12 +105,7 @@ export function registerSupplierLpoRoutes(app: Express) {
   // Workflow actions
   app.post("/api/supplier-lpos/:id/submit-for-approval", async (req, res) => {
     try {
-      const { userId } = req.body;
-      if (!userId) {
-        return res.status(400).json({ message: "User ID is required" });
-      }
-
-      const supplierLpo = await storage.submitForApproval(req.params.id, userId);
+      const supplierLpo = await storage.submitForApproval(req.params.id, getAttributingUserId(req));
       res.json(supplierLpo);
     } catch (error) {
       console.error("Error submitting supplier LPO for approval:", error);
@@ -121,12 +115,8 @@ export function registerSupplierLpoRoutes(app: Express) {
 
   app.post("/api/supplier-lpos/:id/approve", async (req, res) => {
     try {
-      const { userId, notes } = req.body;
-      if (!userId) {
-        return res.status(400).json({ message: "User ID is required" });
-      }
-
-      const supplierLpo = await storage.approveSupplierLpo(req.params.id, userId, notes);
+      const { notes } = req.body;
+      const supplierLpo = await storage.approveSupplierLpo(req.params.id, getAttributingUserId(req), notes);
       res.json(supplierLpo);
     } catch (error) {
       console.error("Error approving supplier LPO:", error);
@@ -136,12 +126,11 @@ export function registerSupplierLpoRoutes(app: Express) {
 
   app.post("/api/supplier-lpos/:id/reject", async (req, res) => {
     try {
-      const { userId, notes } = req.body;
-      if (!userId || !notes) {
-        return res.status(400).json({ message: "User ID and rejection notes are required" });
+      const { notes } = req.body;
+      if (!notes) {
+        return res.status(400).json({ message: "Rejection notes are required" });
       }
-
-      const supplierLpo = await storage.rejectSupplierLpo(req.params.id, userId, notes);
+      const supplierLpo = await storage.rejectSupplierLpo(req.params.id, getAttributingUserId(req), notes);
       res.json(supplierLpo);
     } catch (error) {
       console.error("Error rejecting supplier LPO:", error);
@@ -151,12 +140,7 @@ export function registerSupplierLpoRoutes(app: Express) {
 
   app.post("/api/supplier-lpos/:id/send-to-supplier", async (req, res) => {
     try {
-      const { userId } = req.body;
-      if (!userId) {
-        return res.status(400).json({ message: "User ID is required" });
-      }
-
-      const supplierLpo = await storage.sendToSupplier(req.params.id, userId);
+      const supplierLpo = await storage.sendToSupplier(req.params.id, getAttributingUserId(req));
       res.json(supplierLpo);
     } catch (error) {
       console.error("Error sending supplier LPO to supplier:", error);

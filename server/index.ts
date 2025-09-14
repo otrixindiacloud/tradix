@@ -2,12 +2,19 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import express, { type Request, Response, NextFunction } from "express";
+import { resolveUserId } from './middleware/user-resolution.js';
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { db } from "./db";
+import { users } from "../shared/schemas/users-customers";
+import { eq } from "drizzle-orm";
+import bcrypt from 'bcryptjs';
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+// Attach resolved user id early
+app.use(resolveUserId);
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -41,6 +48,25 @@ app.use((req, res, next) => {
 
 (async () => {
   const server = await registerRoutes(app);
+
+  // Ensure required admin users exist (idempotent upsert-like behavior)
+  try {
+    const adminPass = process.env.INIT_ADMIN_PASSWORD || 'admin123';
+    const hash = await bcrypt.hash(adminPass, 10);
+    const requiredAdmins = [
+      { username: 'admin', email: 'admin@example.com' },
+      { username: 'testadmin', email: 'testadmin@example.com' }
+    ];
+    for (const adm of requiredAdmins) {
+      const existing = await db.select().from(users).where(eq(users.username, adm.username)).limit(1);
+      if (!existing.length) {
+        await db.insert(users).values({ username: adm.username, role: 'admin', passwordHash: hash, email: adm.email });
+        log(`Seeded missing admin user '${adm.username}'.`);
+      }
+    }
+  } catch (e) {
+    console.error('Admin seed error', e);
+  }
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

@@ -30,10 +30,10 @@ export const legacyGoodsReceiptItems = pgTable("goods_receipt_items_legacy", {
 
 // Enhanced Goods Receipt Management
 export const goodsReceiptHeaders = pgTable("goods_receipt_headers", {
-  id: text("id").primaryKey().$defaultFn(() => nanoid()),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   receiptNumber: text("receipt_number").notNull().unique(),
-  supplierLpoId: text("supplier_lpo_id"), // References supplier_lpos.id
-  supplierId: text("supplier_id").notNull().references(() => suppliers.id),
+  supplierLpoId: uuid("supplier_lpo_id"), // References supplier_lpos.id
+  supplierId: uuid("supplier_id").notNull().references(() => suppliers.id),
   receiptDate: date("receipt_date").notNull(),
   expectedDeliveryDate: date("expected_delivery_date"),
   actualDeliveryDate: date("actual_delivery_date"),
@@ -49,11 +49,11 @@ export const goodsReceiptHeaders = pgTable("goods_receipt_headers", {
 });
 
 export const goodsReceiptItems = pgTable("goods_receipt_items", {
-  id: text("id").primaryKey().$defaultFn(() => nanoid()),
-  receiptHeaderId: text("receipt_header_id").notNull().references(() => goodsReceiptHeaders.id, { onDelete: "cascade" }),
-  lpoItemId: text("lpo_item_id"), // References supplier_lpo_items.id
-  itemId: text("item_id").references(() => inventoryItems.id),
-  variantId: text("variant_id").references(() => inventoryVariants.id),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  receiptHeaderId: uuid("receipt_header_id").notNull().references(() => goodsReceiptHeaders.id, { onDelete: "cascade" }),
+  lpoItemId: uuid("lpo_item_id"), // References supplier_lpo_items.id
+  itemId: uuid("item_id").references(() => inventoryItems.id),
+  variantId: uuid("variant_id").references(() => inventoryVariants.id),
   barcode: text("barcode"),
   supplierCode: text("supplier_code"),
   itemDescription: text("item_description").notNull(),

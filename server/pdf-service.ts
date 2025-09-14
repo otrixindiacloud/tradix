@@ -29,6 +29,12 @@ export interface QuotationPDFData {
   quotation: Quotation;
   items: QuotationItem[];
   customer: Customer;
+  companyInfo?: {
+    name: string;
+    address?: string;
+    phone?: string;
+    email?: string;
+  };
 }
 
 export interface InvoicePDFData {

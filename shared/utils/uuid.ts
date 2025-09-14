@@ -134,8 +134,8 @@ export const ENTITY_ID_PATTERNS = {
   invoices: 'uuid',
   
   // Inventory/operational entities may use nanoid for performance
-  goodsReceiptHeaders: 'nanoid',
-  goodsReceiptItems: 'nanoid',
+  goodsReceiptHeaders: 'uuid',
+  goodsReceiptItems: 'uuid',
   stockMovements: 'nanoid',
   
   // Audit and tracking entities use UUID

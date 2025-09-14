@@ -1,7 +1,8 @@
 import type { Express } from "express";
 import { storage } from "../storage";
 import { insertQuotationSchema, insertQuotationItemSchema } from "@shared/schema";
-import { SYSTEM_USER_ID, validateUserIdOrDefault } from "@shared/utils/uuid";
+import { validateUserIdOrDefault } from "@shared/utils/uuid";
+import { getAttributingUserId } from '../utils/user';
 import { z } from "zod";
 import { pdfService } from "../pdf-service";
 
@@ -83,7 +84,7 @@ export function registerQuotationRoutes(app: Express) {
   app.post("/api/quotations/generate/:enquiryId", async (req, res) => {
     try {
       // Use the system user ID for now - in real app, get from auth
-      const userId = validateUserIdOrDefault(req.body.userId); 
+  const userId = req.resolvedUserId || validateUserIdOrDefault(req.body.userId); 
       console.log("Generating quotation for enquiry:", req.params.enquiryId);
       const quotation = await storage.generateQuotationFromEnquiry(req.params.enquiryId, userId);
       console.log("Quotation generated successfully:", quotation.id);
@@ -101,7 +102,7 @@ export function registerQuotationRoutes(app: Express) {
   // Quotation revision routes
   app.post("/api/quotations/:id/revisions", async (req, res) => {
     try {
-      const userId = validateUserIdOrDefault(req.body.userId);
+  const userId = req.resolvedUserId || validateUserIdOrDefault(req.body.userId);
       const revisionData = req.body; // Should include revisionReason and other fields
       
       if (!revisionData.revisionReason) {
@@ -184,8 +185,17 @@ export function registerQuotationRoutes(app: Express) {
 
   app.put("/api/quotation-items/:id", async (req, res) => {
     try {
-      const itemData = insertQuotationItemSchema.partial().parse(req.body);
-      const item = await storage.updateQuotationItem(req.params.id, itemData);
+      // For updates we allow partial fields; manually pick allowable keys and validate each if present
+      const allowedKeys = ["description","quantity","costPrice","markup","unitPrice","lineTotal","isAccepted","rejectionReason","notes"] as const;
+      const partial: any = {};
+      for (const key of allowedKeys) {
+        if (key in req.body) {
+          partial[key] = (req.body as any)[key];
+        }
+      }
+      // Basic minimal validation: ensure numeric fields if provided are numbers
+      ["quantity"].forEach(k => { if (partial[k] !== undefined) partial[k] = Number(partial[k]); });
+      const item = await storage.updateQuotationItem(req.params.id, partial);
       res.json(item);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -209,8 +219,8 @@ export function registerQuotationRoutes(app: Express) {
   // Generate quotation from enquiry
   app.post("/api/quotations/from-enquiry/:enquiryId", async (req, res) => {
     try {
-      const enquiryId = req.params.enquiryId;
-      const userId = req.body.userId || "system";
+  const enquiryId = req.params.enquiryId;
+  const userId = getAttributingUserId(req);
       
       console.log("Received request to generate quotation from enquiry:", { enquiryId, userId });
       

@@ -14,10 +14,12 @@ import EnquiryItemsManager from "@/components/enquiry/enquiry-items-manager";
 import AttachmentManager from "@/components/enquiry/attachment-manager";
 import { formatDate, getStatusColor } from "@/lib/utils";
 import { SYSTEM_USER_ID } from "@shared/utils/uuid";
+import { useUserId } from "@/hooks/useUserId";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 export default function EnquiryDetail() {
+  const userId = useUserId();
   const { id } = useParams();
   const [, navigate] = useLocation();
   const [showStatusDialog, setShowStatusDialog] = useState(false);
@@ -111,7 +113,7 @@ export default function EnquiryDetail() {
 
   const convertToQuotation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/quotations/generate/${id}`, { userId: SYSTEM_USER_ID });
+      const response = await apiRequest("POST", `/api/quotations/generate/${id}`, { userId });
       return response.json();
     },
     onSuccess: (quotation) => {

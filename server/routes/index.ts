@@ -27,6 +27,7 @@ import userRoutes from "./users";
 import settingsRoutes from "./settings";
 import { analyticsRouter } from "./analytics";
 import { registerRecentActivitiesRoutes } from "./recent-activities";
+import { registerAuthRoutes } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Register all route modules
@@ -51,6 +52,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerGoodsReceiptRoutes(app);
   registerUtilityRoutes(app);
   registerRecentActivitiesRoutes(app);
+  registerAuthRoutes(app);
 
   // Register administration routes
   app.use("/api/audit", auditRoutes);

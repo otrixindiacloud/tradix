@@ -24,7 +24,6 @@ import {
   FaHistory,
   FaDownload,
   FaSync,
-  FaActivity,
   FaQuestionCircle,
   FaUpload,
   FaReceipt,
@@ -41,12 +40,14 @@ import {
   FaFileInvoiceDollar
 } from "react-icons/fa";
 import { useState } from "react";
+import { useAuth } from "@/components/auth/auth-context";
 import { useLocation } from "wouter";
 import { useAI } from "@/components/ai-assistant/ai-context";
 import { useNotifications } from "@/components/notifications/notification-context";
 
 export default function Header() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user, logout } = useAuth();
   const { openAssistant } = useAI();
   const { unreadCount } = useNotifications();
   const [, navigate] = useLocation();
@@ -133,23 +134,35 @@ export default function Header() {
               )}
             </Button>
             
-            {/* User Menu */}
-            <div className="flex items-center space-x-2 sm:space-x-3 pl-2 sm:pl-3 border-l border-gray-200">
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-semibold text-gray-900" data-testid="text-user-name">
-                  Ahmed Al-Rashid
-                </p>
-                <p className="text-xs text-gray-600 font-medium" data-testid="text-user-role">
-                  Sales Manager
-                </p>
+            {/* User Menu (Dynamic) */}
+            {user && (
+              <div className="flex items-center space-x-2 sm:space-x-3 pl-2 sm:pl-3 border-l border-gray-200">
+                <div className="text-right hidden sm:block max-w-[140px] truncate">
+                  <p className="text-sm font-semibold text-gray-900 truncate" data-testid="text-user-name" title={user.username}>
+                    {user.username}
+                  </p>
+                  <p className="text-xs text-gray-600 font-medium uppercase tracking-wide" data-testid="text-user-role">
+                    {user.role}
+                  </p>
+                </div>
+                <div 
+                  className="w-8 h-8 sm:w-10 sm:h-10 gradient-primary rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer group"
+                  data-testid="img-user-avatar"
+                  title={`${user.username} (${user.role})`}
+                >
+                  <span className="text-white text-xs sm:text-sm font-bold">
+                    {user.username.slice(0,2).toUpperCase()}
+                  </span>
+                </div>
+                <button
+                  onClick={async () => { await logout(); navigate('/login'); }}
+                  className="hidden md:inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-gray-600 hover:bg-red-50 hover:text-red-700 border border-transparent hover:border-red-200 transition-colors"
+                  data-testid="button-logout-header"
+                >
+                  <FaSignOutAlt className="h-3 w-3" /> Logout
+                </button>
               </div>
-              <div 
-                className="w-8 h-8 sm:w-10 sm:h-10 gradient-primary rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer"
-                data-testid="img-user-avatar"
-              >
-                <span className="text-white text-xs sm:text-sm font-bold">AR</span>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

@@ -185,11 +185,9 @@ export class SalesOrderStorage extends BaseStorage implements ISalesOrderStorage
     }
 
     const updatedSalesOrder = {
-      ...salesOrder,
-      lpoStatus: validationData.status,
-      lpoValidationNotes: validationData.notes,
-      lpoValidatedBy: validationData.validatedBy,
-      lpoValidatedAt: new Date(),
+      customerLpoValidationStatus: validationData.status,
+      customerLpoValidatedBy: validationData.validatedBy,
+      customerLpoValidatedAt: new Date(),
       updatedAt: new Date(),
     };
 

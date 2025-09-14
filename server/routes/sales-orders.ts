@@ -5,6 +5,7 @@ import {
   insertSalesOrderItemSchema
 } from "@shared/schema";
 import { z } from "zod";
+import { getAttributingUserId, getOptionalUserId } from '../utils/user';
 
 export function registerSalesOrderRoutes(app: Express) {
   // Sales Order routes
@@ -90,14 +91,11 @@ export function registerSalesOrderRoutes(app: Express) {
 
   app.post("/api/sales-orders/from-quotation", async (req, res) => {
     try {
-      const { quotationId, userId } = req.body;
+      const { quotationId } = req.body;
       if (!quotationId) {
         return res.status(400).json({ message: "Quotation ID is required" });
       }
-      // Accept userId only if it looks like a UUID (simple regex)
-      const uuidRegex = /^[0-9a-fA-F-]{36}$/;
-      const effectiveUserId = (typeof userId === 'string' && uuidRegex.test(userId)) ? userId : undefined;
-      const salesOrder = await storage.createSalesOrderFromQuotation(quotationId, effectiveUserId);
+      const salesOrder = await storage.createSalesOrderFromQuotation(quotationId, getOptionalUserId(req));
       res.status(201).json(salesOrder);
     } catch (error) {
       console.error("Error creating sales order from quotation:", error);
@@ -130,6 +128,10 @@ export function registerSalesOrderRoutes(app: Express) {
       });
 
       const validationData = validationSchema.parse(req.body);
+      // inject resolved validator if not provided
+      if (!validationData.validatedBy) {
+        (validationData as any).validatedBy = getAttributingUserId(req);
+      }
       const salesOrder = await storage.validateCustomerLpo(req.params.id, validationData);
       res.json(salesOrder);
     } catch (error) {
@@ -181,8 +183,13 @@ export function registerSalesOrderRoutes(app: Express) {
 
   app.put("/api/sales-order-items/:id", async (req, res) => {
     try {
-      const itemData = insertSalesOrderItemSchema.partial().parse(req.body);
-      const item = await storage.updateSalesOrderItem(req.params.id, itemData);
+      const allowedKeys = ["description","quantity","unitPrice","lineTotal","notes"]; // minimal editable fields
+      const partial: any = {};
+      for (const key of allowedKeys) {
+        if (key in req.body) partial[key] = (req.body as any)[key];
+      }
+      if (partial.quantity !== undefined) partial.quantity = Number(partial.quantity);
+      const item = await storage.updateSalesOrderItem(req.params.id, partial);
       res.json(item);
     } catch (error) {
       if (error instanceof z.ZodError) {

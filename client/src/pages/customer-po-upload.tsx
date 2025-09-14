@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,21 +24,40 @@ export default function PoUpload() {
     queryKey: ["/api/quotations"],
   });
 
+  // Fetch current user for proper uploadedBy attribution
+  const { data: currentUser } = useQuery({
+    queryKey: ["/api/auth/me"],
+    queryFn: async () => {
+      try {
+        const res = await fetch("/api/auth/me", { credentials: 'include' });
+        if (!res.ok) return null;
+        return res.json();
+      } catch {
+        return null;
+      }
+    },
+    staleTime: 60_000,
+  });
+
   const uploadPO = useMutation({
     mutationFn: async ({ quotationId, poNumber, file }: { quotationId: string; poNumber: string; file: File }) => {
-      const formData = new FormData();
-      formData.append("poDocument", file);
-      formData.append("poNumber", poNumber);
-      formData.append("quotationId", quotationId);
+      // For now, simulate file upload and create PO record with document info
+      const documentName = file.name;
+      const documentType = file.type.includes('pdf') ? 'PDF' : 'IMAGE';
+      const documentPath = `/uploads/po/${Date.now()}-${file.name}`; // Simulated path
       
-      const response = await fetch("/api/po-upload", {
-        method: "POST",
-        body: formData,
-      });
-      
-      if (!response.ok) {
-        throw new Error("Upload failed");
+      const payload: any = {
+        quotationId,
+        poNumber,
+        documentPath,
+        documentName,
+        documentType,
+      };
+      if (currentUser?.user?.id) {
+        payload.uploadedBy = currentUser.user.id;
       }
+
+      const response = await apiRequest("POST", "/api/customer-po-upload", payload);
       
       return response.json();
     },
@@ -77,7 +96,7 @@ export default function PoUpload() {
   });
 
   // Filter for accepted quotations that need PO upload
-  const acceptedQuotations = quotations?.filter((q: any) => q.status === "Accepted");
+  const acceptedQuotations = (quotations as any[] | undefined)?.filter((q: any) => q.status === "Accepted");
   
   const filteredQuotations = acceptedQuotations?.filter((quotation: any) =>
     quotation.quoteNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -202,7 +221,7 @@ export default function PoUpload() {
         <button
           className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
           onClick={() => {/* Open upload dialog for new PO, fallback to search/filter if not possible */}}
-          data-testid="button-new-po-upload"
+          data-testid="button-new-customer-po-upload"
         >
           <span className="text-xl font-bold">+</span> Upload PO
         </button>
