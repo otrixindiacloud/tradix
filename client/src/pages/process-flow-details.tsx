@@ -264,21 +264,21 @@ export default function ProcessFlowDetailsPage() {
 
   const getStepStatusColor = (status: string) => {
     switch (status) {
-      case "completed": return "text-green-600 bg-green-100";
-      case "current": return "text-gray-600 bg-gray-100";
-      case "pending": return "text-gray-600 bg-gray-100";
-      case "blocked": return "text-red-600 bg-red-100";
-      default: return "text-gray-600 bg-gray-100";
+      case "completed": return "text-white bg-green-600";
+      case "current": return "text-white bg-gray-600";
+      case "pending": return "text-white bg-gray-400";
+      case "blocked": return "text-white bg-red-600";
+      default: return "text-white bg-gray-600";
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "Urgent": return "text-red-600 bg-red-100";
-      case "High": return "text-orange-600 bg-orange-100";
-      case "Medium": return "text-yellow-600 bg-yellow-100";
-      case "Low": return "text-green-600 bg-green-100";
-      default: return "text-gray-600 bg-gray-100";
+      case "Urgent": return "text-white bg-red-600";
+      case "High": return "text-white bg-orange-600";
+      case "Medium": return "text-white bg-yellow-600";
+      case "Low": return "text-white bg-green-600";
+      default: return "text-white bg-gray-600";
     }
   };
 
@@ -307,8 +307,8 @@ export default function ProcessFlowDetailsPage() {
         </div>
         
         <div className="flex items-center gap-2">
-          <Badge className={`${getPriorityColor(processFlow.priority)} flex items-center gap-1`}>
-            {processFlow.priority}
+            <Badge className={`${getPriorityColor(processFlow.priority)} flex items-center gap-1`}>
+              <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold mr-2">High</span>
           </Badge>
           <Badge variant="outline" className="flex items-center gap-1">
             <Clock className="h-4 w-4" />

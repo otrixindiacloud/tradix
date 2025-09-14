@@ -24,7 +24,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge"; // retained for other uses
+import StatusPill from "@/components/status/status-pill";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -229,7 +230,7 @@ export default function QuotationDetailPage() {
   const getApprovalStatusBadgeClass = (status: string) => {
     switch (status) {
       case "Approved": return "bg-green-100 text-green-800";
-      case "Pending": return "bg-yellow-100 text-yellow-800";
+      case "Pending": return "bg-white text-white border border-gray-300";
       case "Rejected": return "bg-red-100 text-red-800";
       default: return "bg-gray-100 text-gray-800";
     }
@@ -299,14 +300,9 @@ export default function QuotationDetailPage() {
         </div>
         
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className={`${getStatusColor(quotation.status)} flex items-center gap-1`}>
-            {getStatusIcon(quotation.status)}
-            {quotation.status}
-          </Badge>
+          <StatusPill status={quotation.status.toLowerCase()} />
           {quotation.approvalStatus && (
-            <Badge className={`${getApprovalStatusBadgeClass(quotation.approvalStatus)} flex items-center gap-1`}>
-              {quotation.approvalStatus}
-            </Badge>
+            <StatusPill status={quotation.approvalStatus.toLowerCase()} />
           )}
         </div>
       </div>

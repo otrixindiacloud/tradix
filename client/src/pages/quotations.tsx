@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import StatusPill from "@/components/status/status-pill";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -275,7 +276,7 @@ export default function QuotationsPage() {
   const getApprovalStatusColor = (status: string) => {
     switch (status) {
       case "Approved": return "text-green-700";
-      case "Pending": return "text-yellow-700";
+      case "Pending": return "text-white";
       case "Rejected": return "text-red-700";
       default: return "text-gray-700";
     }
@@ -312,10 +313,7 @@ export default function QuotationsPage() {
       key: "status",
       header: "Status",
       render: (value: string) => (
-        <Badge variant="outline" className={`${getStatusColor(value)} flex items-center gap-1`}>
-          {getStatusIcon(value)}
-          {value}
-        </Badge>
+        <StatusPill status={value.toLowerCase()} />
       ),
     },
     {
@@ -382,7 +380,7 @@ export default function QuotationsPage() {
             size="sm"
             onClick={(e) => {
               e.stopPropagation();
-              window.location.href = `/quotations/${quotation.id}`;
+              navigate(`/quotations/${quotation.id}`);
             }}
             data-testid={`button-view-${quotation.id}`}
           >
@@ -470,7 +468,8 @@ export default function QuotationsPage() {
         </Card>
         <Card className="flex flex-row items-start gap-4 p-4 shadow-sm border border-gray-200 bg-white">
           <div className="rounded-full bg-yellow-100 p-2 mt-1">
-            <AlertTriangle className="h-6 w-6 text-yellow-500" />
+            {/* Pending approval icon (visible now with contrasting color) */}
+            <AlertTriangle className="h-6 w-6 text-yellow-600" />
           </div>
           <div className="flex-1">
             <div className="text-lg font-bold text-gray-700">Pending Approval</div>
@@ -699,7 +698,7 @@ export default function QuotationsPage() {
               isLoading={isLoading}
               emptyMessage="No quotations found. Create your first quotation to get started."
               onRowClick={(quotation: any) => {
-                window.location.href = `/quotations/${quotation.id}`;
+                navigate(`/quotations/${quotation.id}`);
               }}
             />
           )}

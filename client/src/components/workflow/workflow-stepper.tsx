@@ -50,7 +50,11 @@ export default function WorkflowStepper({
   onViewDetails
 }: WorkflowStepperProps) {
   const [, navigate] = useLocation();
-  const progress = ((completedSteps.length + (currentStep > 0 ? 1 : 0)) / WORKFLOW_STEPS.length) * 100;
+  // Progress expressed as a fraction (0-1) instead of percent so we can
+  // accurately size the active bar when we add horizontal insets to hide
+  // the left "extra" line before the first step circle.
+  const progressFraction = (completedSteps.length + (currentStep > 0 ? 1 : 0)) / WORKFLOW_STEPS.length;
+  const progressPercent = progressFraction * 100; // still available if needed elsewhere
 
   const handleMarkComplete = () => {
     console.log('Mark Complete button clicked', { onMarkComplete, quotationId });
@@ -86,12 +90,13 @@ export default function WorkflowStepper({
       </h3>
       
       <div className="flex items-center justify-between relative">
-        {/* Progress Line */}
-        <div className="absolute top-4 left-0 right-0 h-0.5 bg-gray-200"></div>
-        <div 
-          className="absolute top-4 left-0 h-0.5 bg-gray-400 transition-all duration-500" 
-          style={{ width: `${progress}%` }}
-        ></div>
+        {/* Progress Line (track) - inset by 1rem (16px) each side so it begins at the center of the first circle */}
+        <div className="absolute top-4 left-4 right-4 h-0.5 bg-gray-200" />
+        {/* Active progress bar sized relative to the reduced (inset) track width */}
+        <div
+          className="absolute top-4 left-4 h-0.5 bg-gray-400 transition-all duration-500"
+          style={{ width: `calc((100% - 2rem) * ${progressFraction})` }}
+        />
         
         {/* Steps */}
         <div className="flex items-center justify-between w-full relative z-10">

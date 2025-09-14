@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge"; // still used for small markers
+import StatusPill from "@/components/status/status-pill";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -287,18 +288,22 @@ export default function SalesOrders() {
       key: "sourceType",
       header: "Source",
       render: (value: string) => (
-        <Badge variant={value === "Auto" ? "default" : "outline"}>
-          {value}
-        </Badge>
+        value === "Manual" ? (
+          <Badge variant="outline">
+            {value}
+          </Badge>
+        ) : (
+          <Badge variant={value === "Auto" ? "default" : "outline"}>
+            {value}
+          </Badge>
+        )
       ),
     },
     {
       key: "status",
       header: "Status",
       render: (value: string) => (
-        <Badge variant="outline" className={getStatusColor(value)}>
-          {value}
-        </Badge>
+        <StatusPill status={value.toLowerCase()} />
       ),
     },
     {
@@ -308,18 +313,8 @@ export default function SalesOrders() {
         if (!order.customerLpoRequired) {
           return <span className="text-gray-400">N/A</span>;
         }
-        
-        const statusColors = {
-          "Pending": "bg-blue-700 text-white", // changed to white text on blue background
-          "Approved": "underline decoration-green-500 text-green-700",
-          "Rejected": "underline decoration-red-500 text-red-700",
-        };
-        
-        return (
-          <Badge className={statusColors[value as keyof typeof statusColors] || "underline decoration-gray-500 text-gray-700"}>
-            {value || "Pending"}
-          </Badge>
-        );
+        const statusLabel = value || 'Pending';
+        return <StatusPill status={statusLabel.toLowerCase()} />;
       },
     },
     {
@@ -353,6 +348,7 @@ export default function SalesOrders() {
               }}
               disabled={updateOrderStatus.isPending}
               data-testid={`button-confirm-${order.id}`}
+              className="bg-green-500 hover:bg-green-600 text-white min-w-[80px] h-8 flex items-center justify-center font-medium text-sm border-none px-3 py-1"
             >
               {updateOrderStatus.isPending ? (
                 <LoadingSpinner size="sm" />
@@ -368,7 +364,7 @@ export default function SalesOrders() {
           {order.status === "Confirmed" && order.customerLpoValidationStatus === "Approved" && (
             <Button
               size="sm"
-              variant="outline"
+              className="bg-orange-500 text-white min-w-[80px] h-8 flex items-center justify-center font-medium text-sm border-none px-3 py-1"
               onClick={(e) => {
                 e.stopPropagation();
                 updateOrderStatus.mutate({ id: order.id, status: "Processing" });
@@ -384,6 +380,7 @@ export default function SalesOrders() {
             <Button
               size="sm"
               variant="outline"
+              className="min-w-[80px] h-8 flex items-center justify-center font-medium text-sm px-3 py-1"
               onClick={(e) => {
                 e.stopPropagation();
                 updateOrderStatus.mutate({ id: order.id, status: "Shipped" });
@@ -399,6 +396,7 @@ export default function SalesOrders() {
             <Button
               size="sm"
               variant="outline"
+              className="min-w-[80px] h-8 flex items-center justify-center font-medium text-sm px-3 py-1"
               onClick={(e) => {
                 e.stopPropagation();
                 setSelectedOrder(order);
@@ -414,6 +412,7 @@ export default function SalesOrders() {
           <Button
             size="sm"
             variant="outline"
+            className="min-w-[80px] h-8 flex items-center justify-center font-medium text-sm px-3 py-1"
             onClick={(e) => {
               e.stopPropagation();
               setSelectedOrder(order);
@@ -429,6 +428,7 @@ export default function SalesOrders() {
             <Button
               size="sm"
               variant="outline"
+              className="min-w-[80px] h-8 flex items-center justify-center font-medium text-sm px-3 py-1"
               onClick={(e) => {
                 e.stopPropagation();
                 setConfirmDialog({
@@ -456,6 +456,7 @@ export default function SalesOrders() {
           <Button
             size="sm"
             variant="ghost"
+            className="min-w-[80px] h-8 flex items-center justify-center font-medium text-sm px-3 py-1"
             onClick={(e) => {
               e.stopPropagation();
               setSelectedOrder(order);
@@ -908,7 +909,7 @@ export default function SalesOrders() {
                         <Badge className={
                           selectedOrder.customerLpoValidationStatus === "Approved" ? "underline decoration-green-500 text-green-700" :
                           selectedOrder.customerLpoValidationStatus === "Rejected" ? "underline decoration-red-500 text-red-700" :
-                          "underline decoration-yellow-500 text-yellow-700"
+                          "bg-white text-white border border-gray-300"
                         }>
                           {selectedOrder.customerLpoValidationStatus || "Pending"}
                         </Badge>
@@ -1038,6 +1039,7 @@ export default function SalesOrders() {
           <DialogFooter>
             <Button
               onClick={() => setSelectedOrder(null)}
+              className="bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-blue-500"
               data-testid="button-close-details"
             >
               Close

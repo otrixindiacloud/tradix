@@ -43,23 +43,31 @@ export default function Invoicing() {
     },
   });
 
+  // Dialog state
+  const [showGenerateDialog, setShowGenerateDialog] = useState(false);
+  const [deliverySearch, setDeliverySearch] = useState("");
+  const [invoiceType, setInvoiceType] = useState("Standard");
+
   const createInvoice = useMutation({
-    mutationFn: async (deliveryId: string) => {
-      const response = await apiRequest("POST", "/api/invoices", { deliveryId });
+    mutationFn: async ({ deliveryId, invoiceType }: { deliveryId: string; invoiceType: string }) => {
+      // Use dedicated generation endpoint for consistency with backend route
+      const response = await apiRequest("POST", "/api/invoices/generate-from-delivery", { deliveryId, invoiceType });
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
       toast({
         title: "Success",
-        description: "Invoice created successfully",
+        description: "Invoice generated successfully",
       });
       setSelectedDelivery(null);
+      setShowGenerateDialog(false);
     },
-    onError: () => {
+    onError: (err: any) => {
+      console.error("Generate invoice error", err);
       toast({
         title: "Error",
-        description: "Failed to create invoice",
+        description: "Failed to generate invoice",
         variant: "destructive",
       });
     },
@@ -99,6 +107,28 @@ export default function Invoicing() {
       });
     },
     onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to generate proforma invoice",
+        variant: "destructive",
+      });
+    },
+  });
+  // Additional mutation for the dedicated proforma route in modular route file
+  const generateProformaInvoiceAlt = useMutation({
+    mutationFn: async ({ salesOrderId }: { salesOrderId: string }) => {
+      const response = await apiRequest("POST", "/api/invoices/generate-proforma", { salesOrderId });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      toast({
+        title: "Success",
+        description: "Proforma invoice generated successfully",
+      });
+    },
+    onError: (err: any) => {
+      console.error("Proforma generation error", err);
       toast({
         title: "Error",
         description: "Failed to generate proforma invoice",
@@ -390,6 +420,15 @@ export default function Invoicing() {
       .reduce((sum: number, inv: any) => sum + (inv.totalAmount || 0), 0) || 0,
   };
 
+  // Ref for scrolling to deliveries section
+  const deliveriesSectionRef = useState<any>(null);
+
+  const handleReadyForInvoiceClick = () => {
+    if (deliveriesSectionRef[0] && deliveriesSectionRef[0].scrollIntoView) {
+      deliveriesSectionRef[0].scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   return (
     <div>
       {/* Page Header - Card Style */}
@@ -404,20 +443,51 @@ export default function Invoicing() {
                 Step 10: Generate and manage customer invoices with multi-currency support
               </p>
             </div>
-            <span
-              className="flex items-center px-4 py-1 bg-green-500 text-white rounded-md font-medium text-base shadow-sm border border-green-600"
-              data-testid="badge-ready-for-invoice"
-            >
-              <DollarSign className="h-4 w-4 mr-1" />
-              {completedDeliveries?.length || 0} Ready for Invoice
-            </span>
+            <div className="flex items-center space-x-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowGenerateDialog(true)}
+                data-testid="button-open-generate-invoice"
+              >
+                <Plus className="h-4 w-4 mr-2" /> Generate Invoice
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  // For quick proforma generation user would need to select a draft invoice or use a prompt
+                  const draftWithSO = invoices?.find((inv: any) => inv.status === "Draft" && inv.salesOrderId);
+                  if (draftWithSO) {
+                    generateProformaInvoiceAlt.mutate({ salesOrderId: draftWithSO.salesOrderId });
+                  } else {
+                    toast({
+                      title: "No Draft Found",
+                      description: "No draft invoice with Sales Order available for proforma generation.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+                disabled={generateProformaInvoiceAlt.isPending}
+                data-testid="button-generate-proforma-quick"
+              >
+                {generateProformaInvoiceAlt.isPending ? "Generating..." : "Quick Proforma"}
+              </Button>
+              <Button
+                className="flex items-center px-4 py-1 bg-green-500 text-white rounded-md font-medium text-base shadow-sm border border-green-600 hover:bg-green-600 focus:ring-2 focus:ring-green-300"
+                data-testid="badge-ready-for-invoice"
+                onClick={handleReadyForInvoiceClick}
+                style={{ cursor: "pointer" }}
+              >
+                <DollarSign className="h-4 w-4 mr-1" />
+                {completedDeliveries?.length || 0} Ready for Invoice
+              </Button>
+            </div>
           </div>
         </Card>
       </div>
 
       {/* Quick Actions for Completed Deliveries */}
       {completedDeliveries && completedDeliveries.length > 0 && (
-        <Card className="mb-6">
+        <Card className="mb-6" ref={el => deliveriesSectionRef[1](el)}>
           <CardHeader>
             <CardTitle>Deliveries Ready for Invoicing</CardTitle>
           </CardHeader>
@@ -438,12 +508,12 @@ export default function Invoicing() {
                   </div>
                   <Button
                     size="sm"
-                    onClick={() => createInvoice.mutate(delivery.id)}
+                    onClick={() => createInvoice.mutate({ deliveryId: delivery.id, invoiceType })}
                     disabled={createInvoice.isPending}
                     data-testid={`button-create-invoice-${delivery.id}`}
                   >
                     <Plus className="h-4 w-4 mr-1" />
-                    Create Invoice
+                    {createInvoice.isPending ? "Generating..." : "Create Invoice"}
                   </Button>
                 </div>
               ))}
@@ -461,83 +531,83 @@ export default function Invoicing() {
       <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mt-1">
+                <Edit className="h-6 w-6 text-gray-600" />
+              </div>
               <div>
                 <p className="text-sm text-gray-600 font-bold">Draft Invoices</p>
                 <p className="text-2xl font-bold text-gray-600" data-testid="stat-draft-invoices">
                   {invoiceStats.draft}
                 </p>
               </div>
-              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                <Edit className="h-6 w-6 text-gray-600" />
-              </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mt-1">
+                <Plane className="h-6 w-6 text-blue-600" />
+              </div>
               <div>
                 <p className="text-sm text-gray-600 font-bold">Sent Invoices</p>
                 <p className="text-2xl font-bold text-blue-600" data-testid="stat-sent-invoices">
                   {invoiceStats.sent}
                 </p>
               </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Plane className="h-6 w-6 text-blue-600" />
-              </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mt-1">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              </div>
               <div>
                 <p className="text-sm text-gray-600 font-bold">Paid Invoices</p>
                 <p className="text-2xl font-bold text-green-600" data-testid="stat-paid-invoices">
                   {invoiceStats.paid}
                 </p>
               </div>
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mt-1">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-600">Overdue</p>
+                <p className="text-sm text-gray-600 font-bold">Overdue</p>
                 <p className="text-2xl font-bold text-red-600" data-testid="stat-overdue-invoices">
                   {invoiceStats.overdue}
                 </p>
               </div>
-              <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                <AlertTriangle className="h-6 w-6 text-red-600" />
-              </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mt-1">
+                <DollarSign className="h-6 w-6 text-green-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-600">Total Revenue</p>
+                <p className="text-sm text-gray-600 font-bold">Total Revenue</p>
                 <p className="text-2xl font-bold text-green-600" data-testid="stat-total-revenue">
                   {formatCurrency(invoiceStats.totalRevenue)}
                 </p>
+                <div className="mt-2 text-sm text-gray-600">
+                  From paid invoices
+                </div>
               </div>
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <DollarSign className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-            <div className="mt-2 text-sm text-gray-600">
-              From paid invoices
             </div>
           </CardContent>
         </Card>
@@ -702,9 +772,85 @@ export default function Invoicing() {
                 >
                   Close
                 </Button>
+                {selectedInvoice?.salesOrderId && (
+                  <Button
+                    variant="outline"
+                    onClick={() => generateProformaInvoiceAlt.mutate({ salesOrderId: selectedInvoice.salesOrderId })}
+                    disabled={generateProformaInvoiceAlt.isPending}
+                    data-testid="button-generate-proforma-from-invoice"
+                  >
+                    {generateProformaInvoiceAlt.isPending ? "Generating..." : "Generate Proforma"}
+                  </Button>
+                )}
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Generate Invoice Dialog */}
+      <Dialog open={showGenerateDialog} onOpenChange={setShowGenerateDialog}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Generate Invoice from Delivery</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Input
+                placeholder="Search deliveries..."
+                value={deliverySearch}
+                onChange={(e) => setDeliverySearch(e.target.value)}
+                data-testid="input-search-deliveries"
+              />
+              <Select value={invoiceType} onValueChange={setInvoiceType}>
+                <SelectTrigger className="w-48" data-testid="select-invoice-type">
+                  <SelectValue placeholder="Invoice Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Standard">Standard</SelectItem>
+                  <SelectItem value="Proforma">Proforma</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="max-h-80 overflow-y-auto border rounded-md divide-y" data-testid="list-deliveries-for-invoice">
+              {completedDeliveries && completedDeliveries
+                .filter((d: any) => {
+                  if (!deliverySearch) return true;
+                  const term = deliverySearch.toLowerCase();
+                  return (
+                    d.deliveryNumber?.toLowerCase().includes(term) ||
+                    d.salesOrder?.orderNumber?.toLowerCase().includes(term) ||
+                    d.salesOrder?.customer?.name?.toLowerCase().includes(term)
+                  );
+                })
+                .map((delivery: any) => (
+                  <div key={delivery.id} className="p-3 flex items-center justify-between hover:bg-gray-50">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {delivery.deliveryNumber} / {delivery.salesOrder?.orderNumber}
+                      </p>
+                      <p className="text-xs text-gray-600">
+                        {delivery.salesOrder?.customer?.name} · Value {formatCurrency(delivery.salesOrder?.totalAmount)}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => createInvoice.mutate({ deliveryId: delivery.id, invoiceType })}
+                      disabled={createInvoice.isPending}
+                      data-testid={`button-generate-invoice-${delivery.id}`}
+                    >
+                      {createInvoice.isPending ? "Generating..." : "Generate"}
+                    </Button>
+                  </div>
+                ))}
+              {(!completedDeliveries || completedDeliveries.length === 0) && (
+                <div className="p-4 text-sm text-gray-500" data-testid="empty-no-deliveries">No deliveries available for invoicing.</div>
+              )}
+            </div>
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={() => setShowGenerateDialog(false)} data-testid="button-close-generate-dialog">Close</Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -246,76 +246,76 @@ export default function GoodsReceipt() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mt-1">
+                <Clock className="h-6 w-6 text-orange-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-600">Pending Receipt</p>
+                <p className="text-sm font-bold text-gray-900">Pending Receipt</p>
                 <p className="text-2xl font-bold text-orange-600" data-testid="stat-pending-receipt">
                   {receiptStats.pending}
                 </p>
+                <div className="mt-2 text-sm text-gray-600">
+                  Confirmed LPOs awaiting receipt
+                </div>
               </div>
-              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                <Clock className="h-6 w-6 text-orange-600" />
-              </div>
-            </div>
-            <div className="mt-2 text-sm text-gray-600">
-              Confirmed LPOs awaiting receipt
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mt-1">
+                <Package className="h-6 w-6 text-blue-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-600">Partial Receipt</p>
+                <p className="text-sm font-bold text-gray-900">Partial Receipt</p>
                 <p className="text-2xl font-bold text-blue-600" data-testid="stat-partial-receipt">
                   {receiptStats.partial}
                 </p>
+                <div className="mt-2 text-sm text-gray-600">
+                  Partially received shipments
+                </div>
               </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Package className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-            <div className="mt-2 text-sm text-gray-600">
-              Partially received shipments
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mt-1">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-600">Complete Receipt</p>
+                <p className="text-sm font-bold text-gray-900">Complete Receipt</p>
                 <p className="text-2xl font-bold text-green-600" data-testid="stat-complete-receipt">
                   {receiptStats.complete}
                 </p>
+                <div className="mt-2 text-sm text-gray-600">
+                  Fully received shipments
+                </div>
               </div>
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-            <div className="mt-2 text-sm text-gray-600">
-              Fully received shipments
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mt-1">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-600">Discrepancies</p>
+                <p className="text-sm font-bold text-gray-900">Discrepancies</p>
                 <p className="text-2xl font-bold text-red-600" data-testid="stat-discrepancy-receipt">
                   {receiptStats.discrepancy}
                 </p>
+                <div className="mt-2 text-sm text-gray-600">
+                  Receipts with issues
+                </div>
               </div>
-              <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                <AlertTriangle className="h-6 w-6 text-red-600" />
-              </div>
-            </div>
-            <div className="mt-2 text-sm text-gray-600">
-              Receipts with issues
             </div>
           </CardContent>
         </Card>

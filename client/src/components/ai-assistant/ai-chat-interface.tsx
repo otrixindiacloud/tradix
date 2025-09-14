@@ -69,6 +69,23 @@ export default function AIChatInterface({ isMinimized, onToggleMinimize, onClose
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showCommandMenu, setShowCommandMenu] = useState(false);
+  const COMMANDS = [
+    { key: 'enquiries', text: 'Show me recent enquiries' },
+    { key: 'quotation', text: 'Help me create a quotation' },
+    { key: 'inventory', text: 'Check inventory levels' },
+    { key: 'sales', text: 'Generate sales report' },
+    { key: 'analytics', text: 'Show me key business analytics and insights' },
+    { key: 'pricing', text: 'Help me with pricing strategies and calculations' },
+    { key: 'customers', text: 'Show me customer information and management options' },
+  ];
+  const filteredCommands = showCommandMenu
+    ? COMMANDS.filter(c => {
+        const afterSlash = inputValue.slice(1).toLowerCase();
+        return !afterSlash || c.key.includes(afterSlash) || c.text.toLowerCase().includes(afterSlash);
+      })
+    : [];
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -230,7 +247,17 @@ export default function AIChatInterface({ isMinimized, onToggleMinimize, onClose
   }
 
   return (
-    <Card className="fixed bottom-4 right-4 w-96 h-[600px] shadow-xl border-2 border-blue-200 bg-white flex flex-col">
+    // Main expanded chat panel. Responsive: on very small screens use near full-screen with safe insets.
+    <Card
+      className={cn(
+        "fixed shadow-xl border-2 border-blue-200 bg-white flex flex-col z-[60] transition-all duration-300",
+        isFullscreen
+          ? "inset-2 w-[calc(100vw-1rem)] h-[calc(100vh-1rem)]"
+          : "bottom-4 right-4 w-[560px] h-[80vh] min-h-[520px]",
+        "max-h-[calc(100vh-2rem)] max-w-[95vw] sm:rounded-lg rounded-xl",
+        "xs:w-[94vw] xs:right-2 xs:left-2 xs:bottom-2 xs:mx-auto",
+      )}
+    >
       <CardHeader className="pb-2 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -252,6 +279,15 @@ export default function AIChatInterface({ isMinimized, onToggleMinimize, onClose
             <Button
               variant="ghost"
               size="sm"
+              onClick={() => setIsFullscreen(f => !f)}
+              className="h-8 w-8 p-0"
+              title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+            >
+              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={onToggleMinimize}
               className="h-8 w-8 p-0"
             >
@@ -267,10 +303,35 @@ export default function AIChatInterface({ isMinimized, onToggleMinimize, onClose
             </Button>
           </div>
         </div>
+        {/* Persistent command bar */}
+        <div className="mt-2 flex flex-wrap gap-2">
+          {[
+            { label: 'Recent Enquiries', cmd: 'Show me recent enquiries' },
+            { label: 'Create Quotation', cmd: 'Help me create a quotation' },
+            { label: 'Inventory', cmd: 'Check inventory levels' },
+            { label: 'Sales Report', cmd: 'Generate sales report' },
+            { label: 'Analytics', cmd: 'Show me key business analytics and insights' },
+            { label: 'Pricing', cmd: 'Help me with pricing strategies and calculations' },
+          ].map((c) => (
+            <Button
+              key={c.label}
+              size="sm"
+              variant="secondary"
+              onClick={() => handleSendMessage(c.cmd)}
+              className="h-7 text-[11px] px-2 bg-white hover:bg-white/90 border"
+            >
+              {c.label}
+            </Button>
+          ))}
+        </div>
       </CardHeader>
 
-      <CardContent className="flex-1 p-0 flex flex-col">
-        <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
+      <CardContent className="flex-1 p-0 flex flex-col overflow-hidden">
+        {/* Messages scroll area */}
+        <ScrollArea
+          className="flex-1 p-4 overflow-y-auto"
+          ref={scrollAreaRef}
+        >
           <div className="space-y-4">
             {messages.map((message) => (
               <div
@@ -289,13 +350,15 @@ export default function AIChatInterface({ isMinimized, onToggleMinimize, onClose
                 )}
                 <div
                   className={cn(
-                    "max-w-[80%] rounded-lg p-3 text-sm group relative",
+                    "max-w-[80%] rounded-lg p-3 text-sm group relative break-words overflow-hidden",
+                    // Use word-break utilities to prevent overflow for long tokens (like URLs, long IDs)
+                    "whitespace-pre-wrap break-words", // main wrapping
                     message.role === 'user'
                       ? "bg-blue-500 text-white"
                       : "bg-gray-100 text-gray-900"
                   )}
                 >
-                  <p className="whitespace-pre-wrap">{message.content}</p>
+                  <p className="whitespace-pre-wrap break-words overflow-hidden" style={{overflowWrap: 'anywhere'}}>{message.content}</p>
                   
                   {/* Message actions */}
                   {message.role === 'assistant' && (
@@ -380,22 +443,73 @@ export default function AIChatInterface({ isMinimized, onToggleMinimize, onClose
         <div className="border-t p-3">
           <div className="flex gap-2 items-end">
             <div className="flex-1">
-              <Input
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Ask me anything about your ERP..."
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage(inputValue);
-                  }
-                }}
-                disabled={isLoading || isListening}
-                className={cn(
-                  "text-sm",
-                  isListening && "bg-red-50 border-red-200"
+              <div className="relative">
+                <Input
+                  value={inputValue}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setInputValue(v);
+                    if (v.startsWith('/')) {
+                      setShowCommandMenu(true);
+                    } else if (showCommandMenu) {
+                      setShowCommandMenu(false);
+                    }
+                  }}
+                  placeholder="Type or / for commands (e.g. /inventory)"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey && !showCommandMenu) {
+                      e.preventDefault();
+                      handleSendMessage(inputValue);
+                    } else if (e.key === 'Escape') {
+                      setShowCommandMenu(false);
+                    }
+                  }}
+                  disabled={isLoading || isListening}
+                  className={cn(
+                    "text-sm",
+                    isListening && "bg-red-50 border-red-200"
+                  )}
+                />
+                {showCommandMenu && filteredCommands.length > 0 && (
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-white border rounded-md shadow-lg z-50 max-h-48 overflow-auto text-sm">
+                    {filteredCommands.map(cmd => (
+                      <button
+                        key={cmd.key}
+                        type="button"
+                        onClick={() => {
+                          setInputValue(cmd.text);
+                          setShowCommandMenu(false);
+                          setTimeout(() => handleSendMessage(cmd.text), 50);
+                        }}
+                        className="w-full text-left px-3 py-2 hover:bg-blue-50"
+                      >
+                        <span className="font-medium">/{cmd.key}</span>
+                        <span className="text-gray-500 ml-2">{cmd.text}</span>
+                      </button>
+                    ))}
+                    <div className="px-3 py-1 border-t text-[10px] uppercase tracking-wide text-gray-400 bg-gray-50">Enter to send • Esc to close</div>
+                  </div>
                 )}
-              />
+              </div>
+            </div>
+            {/* Help tooltip trigger */}
+            <div className="relative group">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 p-0 text-xs"
+              >
+                ?
+              </Button>
+              <div className="absolute bottom-full right-0 mb-2 w-64 bg-white border rounded-md shadow-lg p-3 text-[11px] leading-relaxed hidden group-hover:block z-50">
+                <p className="font-semibold mb-1">Tips</p>
+                <ul className="list-disc ml-4 space-y-1">
+                  <li>Type <code className="bg-gray-100 px-1 rounded">/</code> to see commands</li>
+                  <li>Use voice mic to dictate</li>
+                  <li>Fullscreen for large answers</li>
+                </ul>
+              </div>
             </div>
             <VoiceControls
               onVoiceInput={handleVoiceInput}

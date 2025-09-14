@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { Download, CalendarIcon, RefreshCw, Database, FileText, Archive, CheckCircle, Clock } from "lucide-react";
+import { Download, CalendarIcon, RefreshCw, Database, FileText, Archive, CheckCircle, Clock, XCircle, BarChart } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -464,26 +464,30 @@ export default function ExportDataPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
             <div className="text-center">
+              <CheckCircle className="h-5 w-5 mx-auto text-green-600 mb-1" />
               <div className="text-2xl font-bold">
                 {exportJobs.filter(j => j.status === "completed").length}
               </div>
               <div className="text-sm text-muted-foreground">Completed</div>
             </div>
             <div className="text-center">
+              <Clock className="h-5 w-5 mx-auto text-blue-600 mb-1" />
               <div className="text-2xl font-bold">
                 {exportJobs.filter(j => j.status === "processing").length}
               </div>
               <div className="text-sm text-muted-foreground">Processing</div>
             </div>
             <div className="text-center">
+              <XCircle className="h-5 w-5 mx-auto text-red-600 mb-1" />
               <div className="text-2xl font-bold">
                 {exportJobs.filter(j => j.status === "failed").length}
               </div>
               <div className="text-sm text-muted-foreground">Failed</div>
             </div>
             <div className="text-center">
+              <BarChart className="h-5 w-5 mx-auto text-gray-600 mb-1" />
               <div className="text-2xl font-bold">{exportJobs.length}</div>
               <div className="text-sm text-muted-foreground">Total Jobs</div>
             </div>

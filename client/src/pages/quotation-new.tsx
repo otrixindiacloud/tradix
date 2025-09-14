@@ -1,6 +1,9 @@
+import { useLocation } from "wouter";
 import QuotationForm from "@/components/forms/quotation-form";
 
 export default function QuotationNewPage() {
+  const [, navigate] = useLocation();
+  
   return (
     <div className="p-6">
       {/* Page Header */}
@@ -11,10 +14,10 @@ export default function QuotationNewPage() {
       
       <QuotationForm 
         onSuccess={(quotation) => {
-          window.location.href = `/quotations/${quotation.id}`;
+          navigate(`/quotations/${quotation.id}`);
         }}
         onCancel={() => {
-          window.location.href = `/quotations`;
+          navigate(`/quotations`);
         }}
       />
     </div>

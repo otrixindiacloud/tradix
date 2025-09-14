@@ -354,7 +354,7 @@ export default function Suppliers() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Total Suppliers</p>
+                <p className="text-sm text-gray-900 font-bold">Total Suppliers</p>
                 <p className="text-2xl font-bold text-blue-600" data-testid="stat-total-suppliers">
                   {suppliers.length}
                 </p>

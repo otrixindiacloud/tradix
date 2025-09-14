@@ -251,94 +251,94 @@ export default function Inventory() {
       <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mt-1">
+                <Boxes className="h-6 w-6 text-blue-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-600">Total Items</p>
+                <p className="text-sm text-gray-900 font-bold">Total Items</p>
                 <p className="text-2xl font-bold text-blue-600" data-testid="stat-total-items">
                   {inventoryStats.totalItems}
                 </p>
               </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Boxes className="h-6 w-6 text-blue-600" />
-              </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mt-1">
+                <DollarSign className="h-6 w-6 text-green-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-600">Inventory Value</p>
+                <p className="text-sm text-gray-900 font-bold">Inventory Value</p>
                 <p className="text-2xl font-bold text-green-600" data-testid="stat-inventory-value">
                   {formatCurrency(inventoryStats.totalValue)}
                 </p>
+                <div className="mt-2 flex items-center text-sm">
+                  <TrendingUp className="h-4 w-4 text-green-600 mr-1" />
+                  <span className="text-green-600">Total stock value</span>
+                </div>
               </div>
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <DollarSign className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-            <div className="mt-2 flex items-center text-sm">
-              <TrendingUp className="h-4 w-4 text-green-600 mr-1" />
-              <span className="text-green-600">Total stock value</span>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mt-1">
+                <AlertTriangle className="h-6 w-6 text-orange-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-600">Low Stock</p>
+                <p className="text-sm text-gray-900 font-bold">Low Stock</p>
                 <p className="text-2xl font-bold text-orange-600" data-testid="stat-low-stock">
                   {inventoryStats.lowStock}
                 </p>
+                <div className="mt-2 text-sm text-gray-600">
+                  Items with ≤10 units
+                </div>
               </div>
-              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                <AlertTriangle className="h-6 w-6 text-orange-600" />
-              </div>
-            </div>
-            <div className="mt-2 text-sm text-gray-600">
-              Items with ≤10 units
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mt-1">
+                <XCircle className="h-6 w-6 text-red-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-600">Out of Stock</p>
+                <p className="text-sm text-gray-900 font-bold">Out of Stock</p>
                 <p className="text-2xl font-bold text-red-600" data-testid="stat-out-of-stock">
                   {inventoryStats.outOfStock}
                 </p>
+                <div className="mt-2 flex items-center text-sm">
+                  <TrendingDown className="h-4 w-4 text-red-600 mr-1" />
+                  <span className="text-red-600">Requires restocking</span>
+                </div>
               </div>
-              <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                <XCircle className="h-6 w-6 text-red-600" />
-              </div>
-            </div>
-            <div className="mt-2 flex items-center text-sm">
-              <TrendingDown className="h-4 w-4 text-red-600 mr-1" />
-              <span className="text-red-600">Requires restocking</span>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mt-1">
+                <Lock className="h-6 w-6 text-purple-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-600">Reserved Stock</p>
+                <p className="text-sm text-gray-900 font-bold">Reserved Stock</p>
                 <p className="text-2xl font-bold text-purple-600" data-testid="stat-reserved-stock">
                   {inventoryStats.reserved}
                 </p>
+                <div className="mt-2 text-sm text-gray-600">
+                  Items with reserved qty
+                </div>
               </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <Lock className="h-6 w-6 text-purple-600" />
-              </div>
-            </div>
-            <div className="mt-2 text-sm text-gray-600">
-              Items with reserved qty
             </div>
           </CardContent>
         </Card>

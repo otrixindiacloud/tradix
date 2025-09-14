@@ -24,18 +24,19 @@ interface LpoFilters {
 }
 
 const statusColors = {
-  Draft: "underline decoration-gray-500 text-white bg-blue-700",
-  Sent: "underline decoration-blue-500 text-blue-700",
-  Confirmed: "underline decoration-green-500 text-green-700",
-  Received: "underline decoration-purple-500 text-purple-700",
-  Cancelled: "underline decoration-red-500 text-red-700",
+  Draft: "text-white bg-gray-500",
+  Sent: "text-white bg-gray-400",
+  Confirmed: "text-white bg-green-600",
+  Received: "text-white bg-purple-600",
+  Cancelled: "text-white bg-red-600",
+  Missing: "flex items-center gap-2 text-white bg-red-600 border border-red-600 px-4 h-8 min-w-[100px] justify-center font-medium text-base",
 };
 
 const approvalStatusColors = {
-  "Not Required": "underline decoration-gray-500 text-white bg-blue-700",
-  Pending: "underline decoration-yellow-500 text-yellow-700",
-  Approved: "underline decoration-green-500 text-green-700",
-  Rejected: "underline decoration-red-500 text-red-700",
+  "Not Required": "text-white bg-gray-500",
+  Pending: "text-white bg-gray-600",
+  Approved: "text-white bg-green-600",
+  Rejected: "text-white bg-red-600",
 };
 
 export default function SupplierLpoPage() {
@@ -130,9 +131,18 @@ export default function SupplierLpoPage() {
   };
 
   const getStatusBadge = (status: string) => (
-    <Badge className={statusColors[status as keyof typeof statusColors]}>
-      {status}
-    </Badge>
+    status === "Missing"
+      ? (
+          <Badge className={statusColors.Missing}>
+            <XCircle className="h-4 w-4 mr-1" />
+            Missing
+          </Badge>
+        )
+      : (
+          <Badge className={statusColors[status as keyof typeof statusColors]}>
+            {status}
+          </Badge>
+        )
   );
 
   const getApprovalStatusBadge = (status: string) => (
@@ -162,41 +172,61 @@ export default function SupplierLpoPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total LPOs</CardTitle>
+            <CardTitle className="text-base font-medium flex items-center gap-2">
+              <FileText className="h-6 w-6 text-blue-600" />
+              <span className="font-bold text-lg">Total LPOs</span>
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {Array.isArray(supplierLpos) ? supplierLpos.length : 0}
+            <div className="flex items-center gap-3">
+              <div className="text-2xl font-bold text-blue-600">
+                {Array.isArray(supplierLpos) ? supplierLpos.length : 0}
+              </div>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Pending Approval</CardTitle>
+            <CardTitle className="text-base font-medium flex items-center gap-2">
+              <Clock className="h-6 w-6 text-yellow-600" />
+              <span className="font-bold text-lg">Pending Approval</span>
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
-              {Array.isArray(supplierLpos) ? supplierLpos.filter((lpo: SupplierLpo) => lpo.approvalStatus === "Pending").length : 0}
+            <div className="flex items-center gap-3">
+              <div className="text-2xl font-bold text-yellow-600">
+                {Array.isArray(supplierLpos) ? supplierLpos.filter((lpo: SupplierLpo) => lpo.approvalStatus === "Pending").length : 0}
+              </div>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Sent to Suppliers</CardTitle>
+            <CardTitle className="text-base font-medium flex items-center gap-2">
+              <Send className="h-6 w-6 text-blue-600" />
+              <span className="font-bold text-lg">Sent to Suppliers</span>
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {Array.isArray(supplierLpos) ? supplierLpos.filter((lpo: SupplierLpo) => lpo.status === "Sent").length : 0}
+            <div className="flex items-center gap-3">
+              <div className="text-2xl font-bold text-blue-600">
+                {Array.isArray(supplierLpos) ? supplierLpos.filter((lpo: SupplierLpo) => lpo.status === "Sent").length : 0}
+              </div>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Confirmed</CardTitle>
+            <CardTitle className="text-base font-medium flex items-center gap-2">
+              <CheckCircle className="h-6 w-6 text-green-600" />
+              <span className="font-bold text-lg">Confirmed</span>
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {Array.isArray(supplierLpos) ? supplierLpos.filter((lpo: SupplierLpo) => lpo.status === "Confirmed").length : 0}
+            <div className="flex items-center gap-3">
+              <div className="text-2xl font-bold text-green-600">
+                {Array.isArray(supplierLpos) ? supplierLpos.filter((lpo: SupplierLpo) => lpo.status === "Confirmed").length : 0}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -375,14 +405,38 @@ export default function SupplierLpoPage() {
                     data-testid={`row-lpo-${lpo.id}`}
                   >
                     <TableCell className="font-medium">{lpo.lpoNumber}</TableCell>
-                    <TableCell>{lpo.supplierName}</TableCell>
+                    <TableCell>
+                      <span className="px-2 py-1 rounded bg-gray-50 text-gray-700 font-semibold border border-gray-200">
+                        {lpo.supplierName || "-"}
+                      </span>
+                    </TableCell>
                     <TableCell>{getStatusBadge(lpo.status)}</TableCell>
                     <TableCell>{getApprovalStatusBadge(lpo.approvalStatus || "Not Required")}</TableCell>
                     <TableCell>
                       {lpo.lpoDate ? format(new Date(lpo.lpoDate), "MMM dd, yyyy") : "-"}
                     </TableCell>
                     <TableCell>
-                      {lpo.expectedDeliveryDate ? format(new Date(lpo.expectedDeliveryDate), "MMM dd, yyyy") : "-"}
+                      <div className="flex items-center gap-2">
+                        {lpo.expectedDeliveryDate ? (
+                          <span className="px-2 py-1 rounded bg-green-50 text-green-700 font-semibold border border-green-200">
+                            {format(new Date(lpo.expectedDeliveryDate), "MMM dd, yyyy")}
+                          </span>
+                        ) : (
+                          <span className="px-2 py-1 rounded bg-gray-100 text-gray-500 border border-gray-200">-</span>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-green-600 text-green-600 hover:bg-green-50"
+                          onClick={e => {
+                            e.stopPropagation();
+                            toast({ title: "Set Expected Delivery", description: `LPO: ${lpo.lpoNumber}` });
+                          }}
+                          data-testid={`button-set-expected-delivery-${lpo.id}`}
+                        >
+                          Set
+                        </Button>
+                      </div>
                     </TableCell>
                     <TableCell>
                       {lpo.currency} {Number(lpo.totalAmount || 0).toLocaleString()}
@@ -476,7 +530,8 @@ function AutoGenerateLposForm({ onClose }: { onClose: () => void }) {
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Group By Selector */}
       <div>
         <Label>Group By</Label>
         <Select value={groupBy} onValueChange={setGroupBy}>
@@ -491,32 +546,44 @@ function AutoGenerateLposForm({ onClose }: { onClose: () => void }) {
         </Select>
       </div>
 
+      {/* Sales Orders List */}
       <div>
         <Label>Select Sales Orders</Label>
-        <div className="border rounded-md p-3 max-h-64 overflow-y-auto">
+        <div className="border rounded-md p-3 max-h-64 overflow-y-auto space-y-1">
           {salesOrders?.map((order: any) => (
-            <div key={order.id} className="flex items-center space-x-2 py-1">
-              <input
-                type="checkbox"
-                checked={selectedOrders.includes(order.id)}
-                onChange={(e) => {
-                  if (e.target.checked) {
-                    setSelectedOrders([...selectedOrders, order.id]);
-                  } else {
-                    setSelectedOrders(selectedOrders.filter(id => id !== order.id));
-                  }
-                }}
-                data-testid={`checkbox-order-${order.id}`}
-              />
-              <span className="text-sm">
-                {order.orderNumber} - {order.customerName} - ${Number(order.totalAmount || 0).toLocaleString()}
-              </span>
+            <div key={order.id} className="flex items-center justify-between py-1 pr-2">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={selectedOrders.includes(order.id)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedOrders([...selectedOrders, order.id]);
+                    } else {
+                      setSelectedOrders(selectedOrders.filter(id => id !== order.id));
+                    }
+                  }}
+                  data-testid={`checkbox-order-${order.id}`}
+                />
+                <span className="text-sm">
+                  {order.orderNumber} - {order.customerName} - ${Number(order.totalAmount || 0).toLocaleString()}
+                </span>
+              </label>
+              {order.status && (
+                <Badge variant="outline" className="text-xs">
+                  {order.status}
+                </Badge>
+              )}
             </div>
           ))}
+          {(!salesOrders || salesOrders.length === 0) && (
+            <div className="text-sm text-gray-500 py-4 text-center">No confirmed sales orders available.</div>
+          )}
         </div>
       </div>
 
-      <div className="flex justify-end gap-2">
+      {/* Actions */}
+      <div className="flex justify-end gap-2 pt-2">
         <Button variant="outline" onClick={onClose} data-testid="button-cancel">
           Cancel
         </Button>
@@ -524,6 +591,7 @@ function AutoGenerateLposForm({ onClose }: { onClose: () => void }) {
           onClick={() => generateMutation.mutate()}
           disabled={selectedOrders.length === 0 || generateMutation.isPending}
           data-testid="button-generate"
+          className="bg-red-600 text-white border border-red-600 px-4 h-8 min-w-[100px] justify-center font-medium text-base"
         >
           {generateMutation.isPending ? "Generating..." : "Generate LPOs"}
         </Button>
@@ -623,7 +691,7 @@ function LpoDetailDialog({
             <div>
               <Label>Approval Status</Label>
               <div className="mt-1">
-                <Badge className={approvalStatusColors[lpo.approvalStatus as keyof typeof approvalStatusColors] || "underline decoration-gray-500 text-gray-700"}>
+                <Badge className={approvalStatusColors[lpo.approvalStatus as keyof typeof approvalStatusColors] || "text-white"}>
                   {lpo.approvalStatus || "Not Required"}
                 </Badge>
               </div>
@@ -687,7 +755,7 @@ function LpoDetailDialog({
                         {lpo.currency} {Number(item.totalCost).toLocaleString()}
                       </TableCell>
                       <TableCell>
-                        <Badge className={statusColors[item.deliveryStatus as keyof typeof statusColors] || "underline decoration-gray-500 text-gray-700"}>
+                        <Badge className={statusColors[item.deliveryStatus as keyof typeof statusColors] || "text-white"}>
                           {item.deliveryStatus}
                         </Badge>
                       </TableCell>

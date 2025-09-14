@@ -80,7 +80,8 @@ export const NotificationDemoEnhanced: React.FC = () => {
   };
 
   return (
-    <Card className="w-full max-w-4xl mx-auto">
+    // Expanded width to align with AI Assistant page layout
+    <Card className="w-full max-w-6xl mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center">
           <Bell className="h-5 w-5 mr-2" />

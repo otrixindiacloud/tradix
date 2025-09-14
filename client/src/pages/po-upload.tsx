@@ -116,25 +116,33 @@ export default function PoUpload() {
       key: "customerPoNumber",
       header: "PO Number",
       render: (value: string) => value || (
-        <Badge variant="outline" className="text-orange-600">
-          <AlertTriangle className="h-3 w-3 mr-1" />
-          Pending
-        </Badge>
+            <Badge
+              variant="outline"
+              className="bg-blue-600 text-white border-blue-600 flex items-center justify-center gap-2"
+              style={{ borderColor: '#2563eb' }}
+            >
+              <AlertTriangle className="h-3 w-3 text-white" />
+              <span className="font-medium">Pending</span>
+            </Badge>
       ),
     },
     {
       key: "customerPoDocument",
       header: "PO Document",
       render: (value: string) => value ? (
-        <Badge variant="outline" className="text-green-600">
-          <Check className="h-3 w-3 mr-1" />
-          Uploaded
-        </Badge>
+          <Badge variant="outline" className="text-green-600">
+            <Check className="h-3 w-3 mr-1" />
+            Uploaded
+          </Badge>
       ) : (
-        <Badge variant="outline" className="text-red-600">
-          <X className="h-3 w-3 mr-1" />
-          Missing
-        </Badge>
+            <Badge
+              variant="outline"
+              className="bg-red-600 text-white border-red-600 flex items-center justify-center gap-2"
+              style={{ borderColor: '#dc2626' }}
+            >
+              <X className="h-3 w-3 text-white" />
+              <span className="font-medium">Missing</span>
+            </Badge>
       ),
     },
     {
