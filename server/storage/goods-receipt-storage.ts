@@ -1,22 +1,65 @@
 import { IGoodsReceiptStorage } from "./interfaces";
 import { db } from "../db";
-import { insertGoodsReceiptHeaderSchema, insertGoodsReceiptItemSchema } from "@shared/schema";
+import { insertGoodsReceiptHeaderSchema, insertGoodsReceiptItemSchema, goodsReceiptHeaders, goodsReceiptItems } from "@shared/schema";
+import { eq } from "drizzle-orm";
+import { nanoid } from "nanoid";
 
 export class GoodsReceiptStorage implements IGoodsReceiptStorage {
-  async createGoodsReceiptHeader(receipt) {
-    // Validate and insert header
-    const header = insertGoodsReceiptHeaderSchema.parse(receipt);
-    // Insert into DB (replace with Drizzle ORM logic)
-    const result = await db.insert("goods_receipt_headers").values(header).returning();
-    return result[0];
+  private generateReceiptNumber() {
+    return `GRN-${new Date().toISOString().slice(0,10)}-${Math.random().toString(36).slice(2,7).toUpperCase()}`;
   }
 
-  async createGoodsReceiptItem(item) {
-    // Validate and insert item
-    const itemData = insertGoodsReceiptItemSchema.parse(item);
-    const result = await db.insert("goods_receipt_items").values(itemData).returning();
-    return result[0];
+  async createGoodsReceiptHeader(receipt: any) {
+    try {
+      const base = { ...receipt };
+      if (!base.receiptNumber) base.receiptNumber = this.generateReceiptNumber();
+      if (!base.status) base.status = 'Draft';
+      if (!base.receiptDate) base.receiptDate = new Date().toISOString().slice(0,10);
+      const parsed = insertGoodsReceiptHeaderSchema.parse(base);
+      const inserted = await db.insert(goodsReceiptHeaders).values(parsed as any).returning();
+      return inserted[0];
+    } catch (err) {
+      console.error('[GoodsReceiptStorage.createGoodsReceiptHeader] Error', err, { input: receipt });
+      throw err;
+    }
   }
 
-  // ...other methods (get, update, delete) can be added as needed
+  async createGoodsReceiptItem(item: any) {
+    try {
+      const base = { ...item };
+      if (!base.itemDescription) base.itemDescription = base.description || 'Item';
+      if (!base.quantityExpected && base.quantityReceived) base.quantityExpected = base.quantityReceived;
+      const parsed = insertGoodsReceiptItemSchema.parse(base);
+      const inserted = await db.insert(goodsReceiptItems).values(parsed as any).returning();
+      return inserted[0];
+    } catch (err) {
+      console.error('[GoodsReceiptStorage.createGoodsReceiptItem] Error', err, { input: item });
+      throw err;
+    }
+  }
+
+  async getGoodsReceiptHeaders(filters?: any) {
+    let q: any = db.select().from(goodsReceiptHeaders);
+    // Minimal filtering (extend as needed)
+    return q;
+  }
+
+  async getGoodsReceiptHeader(id: string) {
+    const r = await db.select().from(goodsReceiptHeaders).where(eq(goodsReceiptHeaders.id, id)).limit(1); return r[0];
+  }
+
+  async getGoodsReceiptItems(headerId: string) {
+    return db.select().from(goodsReceiptItems).where(eq(goodsReceiptItems.receiptHeaderId, headerId));
+  }
+
+  async createGoodsReceiptItemsBulk(itemsArr: any[]) {
+    if (!itemsArr.length) return [];
+    const prepared = itemsArr.map(it => {
+      const base = { ...it };
+      if (!base.itemDescription) base.itemDescription = base.description || 'Item';
+      if (!base.quantityExpected && base.quantityReceived) base.quantityExpected = base.quantityReceived;
+      return insertGoodsReceiptItemSchema.parse(base);
+    });
+    return db.insert(goodsReceiptItems).values(prepared as any).returning();
+  }
 }

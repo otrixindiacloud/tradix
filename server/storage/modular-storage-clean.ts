@@ -11,6 +11,8 @@ import { SalesOrderStorage } from './sales-order-storage.js';
 import { PurchaseOrderStorage } from './purchase-order-storage.js';
 import { AcceptanceStorage } from './acceptance-storage.js';
 import { GoodsReceiptStorage } from './goods-receipt-storage.js';
+import { SupplierLpoStorage } from './supplier-lpo-storage.js';
+import { InvoiceStorage } from './invoice-storage.js';
 
 // Import the existing DatabaseStorage as a fallback for operations
 // not yet modularized
@@ -33,6 +35,8 @@ export class ModularStorage extends BaseStorage implements IStorage {
   private purchaseOrderStorage: PurchaseOrderStorage;
   private acceptanceStorage: AcceptanceStorage;
   private goodsReceiptStorage: GoodsReceiptStorage;
+  private supplierLpoStorage: SupplierLpoStorage;
+  private invoiceStorage: InvoiceStorage;
 
   constructor() {
     super();
@@ -48,6 +52,8 @@ export class ModularStorage extends BaseStorage implements IStorage {
     this.purchaseOrderStorage = new PurchaseOrderStorage();
     this.acceptanceStorage = new AcceptanceStorage();
     this.goodsReceiptStorage = new GoodsReceiptStorage();
+  this.supplierLpoStorage = new SupplierLpoStorage();
+    this.invoiceStorage = new InvoiceStorage();
 
     // Create proxy to forward any missing methods with helpful error messages
     return new Proxy(this, {
@@ -363,11 +369,29 @@ export class ModularStorage extends BaseStorage implements IStorage {
     return [];
   }
 
-
-  async getSupplierLpos(...args: any[]) {
-    console.warn('getSupplierLpos: Using stub implementation - should be moved to SupplierLpoStorage');
-    return [];
+  // Supplier LPO operations
+  async getSupplierLpos(limit?: number, offset?: number, filters?: any) {
+    return this.supplierLpoStorage.getSupplierLpos(limit, offset, filters);
   }
+  async getSupplierLpo(id: string) { return this.supplierLpoStorage.getSupplierLpo(id); }
+  async createSupplierLpo(lpo: any) { return this.supplierLpoStorage.createSupplierLpo(lpo); }
+  async updateSupplierLpo(id: string, lpo: any) { return this.supplierLpoStorage.updateSupplierLpo(id, lpo); }
+  async deleteSupplierLpo(id: string) { return this.supplierLpoStorage.deleteSupplierLpo(id); }
+  async createSupplierLposFromSalesOrders(salesOrderIds: string[], groupBy: string, userId?: string) { return this.supplierLpoStorage.createSupplierLposFromSalesOrders(salesOrderIds, groupBy, userId); }
+  async createAmendedSupplierLpo(parentLpoId: string, reason: string, amendmentType: string, userId?: string) { return this.supplierLpoStorage.createAmendedSupplierLpo(parentLpoId, reason, amendmentType, userId); }
+  async submitForApproval(id: string, userId: string) { return this.supplierLpoStorage.submitForApproval(id, userId); }
+  async approveSupplierLpo(id: string, userId: string, notes?: string) { return this.supplierLpoStorage.approveSupplierLpo(id, userId, notes); }
+  async rejectSupplierLpo(id: string, userId: string, notes: string) { return this.supplierLpoStorage.rejectSupplierLpo(id, userId, notes); }
+  async sendToSupplier(id: string, userId: string) { return this.supplierLpoStorage.sendToSupplier(id, userId); }
+  async confirmBySupplier(id: string, confirmationReference?: string) { return this.supplierLpoStorage.confirmBySupplier(id, confirmationReference); }
+  async getSupplierLpoBacklog() { return this.supplierLpoStorage.getSupplierLpoBacklog(); }
+  async getCustomerOrderBacklog() { return this.supplierLpoStorage.getCustomerOrderBacklog(); }
+  async getSupplierLpoItems(lpoId: string) { return this.supplierLpoStorage.getSupplierLpoItems(lpoId); }
+  async getSupplierLpoItem(id: string) { return this.supplierLpoStorage.getSupplierLpoItem(id); }
+  async createSupplierLpoItem(item: any) { return this.supplierLpoStorage.createSupplierLpoItem(item); }
+  async updateSupplierLpoItem(id: string, item: any) { return this.supplierLpoStorage.updateSupplierLpoItem(id, item); }
+  async deleteSupplierLpoItem(id: string) { return this.supplierLpoStorage.deleteSupplierLpoItem(id); }
+  async bulkCreateSupplierLpoItems(items: any[]) { return this.supplierLpoStorage.bulkCreateSupplierLpoItems(items); }
 
   async getPurchaseOrders(quotationId?: string) {
     return this.purchaseOrderStorage.getPurchaseOrders(50, 0, quotationId ? { quotationId } : {});
@@ -544,8 +568,71 @@ export class ModularStorage extends BaseStorage implements IStorage {
   }
 
   async getInvoices(...args: any[]) {
-    console.warn('getInvoices: Using stub implementation - should be moved to InvoiceStorage');
-    return [];
+    return this.invoiceStorage.getInvoices(args[0]);
+  }
+
+  async getInvoice(id: string) {
+    return this.invoiceStorage.getInvoice(id);
+  }
+
+  async getInvoiceByNumber(invoiceNumber: string) {
+    return this.invoiceStorage.getInvoiceByNumber(invoiceNumber);
+  }
+
+  async createInvoice(invoice: any) {
+    return this.invoiceStorage.createInvoice(invoice);
+  }
+
+  async updateInvoice(id: string, invoice: any) {
+    return this.invoiceStorage.updateInvoice(id, invoice);
+  }
+
+  async deleteInvoice(id: string) {
+    return this.invoiceStorage.deleteInvoice(id);
+  }
+
+  async generateInvoiceFromDelivery(deliveryId: string, invoiceType?: string, userId?: string) {
+    return this.invoiceStorage.generateInvoiceFromDelivery(deliveryId, invoiceType, userId);
+  }
+
+  async generateProformaInvoice(salesOrderId: string, userId?: string) {
+    return this.invoiceStorage.generateProformaInvoice(salesOrderId, userId);
+  }
+
+  async sendInvoice(invoiceId: string, userId: string) {
+    return this.invoiceStorage.sendInvoice(invoiceId, userId);
+  }
+
+  async markInvoicePaid(invoiceId: string, paidAmount: number, paymentMethod?: string, paymentReference?: string, userId?: string) {
+    return this.invoiceStorage.markInvoicePaid(invoiceId, paidAmount, paymentMethod, paymentReference, userId);
+  }
+
+  async getInvoiceItems(invoiceId: string) {
+    return this.invoiceStorage.getInvoiceItems(invoiceId);
+  }
+
+  async getInvoiceItem(id: string) {
+    return this.invoiceStorage.getInvoiceItem(id);
+  }
+
+  async createInvoiceItem(item: any) {
+    return this.invoiceStorage.createInvoiceItem(item);
+  }
+
+  async updateInvoiceItem(id: string, item: any) {
+    return this.invoiceStorage.updateInvoiceItem(id, item);
+  }
+
+  async deleteInvoiceItem(id: string) {
+    return this.invoiceStorage.deleteInvoiceItem(id);
+  }
+
+  async bulkCreateInvoiceItems(items: any[]) {
+    return this.invoiceStorage.bulkCreateInvoiceItems(items as any);
+  }
+
+  async updateInvoiceCurrency(invoiceId: string, newCurrency: string, exchangeRate: number, userId: string) {
+    return this.invoiceStorage.updateInvoiceCurrency(invoiceId, newCurrency, exchangeRate, userId);
   }
 
   async getCreditNotes(...args: any[]) {

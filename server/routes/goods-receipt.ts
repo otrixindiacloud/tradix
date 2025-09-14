@@ -1,20 +1,27 @@
+import type { Express } from "express";
+import { storage } from "../storage";
+import { 
+  insertGoodsReceiptHeaderSchema,
+  insertGoodsReceiptItemSchema,
+  insertScanningSessionSchema,
+  insertScannedItemSchema,
+  insertSupplierReturnSchema,
+  insertSupplierReturnItemSchema
+} from "@shared/schema";
+import { z } from "zod";
+
+export function registerGoodsReceiptRoutes(app: Express) {
   // Batch create goods receipt header and items
   app.post("/api/goods-receipts", async (req, res) => {
     try {
-      // Expect { header, items } in body
-      const { header, items } = req.body;
+      const { header, items } = req.body; // Expect { header, items }
       const headerData = insertGoodsReceiptHeaderSchema.parse(header);
       const itemsData = z.array(insertGoodsReceiptItemSchema).parse(items);
-      // Create header
       const createdHeader = await storage.createGoodsReceiptHeader(headerData);
-      // Attach header id to items
       const itemsWithHeaderId = itemsData.map(item => ({ ...item, goodsReceiptId: createdHeader.id }));
-      // Bulk create items
       const createdItems = await storage.bulkCreateGoodsReceiptItems(itemsWithHeaderId);
-      // Update inventory quantities for each item
       for (const item of createdItems) {
         const qtyMoved = item.quantityReceived || item.quantityExpected || 0;
-        // TODO: Query inventory for actual quantityBefore and quantityAfter
         await storage.createStockMovement({
           movementType: "IN",
           itemId: item.itemId,
@@ -34,19 +41,6 @@
       res.status(500).json({ message: "Failed to create goods receipt" });
     }
   });
-import type { Express } from "express";
-import { storage } from "../storage";
-import { 
-  insertGoodsReceiptHeaderSchema,
-  insertGoodsReceiptItemSchema,
-  insertScanningSessionSchema,
-  insertScannedItemSchema,
-  insertSupplierReturnSchema,
-  insertSupplierReturnItemSchema
-} from "@shared/schema";
-import { z } from "zod";
-
-export function registerGoodsReceiptRoutes(app: Express) {
   // Goods Receipt Headers routes
   app.get("/api/goods-receipt-headers", async (req, res) => {
     try {

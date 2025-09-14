@@ -1,5 +1,7 @@
 import type { Express } from "express";
 import { storage } from "../storage";
+import { insertItemSchema } from "@shared/schema";
+import { z } from "zod";
 
 export function registerItemRoutes(app: Express) {
   // Item routes
@@ -23,6 +25,20 @@ export function registerItemRoutes(app: Express) {
     } catch (error) {
       console.error("Error fetching item by barcode:", error);
       res.status(500).json({ message: "Failed to fetch item" });
+    }
+  });
+
+  app.post("/api/items", async (req, res) => {
+    try {
+      const itemData = insertItemSchema.parse(req.body);
+      const item = await storage.createItem(itemData as any);
+      res.status(201).json(item);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid item data", errors: error.errors });
+      }
+      console.error("Error creating item:", error);
+      res.status(500).json({ message: "Failed to create item" });
     }
   });
 }

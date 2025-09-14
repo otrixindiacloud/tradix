@@ -4,25 +4,2882 @@
 
 DATABASE_URL from env: SET
 NODE_ENV: development
-[STORAGE] Using database storage
-[dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
-node:events:496
-      throw er; // Unhandled 'error' event
-      ^
-
-Error: listen EADDRINUSE: address already in use ::1:5000
-    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
-    at listenInCluster (node:net:1997:12)
-    at GetAddrInfoReqWrap.callback (node:net:2206:7)
-    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:134:8)
-Emitted 'error' event on Server instance at:
-    at emitErrorNT (node:net:1976:8)
-    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
-  code: 'EADDRINUSE',
-  errno: -98,
-  syscall: 'listen',
-  address: '::1',
-  port: 5000
+[STORAGE] Using modular database storage
+[dotenv@17.2.1] injecting env (0) from .env -- tip: 📡 observe env with Radar: https://dotenvx.com/radar
+3:59:59 AM [express] serving on port 5000
+[STORAGE] ModularStorage initialized successfully
+4:00:11 AM [express] POST /api/customers 201 in 611ms :: {"id":"3efbf56d-49d5-4991-9993-953211aac8fd…
+4:00:11 AM [express] POST /api/suppliers 201 in 285ms :: {"id":"8e6d2b3a-36e3-4938-bbb7-fd8999b5bad3…
+Received enquiry data: {
+  customerId: '3efbf56d-49d5-4991-9993-953211aac8fd',
+  source: 'Email',
+  notes: 'E2E test'
 }
-
-Node.js v22.17.0
+insertEnquirySchema shape: {
+  customerId: ZodString {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: { checks: [Array], typeName: 'ZodString', coerce: false },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  enquiryDate: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodNullable],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  status: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodNullable],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  source: ZodEnum {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: { values: [Array], typeName: 'ZodEnum' },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  targetDeliveryDate: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodString],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  notes: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodNullable],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  attachments: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodNullable],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  createdBy: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodString],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  }
+}
+Creating enquiry with data: {
+  customerId: '3efbf56d-49d5-4991-9993-953211aac8fd',
+  source: 'Email',
+  notes: 'E2E test'
+}
+Generated enquiry number: ENQ-2024-038
+Processed data: {
+  customerId: '3efbf56d-49d5-4991-9993-953211aac8fd',
+  source: 'Email',
+  notes: 'E2E test',
+  targetDeliveryDate: null,
+  enquiryNumber: 'ENQ-2024-038'
+}
+Created enquiry: {
+  id: 'c43b818a-cc68-4ee2-906f-74e5b1f94878',
+  enquiryNumber: 'ENQ-2024-038',
+  customerId: '3efbf56d-49d5-4991-9993-953211aac8fd',
+  enquiryDate: 2025-09-14T04:00:12.029Z,
+  status: 'New',
+  source: 'Email',
+  targetDeliveryDate: null,
+  notes: 'E2E test',
+  attachments: null,
+  createdBy: null,
+  createdAt: 2025-09-14T04:00:12.029Z,
+  updatedAt: 2025-09-14T04:00:12.029Z
+}
+4:00:12 AM [express] POST /api/enquiries 201 in 890ms :: {"id":"c43b818a-cc68-4ee2-906f-74e5b1f94878…
+Error logging audit event: error: invalid input syntax for type uuid: "system"
+    at file:///workspaces/tradix/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async QuotationStorage.logAuditEvent (/workspaces/tradix/server/storage/base.ts:28:7)
+    at async QuotationStorage.createQuotation (/workspaces/tradix/server/storage/quotation-storage.ts:137:5)
+    at async <anonymous> (/workspaces/tradix/server/routes/quotations.ts:47:25) {
+  length: 138,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $6 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'uuid.c',
+  line: '133',
+  routine: 'string_to_uuid'
+}
+4:00:13 AM [express] POST /api/quotations 201 in 940ms :: {"id":"85cb50a0-4a39-4e40-bf96-6a076a4b36c…
+DEBUG: Attempting to create quotation item with body: {
+  description: 'Test Item',
+  quantity: 10,
+  unitPrice: 12.5,
+  lineTotal: 125
+}
+DEBUG: Quotation ID from params: 85cb50a0-4a39-4e40-bf96-6a076a4b36c9
+DEBUG: Parsed item data: {
+  quotationId: '85cb50a0-4a39-4e40-bf96-6a076a4b36c9',
+  description: 'Test Item',
+  quantity: 10,
+  unitPrice: 12.5,
+  lineTotal: 125
+}
+DEBUG: Created item: {
+  id: '685d5b64-1dca-4f68-91aa-f647fd78ec41',
+  quotationId: '85cb50a0-4a39-4e40-bf96-6a076a4b36c9',
+  description: 'Test Item',
+  quantity: 10,
+  costPrice: null,
+  markup: null,
+  unitPrice: '12.5000',
+  lineTotal: '125.00',
+  isAccepted: true,
+  rejectionReason: null,
+  notes: null,
+  createdAt: 2025-09-14T04:00:14.642Z
+}
+4:00:14 AM [express] POST /api/quotations/85cb50a0-4a39-4e40-bf96-6a076a4b36c9/items 201 in 1648ms :…
+[ACCEPTANCE] Create request body: {
+  quotationId: '85cb50a0-4a39-4e40-bf96-6a076a4b36c9',
+  customerId: '3efbf56d-49d5-4991-9993-953211aac8fd',
+  acceptedBy: 'Jane Doe',
+  acceptanceDate: '2025-09-14',
+  acceptanceType: 'Full',
+  status: 'Active',
+  notes: 'Full acceptance'
+}
+[ACCEPTANCE] Created acceptance: {
+  id: 'd2323cfa-33d4-4ac8-ad05-a783dceea9bb',
+  quotationId: '85cb50a0-4a39-4e40-bf96-6a076a4b36c9',
+  acceptanceType: 'Full',
+  acceptedAt: 2025-09-14T04:00:14.966Z,
+  acceptedBy: 'Jane Doe',
+  customerEmail: null,
+  customerNotes: null,
+  totalAcceptedAmount: null,
+  status: 'Active',
+  internalNotes: null,
+  processedBy: null,
+  processedAt: null,
+  createdAt: 2025-09-14T04:00:14.966Z,
+  updatedAt: 2025-09-14T04:00:14.966Z
+}
+4:00:15 AM [express] POST /api/customer-acceptances 201 in 393ms :: {"id":"d2323cfa-33d4-4ac8-ad05-a…
+[ITEM-ACCEPTANCE:BULK] Raw body: [
+  {
+    quotationItemId: '685d5b64-1dca-4f68-91aa-f647fd78ec41',
+    customerAcceptanceId: 'd2323cfa-33d4-4ac8-ad05-a783dceea9bb',
+    isAccepted: true,
+    originalQuantity: 10,
+    acceptedQuantity: 10,
+    rejectedQuantity: 0,
+    status: 'Accepted'
+  }
+]
+[ITEM-ACCEPTANCE:BULK] Prepared payload: [
+  {
+    quotationItemId: '685d5b64-1dca-4f68-91aa-f647fd78ec41',
+    customerAcceptanceId: 'd2323cfa-33d4-4ac8-ad05-a783dceea9bb',
+    isAccepted: true,
+    originalQuantity: 10,
+    acceptedQuantity: 10,
+    rejectedQuantity: 0,
+    status: 'Accepted'
+  }
+]
+[ITEM-ACCEPTANCE:BULK] Created records count= 1
+4:00:15 AM [express] POST /api/customer-acceptances/d2323cfa-33d4-4ac8-ad05-a783dceea9bb/item-accept…
+[PO] Create payload raw: {
+  customerId: '3efbf56d-49d5-4991-9993-953211aac8fd',
+  quotationId: '85cb50a0-4a39-4e40-bf96-6a076a4b36c9',
+  poNumber: 'PO-E2E-001',
+  poDate: '2025-09-14',
+  uploadedBy: 'Jane Doe',
+  fileUrl: '/fake-po.pdf'
+}
+4:00:15 AM [express] POST /api/purchase-orders 400 in 2ms :: {"message":"Invalid purchase order data…
+4:00:17 AM [express] POST /api/sales-orders/from-quotation 201 in 1737ms :: {"id":"f6782b5a-d2ce-492…
+4:00:17 AM [express] GET /api/items 200 in 285ms :: [{"id":"c19058e1-fb1c-4cfc-b5be-00ff1f9f891d","s…
+4:00:17 AM [express] POST /api/sales-order-items 201 in 282ms :: {"id":"7e3a664c-c033-4a03-86ab-d50f…
+[SupplierLpoStorage.createSupplierLpo] Preparing insert {
+  lpoNumber: 'LPO-418520RBEC',
+  supplierId: '93b80e4e-ecf9-4a50-a25c-b819a498cf2f'
+}
+[SupplierLpoStorage.createSupplierLpo] Insert record {
+  lpoNumber: 'LPO-418520RBEC',
+  supplierId: '93b80e4e-ecf9-4a50-a25c-b819a498cf2f',
+  status: 'Draft',
+  sourceType: 'Auto',
+  groupingCriteria: 'supplier',
+  subtotal: '250.00',
+  taxAmount: undefined,
+  totalAmount: '250.00',
+  currency: 'USD',
+  requiresApproval: false,
+  approvalStatus: 'Not Required',
+  createdBy: '11111111-1111-1111-1111-111111111111',
+  createdAt: 2025-09-14T04:00:18.801Z,
+  updatedAt: 2025-09-14T04:00:18.801Z,
+  version: 1,
+  sourceSalesOrderIds: [ 'f6782b5a-d2ce-4922-8863-953dcbd2cdd3' ],
+  sourceQuotationIds: undefined
+}
+[SUPPLIER-LPO:BATCH] Error creating supplier LPOs from sales orders. Payload= {
+  salesOrderIds: [ 'f6782b5a-d2ce-4922-8863-953dcbd2cdd3' ],
+  groupBy: 'supplier',
+  userId: '11111111-1111-1111-1111-111111111111'
+}
+error: insert or update on table "supplier_lpos" violates foreign key constraint "supplier_lpos_created_by_users_id_fk"
+    at file:///workspaces/tradix/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async NeonPreparedQuery.execute (/workspaces/tradix/node_modules/src/neon-serverless/session.ts:102:18)
+    at async SupplierLpoStorage.createSupplierLpo (/workspaces/tradix/server/storage/supplier-lpo-storage.ts:52:22)
+    at async SupplierLpoStorage.createSupplierLposFromSalesOrders (/workspaces/tradix/server/storage/supplier-lpo-storage.ts:70:19)
+    at async <anonymous> (/workspaces/tradix/server/routes/supplier-lpo.ts:65:20) {
+  length: 332,
+  severity: 'ERROR',
+  code: '23503',
+  detail: 'Key (created_by)=(11111111-1111-1111-1111-111111111111) is not present in table "users".',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'supplier_lpos',
+  column: undefined,
+  dataType: undefined,
+  constraint: 'supplier_lpos_created_by_users_id_fk',
+  file: 'ri_triggers.c',
+  line: '2608',
+  routine: 'ri_ReportViolation'
+}
+4:00:19 AM [express] POST /api/supplier-lpos/from-sales-orders 500 in 1144ms :: {"message":"insert o…
+4:01:16 AM [express] POST /api/customers 201 in 3976ms :: {"id":"3ac5ac90-89fa-4fef-b7e5-70544de2fb0…
+4:01:16 AM [express] POST /api/suppliers 201 in 292ms :: {"id":"b93cad96-9832-44de-a436-a72de1f43115…
+Received enquiry data: {
+  customerId: '3ac5ac90-89fa-4fef-b7e5-70544de2fb0c',
+  source: 'Email',
+  notes: 'E2E test'
+}
+insertEnquirySchema shape: {
+  customerId: ZodString {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: { checks: [Array], typeName: 'ZodString', coerce: false },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  enquiryDate: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodNullable],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  status: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodNullable],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  source: ZodEnum {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: { values: [Array], typeName: 'ZodEnum' },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] },
+    _cache: Set(4) { 'Email', 'Phone', 'Web Form', 'Walk-in' }
+  },
+  targetDeliveryDate: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodString],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  notes: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodNullable],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  attachments: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodNullable],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  createdBy: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodString],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  }
+}
+Creating enquiry with data: {
+  customerId: '3ac5ac90-89fa-4fef-b7e5-70544de2fb0c',
+  source: 'Email',
+  notes: 'E2E test'
+}
+Generated enquiry number: ENQ-2024-039
+Processed data: {
+  customerId: '3ac5ac90-89fa-4fef-b7e5-70544de2fb0c',
+  source: 'Email',
+  notes: 'E2E test',
+  targetDeliveryDate: null,
+  enquiryNumber: 'ENQ-2024-039'
+}
+Created enquiry: {
+  id: '802b0271-2d87-46a4-aad9-8220ac7c007e',
+  enquiryNumber: 'ENQ-2024-039',
+  customerId: '3ac5ac90-89fa-4fef-b7e5-70544de2fb0c',
+  enquiryDate: 2025-09-14T04:01:17.357Z,
+  status: 'New',
+  source: 'Email',
+  targetDeliveryDate: null,
+  notes: 'E2E test',
+  attachments: null,
+  createdBy: null,
+  createdAt: 2025-09-14T04:01:17.357Z,
+  updatedAt: 2025-09-14T04:01:17.357Z
+}
+4:01:17 AM [express] POST /api/enquiries 201 in 874ms :: {"id":"802b0271-2d87-46a4-aad9-8220ac7c007e…
+Error logging audit event: error: invalid input syntax for type uuid: "system"
+    at file:///workspaces/tradix/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async QuotationStorage.logAuditEvent (/workspaces/tradix/server/storage/base.ts:28:7)
+    at async QuotationStorage.createQuotation (/workspaces/tradix/server/storage/quotation-storage.ts:137:5)
+    at async <anonymous> (/workspaces/tradix/server/routes/quotations.ts:47:25) {
+  length: 138,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $6 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'uuid.c',
+  line: '133',
+  routine: 'string_to_uuid'
+}
+4:01:18 AM [express] POST /api/quotations 201 in 872ms :: {"id":"a3f07d37-8d13-4ece-9806-08b07672e66…
+DEBUG: Attempting to create quotation item with body: {
+  description: 'Test Item',
+  quantity: 10,
+  unitPrice: 12.5,
+  lineTotal: 125
+}
+DEBUG: Quotation ID from params: a3f07d37-8d13-4ece-9806-08b07672e667
+DEBUG: Parsed item data: {
+  quotationId: 'a3f07d37-8d13-4ece-9806-08b07672e667',
+  description: 'Test Item',
+  quantity: 10,
+  unitPrice: 12.5,
+  lineTotal: 125
+}
+DEBUG: Created item: {
+  id: '775246d2-c90c-4502-8c96-92f7f89aba16',
+  quotationId: 'a3f07d37-8d13-4ece-9806-08b07672e667',
+  description: 'Test Item',
+  quantity: 10,
+  costPrice: null,
+  markup: null,
+  unitPrice: '12.5000',
+  lineTotal: '125.00',
+  isAccepted: true,
+  rejectionReason: null,
+  notes: null,
+  createdAt: 2025-09-14T04:01:19.932Z
+}
+4:01:20 AM [express] POST /api/quotations/a3f07d37-8d13-4ece-9806-08b07672e667/items 201 in 1682ms :…
+[ACCEPTANCE] Create request body: {
+  quotationId: 'a3f07d37-8d13-4ece-9806-08b07672e667',
+  customerId: '3ac5ac90-89fa-4fef-b7e5-70544de2fb0c',
+  acceptedBy: 'Jane Doe',
+  acceptanceDate: '2025-09-14',
+  acceptanceType: 'Full',
+  status: 'Active',
+  notes: 'Full acceptance'
+}
+[ACCEPTANCE] Created acceptance: {
+  id: 'd2a82e53-c37a-4348-9ac6-6fb48cb38505',
+  quotationId: 'a3f07d37-8d13-4ece-9806-08b07672e667',
+  acceptanceType: 'Full',
+  acceptedAt: 2025-09-14T04:01:20.248Z,
+  acceptedBy: 'Jane Doe',
+  customerEmail: null,
+  customerNotes: null,
+  totalAcceptedAmount: null,
+  status: 'Active',
+  internalNotes: null,
+  processedBy: null,
+  processedAt: null,
+  createdAt: 2025-09-14T04:01:20.248Z,
+  updatedAt: 2025-09-14T04:01:20.248Z
+}
+4:01:20 AM [express] POST /api/customer-acceptances 201 in 293ms :: {"id":"d2a82e53-c37a-4348-9ac6-6…
+[ITEM-ACCEPTANCE:BULK] Raw body: [
+  {
+    quotationItemId: '775246d2-c90c-4502-8c96-92f7f89aba16',
+    customerAcceptanceId: 'd2a82e53-c37a-4348-9ac6-6fb48cb38505',
+    isAccepted: true,
+    originalQuantity: 10,
+    acceptedQuantity: 10,
+    rejectedQuantity: 0,
+    status: 'Accepted'
+  }
+]
+[ITEM-ACCEPTANCE:BULK] Prepared payload: [
+  {
+    quotationItemId: '775246d2-c90c-4502-8c96-92f7f89aba16',
+    customerAcceptanceId: 'd2a82e53-c37a-4348-9ac6-6fb48cb38505',
+    isAccepted: true,
+    originalQuantity: 10,
+    acceptedQuantity: 10,
+    rejectedQuantity: 0,
+    status: 'Accepted'
+  }
+]
+[ITEM-ACCEPTANCE:BULK] Created records count= 1
+4:01:20 AM [express] POST /api/customer-acceptances/d2a82e53-c37a-4348-9ac6-6fb48cb38505/item-accept…
+[PO] Create payload raw: {
+  customerId: '3ac5ac90-89fa-4fef-b7e5-70544de2fb0c',
+  quotationId: 'a3f07d37-8d13-4ece-9806-08b07672e667',
+  poNumber: 'PO-E2E-001',
+  poDate: '2025-09-14',
+  uploadedBy: 'Jane Doe',
+  fileUrl: '/fake-po.pdf'
+}
+4:01:20 AM [express] POST /api/purchase-orders 400 in 0ms :: {"message":"Invalid purchase order data…
+4:01:22 AM [express] POST /api/sales-orders/from-quotation 201 in 1743ms :: {"id":"e2054539-94cc-4d2…
+4:01:22 AM [express] GET /api/items 200 in 292ms :: [{"id":"c19058e1-fb1c-4cfc-b5be-00ff1f9f891d","s…
+4:01:23 AM [express] POST /api/sales-order-items 201 in 289ms :: {"id":"63cdd345-de36-4e3c-ab7b-235b…
+[SupplierLpoStorage.createSupplierLpo] Preparing insert {
+  lpoNumber: 'LPO-483738H84Y',
+  supplierId: '93b80e4e-ecf9-4a50-a25c-b819a498cf2f'
+}
+[SupplierLpoStorage.createSupplierLpo] Insert record {
+  lpoNumber: 'LPO-483738H84Y',
+  supplierId: '93b80e4e-ecf9-4a50-a25c-b819a498cf2f',
+  status: 'Draft',
+  sourceType: 'Auto',
+  groupingCriteria: 'supplier',
+  subtotal: '250.00',
+  taxAmount: undefined,
+  totalAmount: '250.00',
+  currency: 'USD',
+  requiresApproval: false,
+  approvalStatus: 'Not Required',
+  createdBy: null,
+  createdAt: 2025-09-14T04:01:24.028Z,
+  updatedAt: 2025-09-14T04:01:24.028Z,
+  version: 1,
+  sourceSalesOrderIds: [ 'e2054539-94cc-4d29-8f24-7d2a062c5a67' ],
+  sourceQuotationIds: undefined
+}
+[SupplierLpoStorage.createSupplierLpo] Insert result [
+  {
+    id: 'b47ac697-9ec4-4b49-9087-10747caa2444',
+    lpoNumber: 'LPO-483738H84Y',
+    supplierId: '93b80e4e-ecf9-4a50-a25c-b819a498cf2f',
+    status: 'Draft',
+    lpoDate: 2025-09-14T04:01:24.111Z,
+    expectedDeliveryDate: null,
+    requestedDeliveryDate: null,
+    sourceType: 'Auto',
+    sourceSalesOrderIds: [ 'e2054539-94cc-4d29-8f24-7d2a062c5a67' ],
+    sourceQuotationIds: null,
+    groupingCriteria: 'supplier',
+    subtotal: '250.00',
+    taxAmount: null,
+    totalAmount: '250.00',
+    currency: 'USD',
+    supplierContactPerson: null,
+    supplierEmail: null,
+    supplierPhone: null,
+    paymentTerms: null,
+    deliveryTerms: null,
+    termsAndConditions: null,
+    specialInstructions: null,
+    version: 1,
+    parentLpoId: null,
+    amendmentReason: null,
+    amendmentType: null,
+    requiresApproval: false,
+    approvalStatus: 'Not Required',
+    approvedBy: null,
+    approvedAt: null,
+    approvalNotes: null,
+    sentToSupplierAt: null,
+    confirmedBySupplierAt: null,
+    supplierConfirmationReference: null,
+    createdBy: null,
+    createdAt: 2025-09-14T04:01:24.028Z,
+    updatedAt: 2025-09-14T04:01:24.028Z
+  }
+]
+4:01:24 AM [express] POST /api/supplier-lpos/from-sales-orders 201 in 1745ms :: [{"id":"b47ac697-9ec…
+4:01:24 AM [express] POST /api/goods-receipts 400 in 2ms :: {"message":"Invalid goods receipt data",…
+4:02:18 AM [express] POST /api/customers 201 in 1965ms :: {"id":"ea30405d-32b8-412e-8805-944b77cbd2a…
+4:02:18 AM [express] POST /api/suppliers 201 in 292ms :: {"id":"bb7a3045-c5ca-4bbe-a67d-5e558451052a…
+Received enquiry data: {
+  customerId: 'ea30405d-32b8-412e-8805-944b77cbd2a8',
+  source: 'Email',
+  notes: 'E2E test'
+}
+insertEnquirySchema shape: {
+  customerId: ZodString {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: { checks: [Array], typeName: 'ZodString', coerce: false },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  enquiryDate: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodNullable],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  status: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodNullable],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  source: ZodEnum {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: { values: [Array], typeName: 'ZodEnum' },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] },
+    _cache: Set(4) { 'Email', 'Phone', 'Web Form', 'Walk-in' }
+  },
+  targetDeliveryDate: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodString],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  notes: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodNullable],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  attachments: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodNullable],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  createdBy: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodString],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  }
+}
+Creating enquiry with data: {
+  customerId: 'ea30405d-32b8-412e-8805-944b77cbd2a8',
+  source: 'Email',
+  notes: 'E2E test'
+}
+Generated enquiry number: ENQ-2024-040
+Processed data: {
+  customerId: 'ea30405d-32b8-412e-8805-944b77cbd2a8',
+  source: 'Email',
+  notes: 'E2E test',
+  targetDeliveryDate: null,
+  enquiryNumber: 'ENQ-2024-040'
+}
+Created enquiry: {
+  id: 'bc013652-12ad-47d6-b7aa-6449ea87fd80',
+  enquiryNumber: 'ENQ-2024-040',
+  customerId: 'ea30405d-32b8-412e-8805-944b77cbd2a8',
+  enquiryDate: 2025-09-14T04:02:19.632Z,
+  status: 'New',
+  source: 'Email',
+  targetDeliveryDate: null,
+  notes: 'E2E test',
+  attachments: null,
+  createdBy: null,
+  createdAt: 2025-09-14T04:02:19.632Z,
+  updatedAt: 2025-09-14T04:02:19.632Z
+}
+4:02:19 AM [express] POST /api/enquiries 201 in 872ms :: {"id":"bc013652-12ad-47d6-b7aa-6449ea87fd80…
+Error logging audit event: error: invalid input syntax for type uuid: "system"
+    at file:///workspaces/tradix/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async QuotationStorage.logAuditEvent (/workspaces/tradix/server/storage/base.ts:28:7)
+    at async QuotationStorage.createQuotation (/workspaces/tradix/server/storage/quotation-storage.ts:137:5)
+    at async <anonymous> (/workspaces/tradix/server/routes/quotations.ts:47:25) {
+  length: 138,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $6 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'uuid.c',
+  line: '133',
+  routine: 'string_to_uuid'
+}
+4:02:20 AM [express] POST /api/quotations 201 in 869ms :: {"id":"2e2cc944-1159-43f9-83cd-959f8fb7a07…
+DEBUG: Attempting to create quotation item with body: {
+  description: 'Test Item',
+  quantity: 10,
+  unitPrice: 12.5,
+  lineTotal: 125
+}
+DEBUG: Quotation ID from params: 2e2cc944-1159-43f9-83cd-959f8fb7a070
+DEBUG: Parsed item data: {
+  quotationId: '2e2cc944-1159-43f9-83cd-959f8fb7a070',
+  description: 'Test Item',
+  quantity: 10,
+  unitPrice: 12.5,
+  lineTotal: 125
+}
+DEBUG: Created item: {
+  id: '94cf05e5-a643-4b65-8962-de4b02960cc8',
+  quotationId: '2e2cc944-1159-43f9-83cd-959f8fb7a070',
+  description: 'Test Item',
+  quantity: 10,
+  costPrice: null,
+  markup: null,
+  unitPrice: '12.5000',
+  lineTotal: '125.00',
+  isAccepted: true,
+  rejectionReason: null,
+  notes: null,
+  createdAt: 2025-09-14T04:02:22.184Z
+}
+4:02:22 AM [express] POST /api/quotations/2e2cc944-1159-43f9-83cd-959f8fb7a070/items 201 in 1658ms :…
+[ACCEPTANCE] Create request body: {
+  quotationId: '2e2cc944-1159-43f9-83cd-959f8fb7a070',
+  customerId: 'ea30405d-32b8-412e-8805-944b77cbd2a8',
+  acceptedBy: 'Jane Doe',
+  acceptanceDate: '2025-09-14',
+  acceptanceType: 'Full',
+  status: 'Active',
+  notes: 'Full acceptance'
+}
+[ACCEPTANCE] Created acceptance: {
+  id: 'b90a95ab-05e9-4bf0-ba64-460c2d4f9d00',
+  quotationId: '2e2cc944-1159-43f9-83cd-959f8fb7a070',
+  acceptanceType: 'Full',
+  acceptedAt: 2025-09-14T04:02:22.493Z,
+  acceptedBy: 'Jane Doe',
+  customerEmail: null,
+  customerNotes: null,
+  totalAcceptedAmount: null,
+  status: 'Active',
+  internalNotes: null,
+  processedBy: null,
+  processedAt: null,
+  createdAt: 2025-09-14T04:02:22.493Z,
+  updatedAt: 2025-09-14T04:02:22.493Z
+}
+4:02:22 AM [express] POST /api/customer-acceptances 201 in 286ms :: {"id":"b90a95ab-05e9-4bf0-ba64-4…
+[ITEM-ACCEPTANCE:BULK] Raw body: [
+  {
+    quotationItemId: '94cf05e5-a643-4b65-8962-de4b02960cc8',
+    customerAcceptanceId: 'b90a95ab-05e9-4bf0-ba64-460c2d4f9d00',
+    isAccepted: true,
+    originalQuantity: 10,
+    acceptedQuantity: 10,
+    rejectedQuantity: 0,
+    status: 'Accepted'
+  }
+]
+[ITEM-ACCEPTANCE:BULK] Prepared payload: [
+  {
+    quotationItemId: '94cf05e5-a643-4b65-8962-de4b02960cc8',
+    customerAcceptanceId: 'b90a95ab-05e9-4bf0-ba64-460c2d4f9d00',
+    isAccepted: true,
+    originalQuantity: 10,
+    acceptedQuantity: 10,
+    rejectedQuantity: 0,
+    status: 'Accepted'
+  }
+]
+[ITEM-ACCEPTANCE:BULK] Created records count= 1
+4:02:23 AM [express] POST /api/customer-acceptances/b90a95ab-05e9-4bf0-ba64-460c2d4f9d00/item-accept…
+[PO] Create payload raw: {
+  customerId: 'ea30405d-32b8-412e-8805-944b77cbd2a8',
+  quotationId: '2e2cc944-1159-43f9-83cd-959f8fb7a070',
+  poNumber: 'PO-E2E-001',
+  poDate: '2025-09-14',
+  uploadedBy: 'Jane Doe',
+  fileUrl: '/fake-po.pdf'
+}
+4:02:23 AM [express] POST /api/purchase-orders 400 in 1ms :: {"message":"Invalid purchase order data…
+4:02:24 AM [express] POST /api/sales-orders/from-quotation 201 in 1709ms :: {"id":"6671d19f-c1fa-4db…
+4:02:25 AM [express] GET /api/items 200 in 285ms :: [{"id":"c19058e1-fb1c-4cfc-b5be-00ff1f9f891d","s…
+4:02:25 AM [express] POST /api/sales-order-items 201 in 285ms :: {"id":"e0752d60-e1b7-4a3b-bba4-b217…
+[SupplierLpoStorage.createSupplierLpo] Preparing insert {
+  lpoNumber: 'LPO-545924ZS1K',
+  supplierId: '93b80e4e-ecf9-4a50-a25c-b819a498cf2f'
+}
+[SupplierLpoStorage.createSupplierLpo] Insert record {
+  lpoNumber: 'LPO-545924ZS1K',
+  supplierId: '93b80e4e-ecf9-4a50-a25c-b819a498cf2f',
+  status: 'Draft',
+  sourceType: 'Auto',
+  groupingCriteria: 'supplier',
+  subtotal: '250.00',
+  taxAmount: undefined,
+  totalAmount: '250.00',
+  currency: 'USD',
+  requiresApproval: false,
+  approvalStatus: 'Not Required',
+  createdBy: null,
+  createdAt: 2025-09-14T04:02:26.209Z,
+  updatedAt: 2025-09-14T04:02:26.209Z,
+  version: 1,
+  sourceSalesOrderIds: [ '6671d19f-c1fa-4db2-aad3-4df433cf49ba' ],
+  sourceQuotationIds: undefined
+}
+[SupplierLpoStorage.createSupplierLpo] Insert result [
+  {
+    id: '053a047a-e4fd-4aaa-adcf-8c5a5f642047',
+    lpoNumber: 'LPO-545924ZS1K',
+    supplierId: '93b80e4e-ecf9-4a50-a25c-b819a498cf2f',
+    status: 'Draft',
+    lpoDate: 2025-09-14T04:02:26.285Z,
+    expectedDeliveryDate: null,
+    requestedDeliveryDate: null,
+    sourceType: 'Auto',
+    sourceSalesOrderIds: [ '6671d19f-c1fa-4db2-aad3-4df433cf49ba' ],
+    sourceQuotationIds: null,
+    groupingCriteria: 'supplier',
+    subtotal: '250.00',
+    taxAmount: null,
+    totalAmount: '250.00',
+    currency: 'USD',
+    supplierContactPerson: null,
+    supplierEmail: null,
+    supplierPhone: null,
+    paymentTerms: null,
+    deliveryTerms: null,
+    termsAndConditions: null,
+    specialInstructions: null,
+    version: 1,
+    parentLpoId: null,
+    amendmentReason: null,
+    amendmentType: null,
+    requiresApproval: false,
+    approvalStatus: 'Not Required',
+    approvedBy: null,
+    approvedAt: null,
+    approvalNotes: null,
+    sentToSupplierAt: null,
+    confirmedBySupplierAt: null,
+    supplierConfirmationReference: null,
+    createdBy: null,
+    createdAt: 2025-09-14T04:02:26.209Z,
+    updatedAt: 2025-09-14T04:02:26.209Z
+  }
+]
+4:02:27 AM [express] POST /api/supplier-lpos/from-sales-orders 201 in 1710ms :: [{"id":"053a047a-e4f…
+Error creating goods receipt header: TypeError: Cannot read properties of undefined (reading 'receiptNumber')
+    at <anonymous> (/workspaces/tradix/node_modules/src/pg-core/query-builders/insert.ts:94:73)
+    at Array.map (<anonymous>)
+    at PgInsertBuilder.values (/workspaces/tradix/node_modules/src/pg-core/query-builders/insert.ts:89:31)
+    at GoodsReceiptStorage.createGoodsReceiptHeader (/workspaces/tradix/server/storage/goods-receipt-storage.ts:10:61)
+    at Proxy.createGoodsReceiptHeader (/workspaces/tradix/server/storage/modular-storage-clean.ts:446:37)
+    at <anonymous> (/workspaces/tradix/server/routes/goods-receipt.ts:80:36)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+    at next (/workspaces/tradix/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/workspaces/tradix/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+4:02:27 AM [express] POST /api/goods-receipt-headers 500 in 4ms :: {"message":"Failed to create good…
+4:03:11 AM [express] POST /api/customers 201 in 1898ms :: {"id":"90ff7e8c-a21d-4394-916b-8b38f7abad9…
+4:03:12 AM [express] POST /api/suppliers 201 in 278ms :: {"id":"70eee8da-1f7e-46e0-a78e-43cebe417a12…
+Received enquiry data: {
+  customerId: '90ff7e8c-a21d-4394-916b-8b38f7abad9a',
+  source: 'Email',
+  notes: 'E2E test'
+}
+insertEnquirySchema shape: {
+  customerId: ZodString {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: { checks: [Array], typeName: 'ZodString', coerce: false },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  enquiryDate: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodNullable],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  status: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodNullable],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  source: ZodEnum {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: { values: [Array], typeName: 'ZodEnum' },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] },
+    _cache: Set(4) { 'Email', 'Phone', 'Web Form', 'Walk-in' }
+  },
+  targetDeliveryDate: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodString],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  notes: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodNullable],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  attachments: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodNullable],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  createdBy: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodString],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  }
+}
+Creating enquiry with data: {
+  customerId: '90ff7e8c-a21d-4394-916b-8b38f7abad9a',
+  source: 'Email',
+  notes: 'E2E test'
+}
+Generated enquiry number: ENQ-2024-041
+Processed data: {
+  customerId: '90ff7e8c-a21d-4394-916b-8b38f7abad9a',
+  source: 'Email',
+  notes: 'E2E test',
+  targetDeliveryDate: null,
+  enquiryNumber: 'ENQ-2024-041'
+}
+Created enquiry: {
+  id: '1bfd09cd-f0b7-46b4-b762-051183b51ce5',
+  enquiryNumber: 'ENQ-2024-041',
+  customerId: '90ff7e8c-a21d-4394-916b-8b38f7abad9a',
+  enquiryDate: 2025-09-14T04:03:12.641Z,
+  status: 'New',
+  source: 'Email',
+  targetDeliveryDate: null,
+  notes: 'E2E test',
+  attachments: null,
+  createdBy: null,
+  createdAt: 2025-09-14T04:03:12.641Z,
+  updatedAt: 2025-09-14T04:03:12.641Z
+}
+4:03:12 AM [express] POST /api/enquiries 201 in 832ms :: {"id":"1bfd09cd-f0b7-46b4-b762-051183b51ce5…
+Error logging audit event: error: invalid input syntax for type uuid: "system"
+    at file:///workspaces/tradix/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async QuotationStorage.logAuditEvent (/workspaces/tradix/server/storage/base.ts:28:7)
+    at async QuotationStorage.createQuotation (/workspaces/tradix/server/storage/quotation-storage.ts:137:5)
+    at async <anonymous> (/workspaces/tradix/server/routes/quotations.ts:47:25) {
+  length: 138,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $6 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'uuid.c',
+  line: '133',
+  routine: 'string_to_uuid'
+}
+4:03:13 AM [express] POST /api/quotations 201 in 830ms :: {"id":"9744a8bf-f423-45b0-9b85-52e28d97885…
+DEBUG: Attempting to create quotation item with body: {
+  description: 'Test Item',
+  quantity: 10,
+  unitPrice: 12.5,
+  lineTotal: 125
+}
+DEBUG: Quotation ID from params: 9744a8bf-f423-45b0-9b85-52e28d97885c
+DEBUG: Parsed item data: {
+  quotationId: '9744a8bf-f423-45b0-9b85-52e28d97885c',
+  description: 'Test Item',
+  quantity: 10,
+  unitPrice: 12.5,
+  lineTotal: 125
+}
+DEBUG: Created item: {
+  id: '04b5ce4f-d082-4391-9894-d9ffbd92d5db',
+  quotationId: '9744a8bf-f423-45b0-9b85-52e28d97885c',
+  description: 'Test Item',
+  quantity: 10,
+  costPrice: null,
+  markup: null,
+  unitPrice: '12.5000',
+  lineTotal: '125.00',
+  isAccepted: true,
+  rejectionReason: null,
+  notes: null,
+  createdAt: 2025-09-14T04:03:15.168Z
+}
+4:03:15 AM [express] POST /api/quotations/9744a8bf-f423-45b0-9b85-52e28d97885c/items 201 in 1669ms :…
+[ACCEPTANCE] Create request body: {
+  quotationId: '9744a8bf-f423-45b0-9b85-52e28d97885c',
+  customerId: '90ff7e8c-a21d-4394-916b-8b38f7abad9a',
+  acceptedBy: 'Jane Doe',
+  acceptanceDate: '2025-09-14',
+  acceptanceType: 'Full',
+  status: 'Active',
+  notes: 'Full acceptance'
+}
+[ACCEPTANCE] Created acceptance: {
+  id: 'cbaf58f5-f249-4279-81e2-15595fab4e05',
+  quotationId: '9744a8bf-f423-45b0-9b85-52e28d97885c',
+  acceptanceType: 'Full',
+  acceptedAt: 2025-09-14T04:03:15.476Z,
+  acceptedBy: 'Jane Doe',
+  customerEmail: null,
+  customerNotes: null,
+  totalAcceptedAmount: null,
+  status: 'Active',
+  internalNotes: null,
+  processedBy: null,
+  processedAt: null,
+  createdAt: 2025-09-14T04:03:15.476Z,
+  updatedAt: 2025-09-14T04:03:15.476Z
+}
+4:03:15 AM [express] POST /api/customer-acceptances 201 in 287ms :: {"id":"cbaf58f5-f249-4279-81e2-1…
+[ITEM-ACCEPTANCE:BULK] Raw body: [
+  {
+    quotationItemId: '04b5ce4f-d082-4391-9894-d9ffbd92d5db',
+    customerAcceptanceId: 'cbaf58f5-f249-4279-81e2-15595fab4e05',
+    isAccepted: true,
+    originalQuantity: 10,
+    acceptedQuantity: 10,
+    rejectedQuantity: 0,
+    status: 'Accepted'
+  }
+]
+[ITEM-ACCEPTANCE:BULK] Prepared payload: [
+  {
+    quotationItemId: '04b5ce4f-d082-4391-9894-d9ffbd92d5db',
+    customerAcceptanceId: 'cbaf58f5-f249-4279-81e2-15595fab4e05',
+    isAccepted: true,
+    originalQuantity: 10,
+    acceptedQuantity: 10,
+    rejectedQuantity: 0,
+    status: 'Accepted'
+  }
+]
+[ITEM-ACCEPTANCE:BULK] Created records count= 1
+4:03:15 AM [express] POST /api/customer-acceptances/cbaf58f5-f249-4279-81e2-15595fab4e05/item-accept…
+[PO] Create payload raw: {
+  customerId: '90ff7e8c-a21d-4394-916b-8b38f7abad9a',
+  quotationId: '9744a8bf-f423-45b0-9b85-52e28d97885c',
+  poNumber: 'PO-E2E-001',
+  poDate: '2025-09-14',
+  uploadedBy: 'Jane Doe',
+  fileUrl: '/fake-po.pdf'
+}
+4:03:16 AM [express] POST /api/purchase-orders 400 in 1ms :: {"message":"Invalid purchase order data…
+4:03:17 AM [express] POST /api/sales-orders/from-quotation 201 in 1709ms :: {"id":"a11e9b77-8f15-45f…
+4:03:18 AM [express] GET /api/items 200 in 284ms :: [{"id":"c19058e1-fb1c-4cfc-b5be-00ff1f9f891d","s…
+4:03:18 AM [express] POST /api/sales-order-items 201 in 285ms :: {"id":"72712c6f-6cf1-462f-b9b1-fa45…
+[SupplierLpoStorage.createSupplierLpo] Preparing insert {
+  lpoNumber: 'LPO-598906F6D8',
+  supplierId: '93b80e4e-ecf9-4a50-a25c-b819a498cf2f'
+}
+[SupplierLpoStorage.createSupplierLpo] Insert record {
+  lpoNumber: 'LPO-598906F6D8',
+  supplierId: '93b80e4e-ecf9-4a50-a25c-b819a498cf2f',
+  status: 'Draft',
+  sourceType: 'Auto',
+  groupingCriteria: 'supplier',
+  subtotal: '250.00',
+  taxAmount: undefined,
+  totalAmount: '250.00',
+  currency: 'USD',
+  requiresApproval: false,
+  approvalStatus: 'Not Required',
+  createdBy: null,
+  createdAt: 2025-09-14T04:03:19.190Z,
+  updatedAt: 2025-09-14T04:03:19.190Z,
+  version: 1,
+  sourceSalesOrderIds: [ 'a11e9b77-8f15-45f0-b35e-627286c910a2' ],
+  sourceQuotationIds: undefined
+}
+[SupplierLpoStorage.createSupplierLpo] Insert result [
+  {
+    id: '23c6f0e1-d774-4d6b-af2b-cdcf49a80908',
+    lpoNumber: 'LPO-598906F6D8',
+    supplierId: '93b80e4e-ecf9-4a50-a25c-b819a498cf2f',
+    status: 'Draft',
+    lpoDate: 2025-09-14T04:03:19.266Z,
+    expectedDeliveryDate: null,
+    requestedDeliveryDate: null,
+    sourceType: 'Auto',
+    sourceSalesOrderIds: [ 'a11e9b77-8f15-45f0-b35e-627286c910a2' ],
+    sourceQuotationIds: null,
+    groupingCriteria: 'supplier',
+    subtotal: '250.00',
+    taxAmount: null,
+    totalAmount: '250.00',
+    currency: 'USD',
+    supplierContactPerson: null,
+    supplierEmail: null,
+    supplierPhone: null,
+    paymentTerms: null,
+    deliveryTerms: null,
+    termsAndConditions: null,
+    specialInstructions: null,
+    version: 1,
+    parentLpoId: null,
+    amendmentReason: null,
+    amendmentType: null,
+    requiresApproval: false,
+    approvalStatus: 'Not Required',
+    approvedBy: null,
+    approvedAt: null,
+    approvalNotes: null,
+    sentToSupplierAt: null,
+    confirmedBySupplierAt: null,
+    supplierConfirmationReference: null,
+    createdBy: null,
+    createdAt: 2025-09-14T04:03:19.190Z,
+    updatedAt: 2025-09-14T04:03:19.190Z
+  }
+]
+4:03:20 AM [express] POST /api/supplier-lpos/from-sales-orders 201 in 1711ms :: [{"id":"23c6f0e1-d77…
+Error creating goods receipt header: TypeError: Cannot read properties of undefined (reading 'receiptNumber')
+    at <anonymous> (/workspaces/tradix/node_modules/src/pg-core/query-builders/insert.ts:94:73)
+    at Array.map (<anonymous>)
+    at PgInsertBuilder.values (/workspaces/tradix/node_modules/src/pg-core/query-builders/insert.ts:89:31)
+    at GoodsReceiptStorage.createGoodsReceiptHeader (/workspaces/tradix/server/storage/goods-receipt-storage.ts:10:61)
+    at Proxy.createGoodsReceiptHeader (/workspaces/tradix/server/storage/modular-storage-clean.ts:446:37)
+    at <anonymous> (/workspaces/tradix/server/routes/goods-receipt.ts:80:36)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+    at next (/workspaces/tradix/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/workspaces/tradix/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+4:03:20 AM [express] POST /api/goods-receipt-headers 500 in 1ms :: {"message":"Failed to create good…
+4:03:48 AM [express] POST /api/customers 201 in 1903ms :: {"id":"de6856f9-f9ba-4986-a4b8-bd28f918397…
+4:03:49 AM [express] POST /api/suppliers 201 in 278ms :: {"id":"6cdee2a0-3699-4a9e-8d9b-9d831b65e033…
+Received enquiry data: {
+  customerId: 'de6856f9-f9ba-4986-a4b8-bd28f918397f',
+  source: 'Email',
+  notes: 'E2E test'
+}
+insertEnquirySchema shape: {
+  customerId: ZodString {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: { checks: [Array], typeName: 'ZodString', coerce: false },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  enquiryDate: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodNullable],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  status: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodNullable],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  source: ZodEnum {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: { values: [Array], typeName: 'ZodEnum' },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] },
+    _cache: Set(4) { 'Email', 'Phone', 'Web Form', 'Walk-in' }
+  },
+  targetDeliveryDate: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodString],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  notes: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodNullable],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  attachments: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodNullable],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  createdBy: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodString],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  }
+}
+Creating enquiry with data: {
+  customerId: 'de6856f9-f9ba-4986-a4b8-bd28f918397f',
+  source: 'Email',
+  notes: 'E2E test'
+}
+Generated enquiry number: ENQ-2024-042
+Processed data: {
+  customerId: 'de6856f9-f9ba-4986-a4b8-bd28f918397f',
+  source: 'Email',
+  notes: 'E2E test',
+  targetDeliveryDate: null,
+  enquiryNumber: 'ENQ-2024-042'
+}
+Created enquiry: {
+  id: '8f9e7806-0e79-438a-b975-dc47ecf26622',
+  enquiryNumber: 'ENQ-2024-042',
+  customerId: 'de6856f9-f9ba-4986-a4b8-bd28f918397f',
+  enquiryDate: 2025-09-14T04:03:49.698Z,
+  status: 'New',
+  source: 'Email',
+  targetDeliveryDate: null,
+  notes: 'E2E test',
+  attachments: null,
+  createdBy: null,
+  createdAt: 2025-09-14T04:03:49.698Z,
+  updatedAt: 2025-09-14T04:03:49.698Z
+}
+4:03:49 AM [express] POST /api/enquiries 201 in 833ms :: {"id":"8f9e7806-0e79-438a-b975-dc47ecf26622…
+Error logging audit event: error: invalid input syntax for type uuid: "system"
+    at file:///workspaces/tradix/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async QuotationStorage.logAuditEvent (/workspaces/tradix/server/storage/base.ts:28:7)
+    at async QuotationStorage.createQuotation (/workspaces/tradix/server/storage/quotation-storage.ts:137:5)
+    at async <anonymous> (/workspaces/tradix/server/routes/quotations.ts:47:25) {
+  length: 138,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $6 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'uuid.c',
+  line: '133',
+  routine: 'string_to_uuid'
+}
+4:03:50 AM [express] POST /api/quotations 201 in 830ms :: {"id":"0a3b8a8d-4c54-43cd-824b-e2ab16dbf19…
+DEBUG: Attempting to create quotation item with body: {
+  description: 'Test Item',
+  quantity: 10,
+  unitPrice: 12.5,
+  lineTotal: 125
+}
+DEBUG: Quotation ID from params: 0a3b8a8d-4c54-43cd-824b-e2ab16dbf19b
+DEBUG: Parsed item data: {
+  quotationId: '0a3b8a8d-4c54-43cd-824b-e2ab16dbf19b',
+  description: 'Test Item',
+  quantity: 10,
+  unitPrice: 12.5,
+  lineTotal: 125
+}
+DEBUG: Created item: {
+  id: 'fa06aace-5644-4f15-beac-3991e3d7b425',
+  quotationId: '0a3b8a8d-4c54-43cd-824b-e2ab16dbf19b',
+  description: 'Test Item',
+  quantity: 10,
+  costPrice: null,
+  markup: null,
+  unitPrice: '12.5000',
+  lineTotal: '125.00',
+  isAccepted: true,
+  rejectionReason: null,
+  notes: null,
+  createdAt: 2025-09-14T04:03:52.153Z
+}
+4:03:52 AM [express] POST /api/quotations/0a3b8a8d-4c54-43cd-824b-e2ab16dbf19b/items 201 in 1604ms :…
+[ACCEPTANCE] Create request body: {
+  quotationId: '0a3b8a8d-4c54-43cd-824b-e2ab16dbf19b',
+  customerId: 'de6856f9-f9ba-4986-a4b8-bd28f918397f',
+  acceptedBy: 'Jane Doe',
+  acceptanceDate: '2025-09-14',
+  acceptanceType: 'Full',
+  status: 'Active',
+  notes: 'Full acceptance'
+}
+[ACCEPTANCE] Created acceptance: {
+  id: 'e3f0f23b-9125-4238-96be-4d6159d112b6',
+  quotationId: '0a3b8a8d-4c54-43cd-824b-e2ab16dbf19b',
+  acceptanceType: 'Full',
+  acceptedAt: 2025-09-14T04:03:52.451Z,
+  acceptedBy: 'Jane Doe',
+  customerEmail: null,
+  customerNotes: null,
+  totalAcceptedAmount: null,
+  status: 'Active',
+  internalNotes: null,
+  processedBy: null,
+  processedAt: null,
+  createdAt: 2025-09-14T04:03:52.451Z,
+  updatedAt: 2025-09-14T04:03:52.451Z
+}
+4:03:52 AM [express] POST /api/customer-acceptances 201 in 275ms :: {"id":"e3f0f23b-9125-4238-96be-4…
+[ITEM-ACCEPTANCE:BULK] Raw body: [
+  {
+    quotationItemId: 'fa06aace-5644-4f15-beac-3991e3d7b425',
+    customerAcceptanceId: 'e3f0f23b-9125-4238-96be-4d6159d112b6',
+    isAccepted: true,
+    originalQuantity: 10,
+    acceptedQuantity: 10,
+    rejectedQuantity: 0,
+    status: 'Accepted'
+  }
+]
+[ITEM-ACCEPTANCE:BULK] Prepared payload: [
+  {
+    quotationItemId: 'fa06aace-5644-4f15-beac-3991e3d7b425',
+    customerAcceptanceId: 'e3f0f23b-9125-4238-96be-4d6159d112b6',
+    isAccepted: true,
+    originalQuantity: 10,
+    acceptedQuantity: 10,
+    rejectedQuantity: 0,
+    status: 'Accepted'
+  }
+]
+[ITEM-ACCEPTANCE:BULK] Created records count= 1
+4:03:52 AM [express] POST /api/customer-acceptances/e3f0f23b-9125-4238-96be-4d6159d112b6/item-accept…
+[PO] Create payload raw: {
+  customerId: 'de6856f9-f9ba-4986-a4b8-bd28f918397f',
+  quotationId: '0a3b8a8d-4c54-43cd-824b-e2ab16dbf19b',
+  poNumber: 'PO-E2E-001',
+  poDate: '2025-09-14',
+  uploadedBy: 'Jane Doe',
+  fileUrl: '/fake-po.pdf'
+}
+4:03:52 AM [express] POST /api/purchase-orders 400 in 1ms :: {"message":"Invalid purchase order data…
+4:03:54 AM [express] POST /api/sales-orders/from-quotation 201 in 1635ms :: {"id":"04bdb78c-21fb-478…
+4:03:54 AM [express] GET /api/items 200 in 272ms :: [{"id":"c19058e1-fb1c-4cfc-b5be-00ff1f9f891d","s…
+4:03:55 AM [express] POST /api/sales-order-items 201 in 273ms :: {"id":"020761fb-9a72-4f7c-b57f-0eb9…
+[SupplierLpoStorage.createSupplierLpo] Preparing insert {
+  lpoNumber: 'LPO-635747Z25W',
+  supplierId: '93b80e4e-ecf9-4a50-a25c-b819a498cf2f'
+}
+[SupplierLpoStorage.createSupplierLpo] Insert record {
+  lpoNumber: 'LPO-635747Z25W',
+  supplierId: '93b80e4e-ecf9-4a50-a25c-b819a498cf2f',
+  status: 'Draft',
+  sourceType: 'Auto',
+  groupingCriteria: 'supplier',
+  subtotal: '250.00',
+  taxAmount: undefined,
+  totalAmount: '250.00',
+  currency: 'USD',
+  requiresApproval: false,
+  approvalStatus: 'Not Required',
+  createdBy: null,
+  createdAt: 2025-09-14T04:03:56.019Z,
+  updatedAt: 2025-09-14T04:03:56.019Z,
+  version: 1,
+  sourceSalesOrderIds: [ '04bdb78c-21fb-4788-b77d-9a178f7ab87c' ],
+  sourceQuotationIds: undefined
+}
+[SupplierLpoStorage.createSupplierLpo] Insert result [
+  {
+    id: '92417e10-dc2d-4ac8-8201-e17aee5aa842',
+    lpoNumber: 'LPO-635747Z25W',
+    supplierId: '93b80e4e-ecf9-4a50-a25c-b819a498cf2f',
+    status: 'Draft',
+    lpoDate: 2025-09-14T04:03:56.080Z,
+    expectedDeliveryDate: null,
+    requestedDeliveryDate: null,
+    sourceType: 'Auto',
+    sourceSalesOrderIds: [ '04bdb78c-21fb-4788-b77d-9a178f7ab87c' ],
+    sourceQuotationIds: null,
+    groupingCriteria: 'supplier',
+    subtotal: '250.00',
+    taxAmount: null,
+    totalAmount: '250.00',
+    currency: 'USD',
+    supplierContactPerson: null,
+    supplierEmail: null,
+    supplierPhone: null,
+    paymentTerms: null,
+    deliveryTerms: null,
+    termsAndConditions: null,
+    specialInstructions: null,
+    version: 1,
+    parentLpoId: null,
+    amendmentReason: null,
+    amendmentType: null,
+    requiresApproval: false,
+    approvalStatus: 'Not Required',
+    approvedBy: null,
+    approvedAt: null,
+    approvalNotes: null,
+    sentToSupplierAt: null,
+    confirmedBySupplierAt: null,
+    supplierConfirmationReference: null,
+    createdBy: null,
+    createdAt: 2025-09-14T04:03:56.019Z,
+    updatedAt: 2025-09-14T04:03:56.019Z
+  }
+]
+4:03:56 AM [express] POST /api/supplier-lpos/from-sales-orders 201 in 1636ms :: [{"id":"92417e10-dc2…
+Error creating goods receipt header: TypeError: Cannot read properties of undefined (reading 'receiptNumber')
+    at <anonymous> (/workspaces/tradix/node_modules/src/pg-core/query-builders/insert.ts:94:73)
+    at Array.map (<anonymous>)
+    at PgInsertBuilder.values (/workspaces/tradix/node_modules/src/pg-core/query-builders/insert.ts:89:31)
+    at GoodsReceiptStorage.createGoodsReceiptHeader (/workspaces/tradix/server/storage/goods-receipt-storage.ts:10:61)
+    at Proxy.createGoodsReceiptHeader (/workspaces/tradix/server/storage/modular-storage-clean.ts:446:37)
+    at <anonymous> (/workspaces/tradix/server/routes/goods-receipt.ts:80:36)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+    at next (/workspaces/tradix/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/workspaces/tradix/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+4:03:56 AM [express] POST /api/goods-receipt-headers 500 in 1ms :: {"message":"Failed to create good…
+4:05:10 AM [express] POST /api/customers 201 in 2014ms :: {"id":"65e5ac6c-8cdc-4dac-a637-917a20edeb5…
+4:05:11 AM [express] POST /api/suppliers 201 in 294ms :: {"id":"1b18297f-ee70-44df-8cd8-72632882dd8f…
+Received enquiry data: {
+  customerId: '65e5ac6c-8cdc-4dac-a637-917a20edeb57',
+  source: 'Email',
+  notes: 'E2E test'
+}
+insertEnquirySchema shape: {
+  customerId: ZodString {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: { checks: [Array], typeName: 'ZodString', coerce: false },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  enquiryDate: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodNullable],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  status: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodNullable],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  source: ZodEnum {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: { values: [Array], typeName: 'ZodEnum' },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] },
+    _cache: Set(4) { 'Email', 'Phone', 'Web Form', 'Walk-in' }
+  },
+  targetDeliveryDate: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodString],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  notes: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodNullable],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  attachments: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodNullable],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  },
+  createdBy: ZodOptional {
+    spa: [Function: bound safeParseAsync] AsyncFunction,
+    _def: {
+      innerType: [ZodString],
+      typeName: 'ZodOptional',
+      errorMap: [Function: customMap],
+      description: undefined
+    },
+    parse: [Function: bound parse],
+    safeParse: [Function: bound safeParse],
+    parseAsync: [Function: bound parseAsync] AsyncFunction,
+    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+    refine: [Function: bound refine],
+    refinement: [Function: bound refinement],
+    superRefine: [Function: bound superRefine],
+    optional: [Function: bound optional],
+    nullable: [Function: bound nullable],
+    nullish: [Function: bound nullish],
+    array: [Function: bound array],
+    promise: [Function: bound promise],
+    or: [Function: bound or],
+    and: [Function: bound and],
+    transform: [Function: bound transform],
+    brand: [Function: bound brand],
+    default: [Function: bound default],
+    catch: [Function: bound catch],
+    describe: [Function: bound describe],
+    pipe: [Function: bound pipe],
+    readonly: [Function: bound readonly],
+    isNullable: [Function: bound isNullable],
+    isOptional: [Function: bound isOptional],
+    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
+  }
+}
+Creating enquiry with data: {
+  customerId: '65e5ac6c-8cdc-4dac-a637-917a20edeb57',
+  source: 'Email',
+  notes: 'E2E test'
+}
+Generated enquiry number: ENQ-2024-043
+Processed data: {
+  customerId: '65e5ac6c-8cdc-4dac-a637-917a20edeb57',
+  source: 'Email',
+  notes: 'E2E test',
+  targetDeliveryDate: null,
+  enquiryNumber: 'ENQ-2024-043'
+}
+Created enquiry: {
+  id: '4ae0c91c-7c9b-40ce-a039-26eba6c63e8d',
+  enquiryNumber: 'ENQ-2024-043',
+  customerId: '65e5ac6c-8cdc-4dac-a637-917a20edeb57',
+  enquiryDate: 2025-09-14T04:05:11.913Z,
+  status: 'New',
+  source: 'Email',
+  targetDeliveryDate: null,
+  notes: 'E2E test',
+  attachments: null,
+  createdBy: null,
+  createdAt: 2025-09-14T04:05:11.913Z,
+  updatedAt: 2025-09-14T04:05:11.913Z
+}
+4:05:12 AM [express] POST /api/enquiries 201 in 878ms :: {"id":"4ae0c91c-7c9b-40ce-a039-26eba6c63e8d…
+Error logging audit event: error: invalid input syntax for type uuid: "system"
+    at file:///workspaces/tradix/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async QuotationStorage.logAuditEvent (/workspaces/tradix/server/storage/base.ts:28:7)
+    at async QuotationStorage.createQuotation (/workspaces/tradix/server/storage/quotation-storage.ts:137:5)
+    at async <anonymous> (/workspaces/tradix/server/routes/quotations.ts:47:25) {
+  length: 138,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $6 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'uuid.c',
+  line: '133',
+  routine: 'string_to_uuid'
+}
+4:05:13 AM [express] POST /api/quotations 201 in 875ms :: {"id":"97c47f92-e006-4a59-943d-9712ac47824…
+DEBUG: Attempting to create quotation item with body: {
+  description: 'Test Item',
+  quantity: 10,
+  unitPrice: 12.5,
+  lineTotal: 125
+}
+DEBUG: Quotation ID from params: 97c47f92-e006-4a59-943d-9712ac47824a
+DEBUG: Parsed item data: {
+  quotationId: '97c47f92-e006-4a59-943d-9712ac47824a',
+  description: 'Test Item',
+  quantity: 10,
+  unitPrice: 12.5,
+  lineTotal: 125
+}
+DEBUG: Created item: {
+  id: '8245bfc7-da5f-45cf-a2c9-a39a5e709346',
+  quotationId: '97c47f92-e006-4a59-943d-9712ac47824a',
+  description: 'Test Item',
+  quantity: 10,
+  costPrice: null,
+  markup: null,
+  unitPrice: '12.5000',
+  lineTotal: '125.00',
+  isAccepted: true,
+  rejectionReason: null,
+  notes: null,
+  createdAt: 2025-09-14T04:05:14.490Z
+}
+4:05:14 AM [express] POST /api/quotations/97c47f92-e006-4a59-943d-9712ac47824a/items 201 in 1678ms :…
+[ACCEPTANCE] Create request body: {
+  quotationId: '97c47f92-e006-4a59-943d-9712ac47824a',
+  customerId: '65e5ac6c-8cdc-4dac-a637-917a20edeb57',
+  acceptedBy: 'Jane Doe',
+  acceptanceDate: '2025-09-14',
+  acceptanceType: 'Full',
+  status: 'Active',
+  notes: 'Full acceptance'
+}
+[ACCEPTANCE] Created acceptance: {
+  id: '80daf60f-9356-4ba6-ae77-2f5862a2b72e',
+  quotationId: '97c47f92-e006-4a59-943d-9712ac47824a',
+  acceptanceType: 'Full',
+  acceptedAt: 2025-09-14T04:05:14.807Z,
+  acceptedBy: 'Jane Doe',
+  customerEmail: null,
+  customerNotes: null,
+  totalAcceptedAmount: null,
+  status: 'Active',
+  internalNotes: null,
+  processedBy: null,
+  processedAt: null,
+  createdAt: 2025-09-14T04:05:14.807Z,
+  updatedAt: 2025-09-14T04:05:14.807Z
+}
+4:05:15 AM [express] POST /api/customer-acceptances 201 in 294ms :: {"id":"80daf60f-9356-4ba6-ae77-2…
+[ITEM-ACCEPTANCE:BULK] Raw body: [
+  {
+    quotationItemId: '8245bfc7-da5f-45cf-a2c9-a39a5e709346',
+    customerAcceptanceId: '80daf60f-9356-4ba6-ae77-2f5862a2b72e',
+    isAccepted: true,
+    originalQuantity: 10,
+    acceptedQuantity: 10,
+    rejectedQuantity: 0,
+    status: 'Accepted'
+  }
+]
+[ITEM-ACCEPTANCE:BULK] Prepared payload: [
+  {
+    quotationItemId: '8245bfc7-da5f-45cf-a2c9-a39a5e709346',
+    customerAcceptanceId: '80daf60f-9356-4ba6-ae77-2f5862a2b72e',
+    isAccepted: true,
+    originalQuantity: 10,
+    acceptedQuantity: 10,
+    rejectedQuantity: 0,
+    status: 'Accepted'
+  }
+]
+[ITEM-ACCEPTANCE:BULK] Created records count= 1
+4:05:15 AM [express] POST /api/customer-acceptances/80daf60f-9356-4ba6-ae77-2f5862a2b72e/item-accept…
+[PO] Create payload raw: {
+  customerId: '65e5ac6c-8cdc-4dac-a637-917a20edeb57',
+  quotationId: '97c47f92-e006-4a59-943d-9712ac47824a',
+  poNumber: 'PO-E2E-001',
+  poDate: '2025-09-14',
+  uploadedBy: 'Jane Doe',
+  fileUrl: '/fake-po.pdf'
+}
+4:05:15 AM [express] POST /api/purchase-orders 400 in 0ms :: {"message":"Invalid purchase order data…
+4:05:17 AM [express] POST /api/sales-orders/from-quotation 201 in 1743ms :: {"id":"4c5ff556-3144-4f1…
+4:05:17 AM [express] GET /api/items 200 in 290ms :: [{"id":"c19058e1-fb1c-4cfc-b5be-00ff1f9f891d","s…
+4:05:17 AM [express] POST /api/sales-order-items 201 in 291ms :: {"id":"bc116cd2-c561-4b7a-a9d9-4133…
+[SupplierLpoStorage.createSupplierLpo] Preparing insert {
+  lpoNumber: 'LPO-718300PN1H',
+  supplierId: '93b80e4e-ecf9-4a50-a25c-b819a498cf2f'
+}
+[SupplierLpoStorage.createSupplierLpo] Insert record {
+  lpoNumber: 'LPO-718300PN1H',
+  supplierId: '93b80e4e-ecf9-4a50-a25c-b819a498cf2f',
+  status: 'Draft',
+  sourceType: 'Auto',
+  groupingCriteria: 'supplier',
+  subtotal: '250.00',
+  taxAmount: undefined,
+  totalAmount: '250.00',
+  currency: 'USD',
+  requiresApproval: false,
+  approvalStatus: 'Not Required',
+  createdBy: null,
+  createdAt: 2025-09-14T04:05:18.590Z,
+  updatedAt: 2025-09-14T04:05:18.590Z,
+  version: 1,
+  sourceSalesOrderIds: [ '4c5ff556-3144-4f1a-91d6-1958a79e1ab8' ],
+  sourceQuotationIds: undefined
+}
+[SupplierLpoStorage.createSupplierLpo] Insert result [
+  {
+    id: '8b6b8391-0751-43ff-9794-e0b8c8d62469',
+    lpoNumber: 'LPO-718300PN1H',
+    supplierId: '93b80e4e-ecf9-4a50-a25c-b819a498cf2f',
+    status: 'Draft',
+    lpoDate: 2025-09-14T04:05:18.672Z,
+    expectedDeliveryDate: null,
+    requestedDeliveryDate: null,
+    sourceType: 'Auto',
+    sourceSalesOrderIds: [ '4c5ff556-3144-4f1a-91d6-1958a79e1ab8' ],
+    sourceQuotationIds: null,
+    groupingCriteria: 'supplier',
+    subtotal: '250.00',
+    taxAmount: null,
+    totalAmount: '250.00',
+    currency: 'USD',
+    supplierContactPerson: null,
+    supplierEmail: null,
+    supplierPhone: null,
+    paymentTerms: null,
+    deliveryTerms: null,
+    termsAndConditions: null,
+    specialInstructions: null,
+    version: 1,
+    parentLpoId: null,
+    amendmentReason: null,
+    amendmentType: null,
+    requiresApproval: false,
+    approvalStatus: 'Not Required',
+    approvedBy: null,
+    approvedAt: null,
+    approvalNotes: null,
+    sentToSupplierAt: null,
+    confirmedBySupplierAt: null,
+    supplierConfirmationReference: null,
+    createdBy: null,
+    createdAt: 2025-09-14T04:05:18.590Z,
+    updatedAt: 2025-09-14T04:05:18.590Z
+  }
+]
+4:05:19 AM [express] POST /api/supplier-lpos/from-sales-orders 201 in 1744ms :: [{"id":"8b6b8391-075…
+Error creating goods receipt header: TypeError: Cannot read properties of undefined (reading 'receiptNumber')
+    at <anonymous> (/workspaces/tradix/node_modules/src/pg-core/query-builders/insert.ts:94:73)
+    at Array.map (<anonymous>)
+    at PgInsertBuilder.values (/workspaces/tradix/node_modules/src/pg-core/query-builders/insert.ts:89:31)
+    at GoodsReceiptStorage.createGoodsReceiptHeader (/workspaces/tradix/server/storage/goods-receipt-storage.ts:10:61)
+    at Proxy.createGoodsReceiptHeader (/workspaces/tradix/server/storage/modular-storage-clean.ts:446:37)
+    at <anonymous> (/workspaces/tradix/server/routes/goods-receipt.ts:80:36)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+    at next (/workspaces/tradix/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/workspaces/tradix/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+4:05:19 AM [express] POST /api/goods-receipt-headers 500 in 1ms :: {"message":"Failed to create good…

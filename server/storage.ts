@@ -13,27 +13,36 @@ import type { IStorage } from './storage/interfaces.js';
 export let storage: IStorage;
 
 // Check if we should use test storage (for development when database issues occur)
-const USE_TEST_STORAGE = process.env.NODE_ENV === 'development' && (
+const FORCE_DATABASE = process.env.FORCE_REAL_DB === 'true';
+const USE_TEST_STORAGE = !FORCE_DATABASE && process.env.NODE_ENV === 'development' && (
   process.env.DATABASE_URL?.includes('invalid') || 
   process.env.FORCE_TEST_STORAGE === 'true' ||
   !process.env.DATABASE_URL
 );
 
-if (USE_TEST_STORAGE) {
-  console.log('[STORAGE] Using test storage with mock data');
-  storage = new TestStorage() as any;
-} else {
-  console.log('[STORAGE] Using database storage');
-  try {
-    // Test database connection
-    const { db } = await import('./db.ts');
-    await db.select().from((await import('../shared/schema.ts')).enquiries).limit(1);
-    storage = new ModularStorage() as any;
-  } catch (error) {
-    console.warn('[STORAGE] Database connection failed, falling back to test storage:', error.message);
+// Async init wrapped to avoid top-level await restrictions during type checking
+async function initStorage() {
+  if (USE_TEST_STORAGE) {
+    console.log('[STORAGE] Using test storage with mock data');
     storage = new TestStorage() as any;
+  } else {
+    console.log('[STORAGE] Using modular database storage');
+    try {
+      const { db } = await import('./db.ts');
+      const schema = await import('../shared/schema.ts');
+      await db.select().from(schema.enquiries).limit(1);
+      storage = new ModularStorage() as any;
+      console.log('[STORAGE] ModularStorage initialized successfully');
+    } catch (error: any) {
+      console.warn('[STORAGE] Database connection failed, falling back to test storage:', error?.message);
+      storage = new TestStorage() as any;
+    }
   }
 }
+
+// Kick off initialization (fire and forget)
+// Consumers can import storage immediately; if still undefined briefly, they should handle gracefully
+void initStorage();
 
 // Re-export types for compatibility
 export type { IStorage } from './storage/interfaces.js';

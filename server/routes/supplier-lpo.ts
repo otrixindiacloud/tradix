@@ -45,8 +45,33 @@ export function registerSupplierLpoRoutes(app: Express) {
       }
       res.status(201).json(lpos[0]);
     } catch (error) {
-      console.error("Error creating supplier LPO from sales order:", error);
-      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to create supplier LPO from sales order" });
+      console.error("[SUPPLIER-LPO:SINGLE] Error creating supplier LPO from sales order. Payload=", req.body);
+      console.error(error);
+      if (error instanceof Error) {
+        res.status(500).json({ message: error.message, stack: error.stack });
+      } else {
+        res.status(500).json({ message: "Failed to create supplier LPO from sales order" });
+      }
+    }
+  });
+
+  // Batch: create Supplier LPOs from multiple sales orders
+  app.post("/api/supplier-lpos/from-sales-orders", async (req, res) => {
+    try {
+      const { salesOrderIds, groupBy = 'supplier', userId } = req.body;
+      if (!Array.isArray(salesOrderIds) || salesOrderIds.length === 0) {
+        return res.status(400).json({ message: "salesOrderIds array required" });
+      }
+      const lpos = await storage.createSupplierLposFromSalesOrders(salesOrderIds, groupBy, userId);
+      res.status(201).json(lpos);
+    } catch (error) {
+      console.error("[SUPPLIER-LPO:BATCH] Error creating supplier LPOs from sales orders. Payload=", req.body);
+      console.error(error);
+      if (error instanceof Error) {
+        res.status(500).json({ message: error.message, stack: error.stack });
+      } else {
+        res.status(500).json({ message: "Failed to create supplier LPOs" });
+      }
     }
   });
 
@@ -208,7 +233,7 @@ export function registerSupplierLpoRoutes(app: Express) {
       res.status(500).json({ message: "Failed to create supplier LPO item" });
     }
   });
-
+  // Update item
   app.put("/api/supplier-lpo-items/:id", async (req, res) => {
     try {
       const itemData = insertSupplierLpoItemSchema.partial().parse(req.body);
@@ -223,6 +248,7 @@ export function registerSupplierLpoRoutes(app: Express) {
     }
   });
 
+  // Delete item
   app.delete("/api/supplier-lpo-items/:id", async (req, res) => {
     try {
       await storage.deleteSupplierLpoItem(req.params.id);
@@ -233,6 +259,7 @@ export function registerSupplierLpoRoutes(app: Express) {
     }
   });
 
+  // Bulk create items
   app.post("/api/supplier-lpo-items/bulk", async (req, res) => {
     try {
       const itemsData = req.body.items;
@@ -245,8 +272,7 @@ export function registerSupplierLpoRoutes(app: Express) {
       }
       console.error("Error bulk creating supplier LPO items:", error);
       res.status(500).json({ message: "Failed to bulk create supplier LPO items" });
-
-
-
+    }
+  });
 }
 

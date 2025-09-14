@@ -91,12 +91,13 @@ export function registerSalesOrderRoutes(app: Express) {
   app.post("/api/sales-orders/from-quotation", async (req, res) => {
     try {
       const { quotationId, userId } = req.body;
-      if (!quotationId || !userId) {
-        return res.status(400).json({ message: "Quotation ID and User ID are required" });
+      if (!quotationId) {
+        return res.status(400).json({ message: "Quotation ID is required" });
       }
-
-  // storage.createSalesOrderFromQuotation signature: (quotationId, userId?)
-  const salesOrder = await storage.createSalesOrderFromQuotation(quotationId, userId);
+      // Accept userId only if it looks like a UUID (simple regex)
+      const uuidRegex = /^[0-9a-fA-F-]{36}$/;
+      const effectiveUserId = (typeof userId === 'string' && uuidRegex.test(userId)) ? userId : undefined;
+      const salesOrder = await storage.createSalesOrderFromQuotation(quotationId, effectiveUserId);
       res.status(201).json(salesOrder);
     } catch (error) {
       console.error("Error creating sales order from quotation:", error);
