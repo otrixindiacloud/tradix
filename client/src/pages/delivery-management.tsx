@@ -218,23 +218,19 @@ const DeliveryManagement = () => {
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Truck className="h-8 w-8" />
-            Delivery & Invoicing Management
-          </h1>
-          <p className="text-muted-foreground">
-            Comprehensive delivery management with barcode picking and automated invoicing
-          </p>
+      <div className="mb-6">
+        <div className="bg-white rounded-xl shadow-sm flex items-center justify-between px-6 py-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <Truck className="h-8 w-8" />
+              Delivery & Invoicing Management
+            </h1>
+            <p className="text-gray-600 mt-1">Step 9: Comprehensive delivery management with barcode picking and automated invoicing</p>
+          </div>
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg" onClick={() => setShowCreateDialog(true)} data-testid="button-create-delivery">
+            <span className="mr-2">+</span> Create Delivery
+          </Button>
         </div>
-        <Button 
-          onClick={() => setShowCreateDialog(true)}
-          data-testid="button-create-delivery"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Create Delivery
-        </Button>
       </div>
 
       {/* Stats Cards */}

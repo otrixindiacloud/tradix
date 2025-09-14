@@ -251,20 +251,17 @@ export default function Delivery() {
   return (
     <div>
       {/* Page Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900" data-testid="text-page-title">
-            Customer Delivery
-          </h2>
-          <p className="text-gray-600">
-            Step 9: Generate delivery notes and manage customer deliveries with barcode picking
-          </p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Badge variant="outline" className="text-blue-600">
-            <Truck className="h-4 w-4 mr-1" />
-            {deliveryStats.readyForDelivery} Ready for Delivery
-          </Badge>
+      <div className="mb-6">
+        <div className="bg-white rounded-xl shadow-sm flex items-center justify-between px-6 py-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900" data-testid="text-page-title">
+              Customer Delivery
+            </h2>
+            <p className="text-gray-600">Step 9: Generate delivery notes and manage customer deliveries with barcode picking</p>
+          </div>
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg" onClick={() => {}}>
+            <span className="mr-2">+</span> Create Delivery
+          </Button>
         </div>
       </div>
 

@@ -1,4 +1,7 @@
 import { useState, useEffect } from "react";
+import { CalendarDays } from "lucide-react";
+import Calendar from "react-calendar";
+import 'react-calendar/dist/Calendar.css';
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,15 +11,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { 
   Activity, 
   Filter, 
   Download, 
   RefreshCw, 
   Search, 
-  CalendarIcon,
   Eye,
   CheckCircle2,
   Upload,
@@ -112,13 +112,9 @@ export default function RecentActivitiesPage() {
     priority: "all"
   });
 
-  const [dateRange, setDateRange] = useState<{
-    from: Date | undefined;
-    to: Date | undefined;
-  }>({
-    from: undefined,
-    to: undefined
-  });
+  // Date range picker state
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarDate, setCalendarDate] = useState<[Date | null, Date | null]>([null, null]);
 
   const [activeTab, setActiveTab] = useState("all");
 
@@ -351,13 +347,30 @@ export default function RecentActivitiesPage() {
     setPagination(prev => ({ ...prev, page: 1 }));
   };
 
-  const handleDateRangeChange = (from: Date | undefined, to: Date | undefined) => {
-    setDateRange({ from, to });
+  // Date range picker handler
+  // Accept Value type from react-calendar
+  // Accept Value and event from react-calendar
+  const handleCalendarChange = (value: any, _event?: any) => {
+    let start: Date | null = null;
+    let end: Date | null = null;
+    if (Array.isArray(value)) {
+      start = value[0] instanceof Date ? value[0] : null;
+      end = value[1] instanceof Date ? value[1] : null;
+    } else if (value instanceof Date) {
+      start = value;
+      end = value;
+    } else {
+      start = null;
+      end = null;
+    }
+    setCalendarDate([start, end]);
+    setCalendarOpen(false);
     setFilters(prev => ({
       ...prev,
-      startDate: from ? format(from, "yyyy-MM-dd") : "",
-      endDate: to ? format(to, "yyyy-MM-dd") : ""
+      startDate: start ? format(start, "yyyy-MM-dd") : "",
+      endDate: end ? format(end, "yyyy-MM-dd") : ""
     }));
+    setPagination(prev => ({ ...prev, page: 1 }));
   };
 
   const exportActivities = async () => {
@@ -554,7 +567,7 @@ export default function RecentActivitiesPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">This Week</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.thisWeek}</div>
@@ -564,7 +577,7 @@ export default function RecentActivitiesPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">This Month</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.thisMonth}</div>
@@ -583,7 +596,8 @@ export default function RecentActivitiesPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* ...existing code... */}
             <div className="space-y-2">
               <Label htmlFor="type">Activity Type</Label>
               <Select value={filters.type} onValueChange={(value) => handleFilterChange("type", value)}>
@@ -600,7 +614,6 @@ export default function RecentActivitiesPage() {
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="action">Action</Label>
               <Select value={filters.action} onValueChange={(value) => handleFilterChange("action", value)}>
@@ -617,7 +630,6 @@ export default function RecentActivitiesPage() {
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="priority">Priority</Label>
               <Select value={filters.priority} onValueChange={(value) => handleFilterChange("priority", value)}>
@@ -633,7 +645,6 @@ export default function RecentActivitiesPage() {
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="search">Search</Label>
               <div className="relative">
@@ -647,116 +658,47 @@ export default function RecentActivitiesPage() {
                 />
               </div>
             </div>
-          </div>
-
-          {/* Date Range Picker */}
-          <div className="mt-4 pt-4 border-t">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Date Range</Label>
-                  {dateRange.from && (
-                    <Badge variant="secondary" className="text-xs">
-                      Filter Active
-                    </Badge>
-                  )}
+            {/* Calendar filter */}
+            <div className="space-y-2 flex flex-col items-center justify-center">
+              <Label htmlFor="calendar">Date Range</Label>
+              <button
+                type="button"
+                className="w-12 h-12 rounded-lg border flex items-center justify-center bg-white hover:bg-blue-50 transition relative"
+                onClick={() => setCalendarOpen(true)}
+                aria-label="Select date range"
+              >
+                <CalendarDays className="h-7 w-7 text-blue-600" />
+              </button>
+              {filters.startDate && filters.endDate && (
+                <div className="text-xs mt-1 text-blue-600 text-center">
+                  {format(new Date(filters.startDate), "MMM dd")} - {format(new Date(filters.endDate), "MMM dd, yyyy")}
                 </div>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      id="date"
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !dateRange.from && "text-muted-foreground",
-                        dateRange.from && "border-blue-300 bg-blue-50"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dateRange.from ? (
-                        dateRange.to ? (
-                          <>
-                            {format(dateRange.from, "LLL dd, y")} -{" "}
-                            {format(dateRange.to, "LLL dd, y")}
-                          </>
-                        ) : (
-                          format(dateRange.from, "LLL dd, y")
-                        )
-                      ) : (
-                        <span>Pick a date range</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start" side="bottom" sideOffset={8}>
+              )}
+              {calendarOpen && (
+                <div
+                  className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30"
+                  onClick={() => setCalendarOpen(false)}
+                >
+                  <div
+                    className="bg-white rounded-lg shadow-lg p-6 relative flex flex-col items-center"
+                    style={{ minWidth: 320 }}
+                    onClick={e => e.stopPropagation()}
+                  >
                     <Calendar
-                      initialFocus
-                      mode="range"
-                      defaultMonth={dateRange.from}
-                      selected={dateRange}
-                      onSelect={(range) => handleDateRangeChange(range?.from, range?.to)}
-                      numberOfMonths={2}
-                      disabled={(date) => date > new Date()}
-                      modifiers={{
-                        today: new Date(),
-                      }}
-                      modifiersClassNames={{
-                        today: "bg-blue-100 text-blue-900 font-semibold",
-                      }}
+                      selectRange={true}
+                      value={calendarDate[0] && calendarDate[1] ? [calendarDate[0], calendarDate[1]] : null}
+                      onChange={handleCalendarChange}
+                      className="react-calendar-square"
                     />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="space-y-2 mt-4">
-                <Label>Quick Filters</Label>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant={!dateRange.from ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => {
-                      const today = new Date();
-                      handleDateRangeChange(today, today);
-                    }}
-                  >
-                    Today
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const today = new Date();
-                      const weekAgo = new Date();
-                      weekAgo.setDate(today.getDate() - 7);
-                      handleDateRangeChange(weekAgo, today);
-                    }}
-                  >
-                    Last 7 days
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const today = new Date();
-                      const monthAgo = new Date();
-                      monthAgo.setMonth(today.getMonth() - 1);
-                      handleDateRangeChange(monthAgo, today);
-                    }}
-                  >
-                    Last 30 days
-                  </Button>
-                  {dateRange.from && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        handleDateRangeChange(undefined, undefined);
-                      }}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    <button
+                      className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                      onClick={() => setCalendarOpen(false)}
                     >
-                      Clear Filter
-                    </Button>
-                  )}
+                      Close
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </CardContent>
@@ -791,7 +733,7 @@ export default function RecentActivitiesPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                      handleDateRangeChange(undefined, undefined);
+                      /* Date filter clear removed (calendar logic gone) */
                     }}
                     className="text-red-600 hover:text-red-700 hover:bg-red-50"
                   >

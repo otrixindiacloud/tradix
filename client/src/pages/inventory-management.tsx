@@ -1115,10 +1115,15 @@ export default function InventoryManagementPage() {
   return (
     <div className="container mx-auto py-6" data-testid="inventory-management-page">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Inventory Management</h1>
-        <p className="text-gray-600 mt-1">
-          Manage your inventory items, stock levels, goods receipts, and supplier returns
-        </p>
+        <div className="bg-white rounded-xl shadow-sm flex items-center justify-between px-6 py-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Inventory Management</h1>
+            <p className="text-gray-600 mt-1">Step 8: Monitor stock levels and manage inventory with barcode tracking</p>
+          </div>
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg" onClick={() => {}}>
+            <span className="mr-2">+</span> Add Item
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="items" className="space-y-6">

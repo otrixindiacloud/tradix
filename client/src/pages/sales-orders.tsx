@@ -310,7 +310,7 @@ export default function SalesOrders() {
         }
         
         const statusColors = {
-          "Pending": "underline decoration-yellow-500 text-yellow-700",
+          "Pending": "bg-blue-700 text-white", // changed to white text on blue background
           "Approved": "underline decoration-green-500 text-green-700",
           "Rejected": "underline decoration-red-500 text-red-700",
         };

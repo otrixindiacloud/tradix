@@ -233,23 +233,17 @@ export default function Inventory() {
   return (
     <div>
       {/* Page Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900" data-testid="text-page-title">
-            Inventory Management
-          </h2>
-          <p className="text-gray-600">
-            Step 8: Monitor stock levels and manage inventory with barcode tracking
-          </p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Badge variant="outline" className="text-orange-600">
-            <AlertTriangle className="h-4 w-4 mr-1" />
-            {inventoryStats.lowStock} Low Stock
-          </Badge>
-          <Badge variant="outline" className="text-red-600">
-            {inventoryStats.outOfStock} Out of Stock
-          </Badge>
+      <div className="mb-6">
+        <div className="bg-white rounded-xl shadow-sm flex items-center justify-between px-6 py-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900" data-testid="text-page-title">
+              Inventory Management
+            </h2>
+            <p className="text-gray-600">Step 8: Monitor stock levels and manage inventory with barcode tracking</p>
+          </div>
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg" onClick={() => {}}>
+            <span className="mr-2">+</span> Add Item
+          </Button>
         </div>
       </div>
 

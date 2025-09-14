@@ -24,7 +24,7 @@ interface LpoFilters {
 }
 
 const statusColors = {
-  Draft: "underline decoration-gray-500 text-gray-700",
+  Draft: "underline decoration-gray-500 text-white bg-blue-700",
   Sent: "underline decoration-blue-500 text-blue-700",
   Confirmed: "underline decoration-green-500 text-green-700",
   Received: "underline decoration-purple-500 text-purple-700",
@@ -32,7 +32,7 @@ const statusColors = {
 };
 
 const approvalStatusColors = {
-  "Not Required": "underline decoration-gray-500 text-gray-700",
+  "Not Required": "underline decoration-gray-500 text-white bg-blue-700",
   Pending: "underline decoration-yellow-500 text-yellow-700",
   Approved: "underline decoration-green-500 text-green-700",
   Rejected: "underline decoration-red-500 text-red-700",
