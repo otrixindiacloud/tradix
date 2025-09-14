@@ -62,35 +62,41 @@ export class InvoiceStorage extends BaseStorage {
     const items = await db.select().from(deliveryItems).where(eq(deliveryItems.deliveryId, deliveryId));
     // Attempt to get pricing from related sales order items if present
     let subtotal = 0;
-    const invoiceItemsToInsert: InsertInvoiceItem[] = [];
+    const invoiceItemsToInsert: any[] = [];
+    let lineNumber = 1;
     for (const di of items as any[]) {
       const soItemArr = di.salesOrderItemId ? await db.select().from(salesOrderItems).where(eq(salesOrderItems.id, di.salesOrderItemId)).limit(1) : [];
       const soItem: any = soItemArr[0];
-      const qty = num(di.quantity || soItem?.quantity || 0);
+      const qty = num(di.deliveredQuantity || di.pickedQuantity || di.orderedQuantity || soItem?.quantity || 0);
       const unitPrice = num(soItem?.unitPrice || di.unitPrice || 0);
       const lineTotal = qty * unitPrice;
       subtotal += lineTotal;
+      const barcode = di.barcode || soItem?.barcode || `AUTO-${lineNumber}`;
+      const supplierCode = di.supplierCode || soItem?.supplierCode || 'AUTO-SUP';
       invoiceItemsToInsert.push({
-        invoiceId: 'TEMP', // placeholder replaced after invoice insert
+        invoiceId: 'TEMP',
         deliveryItemId: di.id,
         salesOrderItemId: di.salesOrderItemId || soItem?.id || null,
         itemId: soItem?.itemId || di.itemId || null,
+        barcode,
+        supplierCode,
         description: soItem?.description || di.description || 'Item',
+        lineNumber,
         quantity: qty,
         unitPrice: unitPrice,
-        currency: so?.currency || 'USD',
-        exchangeRate: so?.exchangeRate || '1.0000',
-        total: lineTotal,
-        totalBase: lineTotal, // simplified (no FX calc)
-        taxRate: '0',
-        taxAmount: 0,
+        totalPrice: lineTotal,
         discountPercentage: '0',
         discountAmount: 0,
-        lineTotal: lineTotal,
-        lineTotalBase: lineTotal,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      } as any);
+        taxRate: '0',
+        taxAmount: 0,
+        unitPriceBase: unitPrice,
+        totalPriceBase: lineTotal,
+        discountAmountBase: 0,
+        taxAmountBase: 0,
+        returnQuantity: 0,
+        notes: null
+      });
+      lineNumber++;
     }
     const invoiceNumber = this.generateNumber('INV');
     const invoiceInsert: any = {

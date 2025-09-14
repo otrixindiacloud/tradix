@@ -11,12 +11,36 @@ export class GoodsReceiptStorage implements IGoodsReceiptStorage {
 
   async createGoodsReceiptHeader(receipt: any) {
     try {
-      const base = { ...receipt };
+      // Assume upstream route already validated with insertGoodsReceiptHeaderSchema, so avoid double-parse issues
+      const base: any = { ...receipt };
       if (!base.receiptNumber) base.receiptNumber = this.generateReceiptNumber();
       if (!base.status) base.status = 'Draft';
       if (!base.receiptDate) base.receiptDate = new Date().toISOString().slice(0,10);
-      const parsed = insertGoodsReceiptHeaderSchema.parse(base);
-      const inserted = await db.insert(goodsReceiptHeaders).values(parsed as any).returning();
+      // Minimal re-validation but tolerant: catch and log instead of throwing mysterious undefined later
+      let toInsert: any;
+      try {
+        toInsert = insertGoodsReceiptHeaderSchema.parse(base);
+      } catch (zerr) {
+        console.error('[GoodsReceiptStorage.createGoodsReceiptHeader] Validation failed before insert', zerr, { base });
+        throw zerr;
+      }
+      // Explicitly project only known columns to prevent accidental prototype / undefined issues
+      const projected = {
+        receiptNumber: toInsert.receiptNumber,
+        supplierLpoId: toInsert.supplierLpoId,
+        supplierId: toInsert.supplierId,
+        receiptDate: toInsert.receiptDate,
+        expectedDeliveryDate: toInsert.expectedDeliveryDate,
+        actualDeliveryDate: toInsert.actualDeliveryDate,
+        receivedBy: toInsert.receivedBy,
+        status: toInsert.status,
+        notes: toInsert.notes,
+        totalItems: toInsert.totalItems,
+        totalQuantityExpected: toInsert.totalQuantityExpected,
+        totalQuantityReceived: toInsert.totalQuantityReceived,
+        discrepancyFlag: toInsert.discrepancyFlag
+      };
+      const inserted = await db.insert(goodsReceiptHeaders).values(projected as any).returning();
       return inserted[0];
     } catch (err) {
       console.error('[GoodsReceiptStorage.createGoodsReceiptHeader] Error', err, { input: receipt });

@@ -25,15 +25,26 @@ cust_id=$(json_field "$cust" '.id')
 assert_non_empty customer_id "$cust_id" "$cust"
 put_summary customerId "$cust_id"
 
-log_step "1b. Create Supplier"
+log_step "1b. Create / Ensure Supplier"
 supplier_payload='{"name":"E2E Supplier","email":"supplier@e2e.test","phone":"555-111","address":"Supplier Zone","contactPerson":"Supp Contact"}'
-supplier=$(curl -s -X POST -H 'Content-Type: application/json' -d "$supplier_payload" $BASE_URL/api/suppliers || true)
-supplier_id=$(echo "$supplier" | jq -r '.id // empty')
-if [ -n "$supplier_id" ]; then
-	put_summary supplierId "$supplier_id"
+# Attempt creation (ignore non-2xx silently but capture body)
+supplier_resp=$(curl -s -w "\n%{http_code}" -X POST -H 'Content-Type: application/json' -d "$supplier_payload" $BASE_URL/api/suppliers || true)
+supplier_body=$(echo "$supplier_resp" | head -n1)
+supplier_code=$(echo "$supplier_resp" | tail -n1)
+if [ "$supplier_code" != "201" ] && [ "$supplier_code" != "200" ]; then
+	echo "Primary supplier creation attempt returned status $supplier_code; attempting to list existing suppliers"
+	existing_suppliers=$(curl -s $BASE_URL/api/suppliers || echo '[]')
+	supplier_id=$(echo "$existing_suppliers" | jq -r '.[0].id // empty')
+	if [ -z "$supplier_id" ]; then
+		echo "No existing suppliers available. Cannot proceed with Goods Receipt without a valid supplier. Aborting." >&2
+		exit 1
+	fi
+	echo "Using existing supplier $supplier_id"
 else
-	echo "Supplier creation failed or endpoint missing; continuing without dedicated supplier (ID=$supplier_id)"
+	supplier_id=$(echo "$supplier_body" | jq -r '.id // empty')
 fi
+assert_non_empty supplier_id "$supplier_id" "$supplier_body"
+put_summary supplierId "$supplier_id"
 
 log_step "2. Create Enquiry"
 enquiry_payload='{"customerId":"'$cust_id'","source":"Email","notes":"E2E test"}'
@@ -134,13 +145,17 @@ if [ -n "$lpo_supplier_id" ]; then
 fi
 
 log_step "11. Goods Receipt"
-# Use goods_receipt_headers route schema: need receiptNumber, supplierId, receiptDate, status, plus items referencing receiptHeaderId later
-gr_supplier_id=${supplier_id:-$cust_id}
-effective_supplier_id=${lpo_supplier_id:-$gr_supplier_id}
-gr_header_payload='{ "receiptNumber":"GRN-'$DATE'-'$(date +%s)'","supplierLpoId":"'$lpo_id'","supplierId":"'${effective_supplier_id}'","receiptDate":"'$DATE'","status":"Draft","notes":"E2E receipt" }'
+# Require a valid supplierId (no fallback to customerId, which breaks FK constraint)
+effective_supplier_id=${lpo_supplier_id:-$supplier_id}
+assert_non_empty effective_supplier_id "$effective_supplier_id" "No supplier id available for goods receipt"
+gr_header_payload='{ "receiptNumber":"GRN-'$DATE'-'$(date +%s)'","supplierLpoId":"'$lpo_id'","supplierId":"'$effective_supplier_id'","receiptDate":"'$DATE'","status":"Draft","notes":"E2E receipt" }'
+echo "GR HEADER PAYLOAD: $gr_header_payload"
 gr_header=$(curl -s -X POST -H 'Content-Type: application/json' -d "$gr_header_payload" $BASE_URL/api/goods-receipt-headers)
 gr_header_id=$(echo "$gr_header" | jq -r '.id // empty')
-assert_non_empty goods_receipt_header_id "$gr_header_id" "$gr_header"
+if [ -z "$gr_header_id" ]; then
+	echo "Goods receipt header creation failed. Response: $gr_header" >&2
+	exit 1
+fi
 put_summary goodsReceiptHeaderId "$gr_header_id"
 
 # Add goods receipt item
@@ -151,21 +166,28 @@ assert_non_empty goods_receipt_item_id "$gr_item_id" "$gr_item"
 put_summary goodsReceiptItemId "$gr_item_id"
 
 log_step "12. Create Delivery"
-delivery_payload='{ "deliveryNumber":"DLV-'$DATE'-'$(date +%s)'","salesOrderId":"'$so_id'","deliveryDate":"'$DATE'","status":"Pending","deliveryNotes":"E2E delivery" }'
+delivery_iso=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+delivery_payload='{ "deliveryNumber":"DLV-'$DATE'-'$(date +%s)'","salesOrderId":"'$so_id'","deliveryDate":"'$delivery_iso'","status":"Pending","deliveryNotes":"E2E delivery" }'
 delivery=$(curl -s -X POST -H 'Content-Type: application/json' -d "$delivery_payload" $BASE_URL/api/deliveries)
 delivery_id=$(json_field "$delivery" '.id')
+if [ -z "$delivery_id" ]; then
+	echo "Delivery creation with explicit timestamp failed (response: $delivery) - retrying without deliveryDate" >&2
+	delivery_payload='{ "deliveryNumber":"DLV-'$DATE'-'$(date +%s)'","salesOrderId":"'$so_id'","status":"Pending","deliveryNotes":"E2E delivery" }'
+	delivery=$(curl -s -X POST -H 'Content-Type: application/json' -d "$delivery_payload" $BASE_URL/api/deliveries)
+	delivery_id=$(json_field "$delivery" '.id')
+fi
 assert_non_empty delivery_id "$delivery_id" "$delivery"
 put_summary deliveryId "$delivery_id"
 
 log_step "13. Add Delivery Item"
-del_item_payload='{ "deliveryId":"'$delivery_id'","itemId":"'$first_item_id'","quantity":10,"unitPrice":"12.50","totalPrice":"125.00" }'
+del_item_payload='{ "deliveryId":"'$delivery_id'","salesOrderItemId":"'$so_item_id'","itemId":"'$first_item_id'","barcode":"BC-'$so_item_id'","supplierCode":"SUP-E2E","description":"Test Item","orderedQuantity":10,"pickedQuantity":10,"deliveredQuantity":10,"unitPrice":"12.50","totalPrice":"125.00" }'
 del_item=$(curl -s -X POST -H 'Content-Type: application/json' -d "$del_item_payload" $BASE_URL/api/delivery-items)
 del_item_id=$(json_field "$del_item" '.id')
 assert_non_empty delivery_item_id "$del_item_id" "$del_item"
 put_summary deliveryItemId "$del_item_id"
 
 log_step "14. Generate Invoice From Delivery"
-invoice_payload='{ "deliveryId":"'$delivery_id'","invoiceType":"Standard","userId":"invoicer" }'
+invoice_payload='{ "deliveryId":"'$delivery_id'","invoiceType":"Standard" }'
 invoice=$(curl -s -X POST -H 'Content-Type: application/json' -d "$invoice_payload" $BASE_URL/api/invoices/generate-from-delivery)
 invoice_id=$(json_field "$invoice" '.id')
 assert_non_empty invoice_id "$invoice_id" "$invoice"

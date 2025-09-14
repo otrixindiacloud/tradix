@@ -76,9 +76,18 @@ export function registerGoodsReceiptRoutes(app: Express) {
 
   app.post("/api/goods-receipt-headers", async (req, res) => {
     try {
-      const headerData = insertGoodsReceiptHeaderSchema.parse(req.body);
-      const header = await storage.createGoodsReceiptHeader(headerData);
-      res.status(201).json(header);
+      console.log('[GR HEADER][RAW BODY]', req.body);
+      try {
+        const headerData = insertGoodsReceiptHeaderSchema.parse(req.body);
+        const header = await storage.createGoodsReceiptHeader(headerData);
+        return res.status(201).json(header);
+      } catch (zerr) {
+        if (zerr instanceof z.ZodError) {
+          console.error('[GR HEADER][VALIDATION ERROR]', JSON.stringify(zerr.errors, null, 2));
+          return res.status(400).json({ message: "Invalid goods receipt header data", errors: zerr.errors, raw: req.body });
+        }
+        throw zerr;
+      }
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid goods receipt header data", errors: error.errors });

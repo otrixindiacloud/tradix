@@ -1,5 +1,6 @@
 import { BaseStorage } from './base.js';
 import { IDeliveryStorage } from './interfaces.js';
+import { db } from '../db';
 import { 
   Delivery, 
   DeliveryItem, 
@@ -31,7 +32,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
     offset?: number;
   }): Promise<Delivery[]> {
     try {
-      let query = this.db
+      let query = db
         .select()
         .from(deliveries)
         .leftJoin(salesOrders, eq(deliveries.salesOrderId, salesOrders.id))
@@ -69,7 +70,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
 
   async getDelivery(id: string): Promise<Delivery | undefined> {
     try {
-      const result = await this.db
+      const result = await db
         .select()
         .from(deliveries)
         .where(eq(deliveries.id, id))
@@ -84,7 +85,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
 
   async getDeliveryByNumber(deliveryNumber: string): Promise<Delivery | undefined> {
     try {
-      const result = await this.db
+      const result = await db
         .select()
         .from(deliveries)
         .where(eq(deliveries.deliveryNumber, deliveryNumber))
@@ -99,7 +100,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
 
   async createDelivery(delivery: InsertDelivery): Promise<Delivery> {
     try {
-      const result = await this.db
+      const result = await db
         .insert(deliveries)
         .values(delivery)
         .returning();
@@ -113,7 +114,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
 
   async updateDelivery(id: string, delivery: Partial<InsertDelivery>): Promise<Delivery> {
     try {
-      const result = await this.db
+      const result = await db
         .update(deliveries)
         .set({ ...delivery, updatedAt: new Date() })
         .where(eq(deliveries.id, id))
@@ -132,7 +133,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
 
   async deleteDelivery(id: string): Promise<void> {
     try {
-      await this.db
+      await db
         .delete(deliveries)
         .where(eq(deliveries.id, id));
     } catch (error) {
@@ -218,7 +219,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
   // Delivery Item operations
   async getDeliveryItems(deliveryId: string): Promise<DeliveryItem[]> {
     try {
-      return await this.db
+      return await db
         .select()
         .from(deliveryItems)
         .where(eq(deliveryItems.deliveryId, deliveryId))
@@ -231,7 +232,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
 
   async getDeliveryItem(id: string): Promise<DeliveryItem | undefined> {
     try {
-      const result = await this.db
+      const result = await db
         .select()
         .from(deliveryItems)
         .where(eq(deliveryItems.id, id))
@@ -246,7 +247,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
 
   async createDeliveryItem(item: InsertDeliveryItem): Promise<DeliveryItem> {
     try {
-      const result = await this.db
+      const result = await db
         .insert(deliveryItems)
         .values(item)
         .returning();
@@ -260,7 +261,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
 
   async updateDeliveryItem(id: string, item: Partial<InsertDeliveryItem>): Promise<DeliveryItem> {
     try {
-      const result = await this.db
+      const result = await db
         .update(deliveryItems)
         .set({ ...item, updatedAt: new Date() })
         .where(eq(deliveryItems.id, id))
@@ -279,7 +280,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
 
   async deleteDeliveryItem(id: string): Promise<void> {
     try {
-      await this.db
+      await db
         .delete(deliveryItems)
         .where(eq(deliveryItems.id, id));
     } catch (error) {
@@ -290,7 +291,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
 
   async bulkCreateDeliveryItems(items: InsertDeliveryItem[]): Promise<DeliveryItem[]> {
     try {
-      const result = await this.db
+      const result = await db
         .insert(deliveryItems)
         .values(items)
         .returning();

@@ -42,8 +42,14 @@ export function registerDeliveryRoutes(app: Express) {
 
   app.post("/api/deliveries", async (req, res) => {
     try {
-      const deliveryData = insertDeliverySchema.parse(req.body);
-      const delivery = await storage.createDelivery(deliveryData);
+      const raw = { ...req.body };
+      if (raw.deliveryDate && typeof raw.deliveryDate === 'string') {
+        const parsedDate = new Date(raw.deliveryDate);
+        if (!isNaN(parsedDate.getTime())) raw.deliveryDate = parsedDate;
+      }
+      if (!raw.deliveryDate) raw.deliveryDate = new Date();
+      const deliveryData = insertDeliverySchema.parse(raw);
+      const delivery = await storage.createDelivery(deliveryData as any);
       res.status(201).json(delivery);
     } catch (error) {
       if (error instanceof z.ZodError) {
