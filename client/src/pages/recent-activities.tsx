@@ -31,7 +31,8 @@ import {
   AlertCircle,
   Clock,
   User,
-  ArrowRight
+  ArrowRight,
+  BarChart3
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -521,8 +522,7 @@ export default function RecentActivitiesPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Activity className="h-8 w-8 text-blue-600" />
+          <h1 className="text-3xl font-bold tracking-tight">
             Recent Activities
           </h1>
           <p className="text-muted-foreground">
@@ -545,42 +545,42 @@ export default function RecentActivitiesPage() {
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Activities</CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
+            <CardHeader className="flex flex-row items-center space-y-0 pb-2">
+              <BarChart3 className="h-6 w-6 text-blue-600 mr-2" />
+              <CardTitle className="text-base font-bold">Total Activities</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.total.toLocaleString()}</div>
+              <div className="text-2xl font-bold text-blue-600 pl-8">{stats.total.toLocaleString()}</div>
               <p className="text-xs text-muted-foreground">All time</p>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Today</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
+            <CardHeader className="flex flex-row items-center space-y-0 pb-2">
+              <Clock className="h-6 w-6 text-green-600 mr-2" />
+              <CardTitle className="text-base font-bold">Today</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.today}</div>
+              <div className="text-2xl font-bold text-green-600 pl-8">{stats.today}</div>
               <p className="text-xs text-muted-foreground">Activities today</p>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">This Week</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
+            <CardHeader className="flex flex-row items-center space-y-0 pb-2">
+              <FileText className="h-6 w-6 text-purple-600 mr-2" />
+              <CardTitle className="text-base font-bold">This Week</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.thisWeek}</div>
+              <div className="text-2xl font-bold text-purple-600 pl-8">{stats.thisWeek}</div>
               <p className="text-xs text-muted-foreground">Last 7 days</p>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">This Month</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
+            <CardHeader className="flex flex-row items-center space-y-0 pb-2">
+              <CalendarDays className="h-6 w-6 text-orange-600 mr-2" />
+              <CardTitle className="text-base font-bold">This Month</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.thisMonth}</div>
+              <div className="text-2xl font-bold text-orange-600 pl-8">{stats.thisMonth}</div>
               <p className="text-xs text-muted-foreground">Last 30 days</p>
             </CardContent>
           </Card>

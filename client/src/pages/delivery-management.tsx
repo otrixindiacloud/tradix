@@ -239,7 +239,7 @@ const DeliveryManagement = () => {
           <CardContent className="flex items-center p-6">
             <Package className="h-8 w-8 text-blue-600" />
             <div className="ml-4">
-              <p className="text-sm font-medium text-muted-foreground">Total Deliveries</p>
+              <p className="text-sm font-bold text-gray-900">Total Deliveries</p>
               <p className="text-2xl font-bold">{deliveryStats.total}</p>
             </div>
           </CardContent>
@@ -248,7 +248,7 @@ const DeliveryManagement = () => {
           <CardContent className="flex items-center p-6">
             <Clock className="h-8 w-8 text-yellow-600" />
             <div className="ml-4">
-              <p className="text-sm font-medium text-muted-foreground">Pending</p>
+              <p className="text-sm font-bold text-gray-900">Pending</p>
               <p className="text-2xl font-bold">{deliveryStats.pending}</p>
             </div>
           </CardContent>
@@ -257,7 +257,7 @@ const DeliveryManagement = () => {
           <CardContent className="flex items-center p-6">
             <AlertCircle className="h-8 w-8 text-orange-600" />
             <div className="ml-4">
-              <p className="text-sm font-medium text-muted-foreground">In Progress</p>
+              <p className="text-sm font-bold text-gray-900">In Progress</p>
               <p className="text-2xl font-bold">{deliveryStats.partial}</p>
             </div>
           </CardContent>
@@ -266,7 +266,7 @@ const DeliveryManagement = () => {
           <CardContent className="flex items-center p-6">
             <CheckCircle className="h-8 w-8 text-green-600" />
             <div className="ml-4">
-              <p className="text-sm font-medium text-muted-foreground">Completed</p>
+              <p className="text-sm font-bold text-gray-900">Completed</p>
               <p className="text-2xl font-bold">{deliveryStats.complete}</p>
             </div>
           </CardContent>

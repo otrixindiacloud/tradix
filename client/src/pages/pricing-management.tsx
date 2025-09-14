@@ -252,11 +252,26 @@ export default function PricingManagement() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="categories" data-testid="tab-categories">Product Categories</TabsTrigger>
-          <TabsTrigger value="markup" data-testid="tab-markup">Markup Configuration</TabsTrigger>
-          <TabsTrigger value="calculator" data-testid="tab-calculator">Price Calculator</TabsTrigger>
-          <TabsTrigger value="pricing" data-testid="tab-pricing">Item Pricing</TabsTrigger>
-          <TabsTrigger value="price-lists" data-testid="tab-price-lists">Price Lists</TabsTrigger>
+          <TabsTrigger value="categories" data-testid="tab-categories">
+            <Settings className="inline-block mr-2 h-4 w-4" />
+            Product Categories
+          </TabsTrigger>
+          <TabsTrigger value="markup" data-testid="tab-markup">
+            <Edit className="inline-block mr-2 h-4 w-4" />
+            Markup Configuration
+          </TabsTrigger>
+          <TabsTrigger value="calculator" data-testid="tab-calculator">
+            <Calculator className="inline-block mr-2 h-4 w-4" />
+            Price Calculator
+          </TabsTrigger>
+          <TabsTrigger value="pricing" data-testid="tab-pricing">
+            <Plus className="inline-block mr-2 h-4 w-4" />
+            Item Pricing
+          </TabsTrigger>
+          <TabsTrigger value="price-lists" data-testid="tab-price-lists">
+            <Download className="inline-block mr-2 h-4 w-4" />
+            Price Lists
+          </TabsTrigger>
         </TabsList>
 
         {/* Product Categories Tab */}

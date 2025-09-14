@@ -139,30 +139,48 @@ export default function Invoicing() {
 
   const downloadInvoicePDF = async (invoiceId: string, invoiceNumber: string) => {
     try {
-      const response = await fetch(`/api/invoices/${invoiceId}/pdf`);
+      // Show loading state
+      toast({
+        title: "Generating PDF",
+        description: "Creating comprehensive invoice with material specifications...",
+      });
+
+      const response = await fetch(`/api/invoices/${invoiceId}/pdf`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/pdf',
+        },
+      });
+      
       if (!response.ok) {
-        throw new Error('Failed to generate PDF');
+        const errorData = await response.json().catch(() => ({ message: 'Failed to generate PDF' }));
+        throw new Error(errorData.message || 'Failed to generate PDF');
       }
       
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `invoice-${invoiceNumber}.pdf`;
+      a.download = `Golden-Tag-Invoice-${invoiceNumber}-${new Date().toISOString().split('T')[0]}.pdf`;
+      a.style.display = 'none';
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      
+      // Cleanup
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }, 100);
       
       toast({
         title: "Success",
-        description: "Invoice PDF downloaded successfully",
+        description: "Comprehensive invoice PDF downloaded successfully with all material specifications and company details",
       });
     } catch (error) {
       console.error("Error generating PDF:", error);
       toast({
         title: "Error",
-        description: "Failed to generate PDF",
+        description: error instanceof Error ? error.message : "Failed to generate PDF",
         variant: "destructive",
       });
     }
@@ -388,7 +406,8 @@ export default function Invoicing() {
               downloadInvoicePDF(invoice.id, invoice.invoiceNumber);
             }}
             data-testid={`button-download-${invoice.id}`}
-            title="Download PDF"
+            title="Download Comprehensive PDF with Material Specs"
+            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
           >
             <Download className="h-4 w-4" />
           </Button>
@@ -680,108 +699,204 @@ export default function Invoicing() {
         </CardContent>
       </Card>
 
-      {/* Invoice Details Dialog */}
+      {/* Invoice Details Dialog - Enhanced with Material Information */}
       <Dialog open={!!selectedInvoice} onOpenChange={() => setSelectedInvoice(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Invoice Details</DialogTitle>
+            <DialogTitle className="flex items-center space-x-2">
+              <FileText className="h-5 w-5 text-blue-600" />
+              <span>Invoice Details - {selectedInvoice?.invoiceNumber}</span>
+              <Badge variant="outline" className={getStatusColor(selectedInvoice?.status || '')}>
+                {selectedInvoice?.status}
+              </Badge>
+            </DialogTitle>
           </DialogHeader>
           {selectedInvoice && (
             <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h4 className="font-medium text-gray-900 mb-2">Invoice Information</h4>
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Invoice Number:</span> {selectedInvoice.invoiceNumber}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Status:</span> {selectedInvoice.status}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Invoice Date:</span> {formatDate(selectedInvoice.invoiceDate)}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Due Date:</span> {selectedInvoice.dueDate ? formatDate(selectedInvoice.dueDate) : "N/A"}
-                  </p>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h4 className="font-medium text-gray-900 mb-2">Customer Information</h4>
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Name:</span> {selectedInvoice.customer?.name}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Type:</span> {selectedInvoice.customer?.customerType}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Email:</span> {selectedInvoice.customer?.email || "N/A"}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Phone:</span> {selectedInvoice.customer?.phone || "N/A"}
-                  </p>
-                </div>
-              </div>
-              
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="font-medium text-gray-900 mb-2">Financial Summary</h4>
-                <div className="grid grid-cols-4 gap-4">
-                  <div>
-                    <p className="text-xs text-gray-600">Subtotal</p>
-                    <p className="text-sm font-medium">{formatCurrency(selectedInvoice.subtotal || 0)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-600">Tax Amount</p>
-                    <p className="text-sm font-medium">{formatCurrency(selectedInvoice.taxAmount || 0)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-600">Total Amount</p>
-                    <p className="text-lg font-bold text-blue-600">{formatCurrency(selectedInvoice.totalAmount || 0)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-600">Paid Amount</p>
-                    <p className="text-sm font-medium text-green-600">{formatCurrency(selectedInvoice.paidAmount || 0)}</p>
+              {/* Invoice Header Information */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <h4 className="font-medium text-blue-900 mb-3 flex items-center">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Invoice Information
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Number:</span>
+                      <span className="font-mono font-medium">{selectedInvoice.invoiceNumber}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Type:</span>
+                      <span className="font-medium">{selectedInvoice.invoiceType || 'Final'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Currency:</span>
+                      <span className="font-medium">{selectedInvoice.currency || 'USD'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Date:</span>
+                      <span>{formatDate(selectedInvoice.invoiceDate)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Due Date:</span>
+                      <span>{selectedInvoice.dueDate ? formatDate(selectedInvoice.dueDate) : "Upon Receipt"}</span>
+                    </div>
                   </div>
                 </div>
-                {selectedInvoice.totalAmount > selectedInvoice.paidAmount && (
-                  <div className="mt-2 p-2 bg-orange-100 rounded">
-                    <p className="text-sm text-orange-800">
-                      <span className="font-medium">Outstanding Balance:</span> {formatCurrency(selectedInvoice.totalAmount - selectedInvoice.paidAmount)}
-                    </p>
+
+                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                  <h4 className="font-medium text-green-900 mb-3 flex items-center">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Customer Information
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <span className="text-gray-600">Name:</span>
+                      <p className="font-medium">{selectedInvoice.customer?.name}</p>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Type:</span>
+                      <span className="font-medium">{selectedInvoice.customer?.customerType}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Classification:</span>
+                      <span className="font-medium">{selectedInvoice.customer?.classification}</span>
+                    </div>
+                    {selectedInvoice.customer?.email && (
+                      <div>
+                        <span className="text-gray-600">Email:</span>
+                        <p className="text-blue-600">{selectedInvoice.customer.email}</p>
+                      </div>
+                    )}
+                    {selectedInvoice.customer?.phone && (
+                      <div>
+                        <span className="text-gray-600">Phone:</span>
+                        <p>{selectedInvoice.customer.phone}</p>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
+
+                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                  <h4 className="font-medium text-yellow-900 mb-3 flex items-center">
+                    <DollarSign className="h-4 w-4 mr-2" />
+                    Financial Summary
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Subtotal:</span>
+                      <span className="font-medium">{formatCurrency(selectedInvoice.subtotal || 0)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Tax:</span>
+                      <span className="font-medium">{formatCurrency(selectedInvoice.taxAmount || 0)}</span>
+                    </div>
+                    <div className="flex justify-between font-bold text-lg border-t pt-2">
+                      <span>Total:</span>
+                      <span className="text-blue-600">{formatCurrency(selectedInvoice.totalAmount || 0)}</span>
+                    </div>
+                    <div className="flex justify-between text-green-600">
+                      <span>Paid:</span>
+                      <span className="font-medium">{formatCurrency(selectedInvoice.paidAmount || 0)}</span>
+                    </div>
+                    {(selectedInvoice.totalAmount || 0) > (selectedInvoice.paidAmount || 0) && (
+                      <div className="flex justify-between text-red-600 font-medium">
+                        <span>Outstanding:</span>
+                        <span>{formatCurrency((selectedInvoice.totalAmount || 0) - (selectedInvoice.paidAmount || 0))}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
-              {selectedInvoice.notes && (
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Notes</h4>
-                  <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded">{selectedInvoice.notes}</p>
+              {/* Material Specifications & Items */}
+              <div className="bg-gray-50 p-4 rounded-lg border">
+                <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Material Specifications & Items
+                </h4>
+                <div className="text-sm text-gray-600 mb-3">
+                  This invoice includes detailed material specifications, supplier codes, barcodes, and comprehensive item information as required for business operations.
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="bg-white p-3 rounded border">
+                    <span className="text-xs text-gray-500">Document Features</span>
+                    <ul className="text-sm mt-1 space-y-1">
+                      <li>✓ Complete company branding</li>
+                      <li>✓ Supplier codes & barcodes</li>
+                      <li>✓ Material specifications</li>
+                      <li>✓ Multi-currency support</li>
+                    </ul>
+                  </div>
+                  <div className="bg-white p-3 rounded border">
+                    <span className="text-xs text-gray-500">Business Information</span>
+                    <ul className="text-sm mt-1 space-y-1">
+                      <li>✓ Golden Tag WLL details</li>
+                      <li>✓ Banking information</li>
+                      <li>✓ Legal registration numbers</li>
+                      <li>✓ Terms & conditions</li>
+                    </ul>
+                  </div>
+                  <div className="bg-white p-3 rounded border">
+                    <span className="text-xs text-gray-500">Customer Requirements</span>
+                    <ul className="text-sm mt-1 space-y-1">
+                      <li>✓ Detailed item descriptions</li>
+                      <li>✓ Quantity & pricing</li>
+                      <li>✓ Tax calculations</li>
+                      <li>✓ Payment tracking</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Information */}
+              {selectedInvoice.paymentTerms && (
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <h4 className="font-medium text-blue-900 mb-2">Payment Terms</h4>
+                  <p className="text-sm text-gray-700">{selectedInvoice.paymentTerms}</p>
                 </div>
               )}
 
-              <div className="flex justify-end space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={() => downloadInvoicePDF(selectedInvoice.id, selectedInvoice.invoiceNumber)}
-                  data-testid="button-download-pdf"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Download PDF
-                </Button>
-                <Button
-                  onClick={() => setSelectedInvoice(null)}
-                  data-testid="button-close-details"
-                >
-                  Close
-                </Button>
-                {selectedInvoice?.salesOrderId && (
+              {/* Notes */}
+              {selectedInvoice.notes && (
+                <div className="bg-gray-50 p-4 rounded-lg border">
+                  <h4 className="font-medium text-gray-900 mb-2">Notes</h4>
+                  <p className="text-sm text-gray-700">{selectedInvoice.notes}</p>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex justify-between items-center pt-4 border-t">
+                <div className="space-x-2">
+                  {selectedInvoice?.salesOrderId && (
+                    <Button
+                      variant="outline"
+                      onClick={() => generateProformaInvoiceAlt.mutate({ salesOrderId: selectedInvoice.salesOrderId })}
+                      disabled={generateProformaInvoiceAlt.isPending}
+                      data-testid="button-generate-proforma-from-invoice"
+                    >
+                      {generateProformaInvoiceAlt.isPending ? "Generating..." : "Generate Proforma"}
+                    </Button>
+                  )}
+                </div>
+                
+                <div className="flex space-x-2">
                   <Button
                     variant="outline"
-                    onClick={() => generateProformaInvoiceAlt.mutate({ salesOrderId: selectedInvoice.salesOrderId })}
-                    disabled={generateProformaInvoiceAlt.isPending}
-                    data-testid="button-generate-proforma-from-invoice"
+                    onClick={() => downloadInvoicePDF(selectedInvoice.id, selectedInvoice.invoiceNumber)}
+                    data-testid="button-download-pdf"
+                    className="flex items-center space-x-2"
                   >
-                    {generateProformaInvoiceAlt.isPending ? "Generating..." : "Generate Proforma"}
+                    <Download className="h-4 w-4" />
+                    <span>Download Comprehensive PDF</span>
                   </Button>
-                )}
+                  <Button
+                    onClick={() => setSelectedInvoice(null)}
+                    data-testid="button-close-details"
+                  >
+                    Close
+                  </Button>
+                </div>
               </div>
             </div>
           )}

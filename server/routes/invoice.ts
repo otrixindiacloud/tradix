@@ -5,7 +5,7 @@ import {
   insertInvoiceItemSchema
 } from "@shared/schema";
 import { z } from "zod";
-import { pdfService } from "../pdf-service";
+import { generateInvoicePDF } from '../pdf-service-simple';
 
 export function registerInvoiceRoutes(app: Express) {
   // Invoice routes
@@ -251,45 +251,83 @@ export function registerInvoiceRoutes(app: Express) {
     }
   });
 
-  // Generate PDF for invoice
+  // Generate PDF for invoice with comprehensive information
   app.get("/api/invoices/:id/pdf", async (req, res) => {
     try {
       const invoiceId = req.params.id;
       
-      // Get invoice with items and customer
+      // Get invoice with all related data
       const invoice = await storage.getInvoice(invoiceId);
       if (!invoice) {
         return res.status(404).json({ message: "Invoice not found" });
       }
 
-      const items = await storage.getInvoiceItems(invoiceId);
+      // Get invoice items with item details
+      const invoiceItems = await storage.getInvoiceItems(invoiceId);
+      
+      // Enhance items with full item data for material specifications
+      const enhancedItems = await Promise.all(
+        invoiceItems.map(async (invoiceItem) => {
+          let itemDetails = null;
+          if (invoiceItem.itemId) {
+            try {
+              itemDetails = await storage.getItem(invoiceItem.itemId);
+            } catch (error) {
+              console.warn(`Could not fetch item details for ${invoiceItem.itemId}:`, error);
+            }
+          }
+          return {
+            ...invoiceItem,
+            item: itemDetails
+          };
+        })
+      );
+
+      // Get customer information
       const customer = await storage.getCustomer(invoice.customerId);
       if (!customer) {
         return res.status(404).json({ message: "Customer not found" });
       }
 
-      // Generate PDF
-      const pdfBuffer = pdfService.generateInvoicePDF({
-        invoice,
-        items,
-        customer,
-        companyInfo: {
-          name: "Golden Tag WLL",
-          address: "Your Company Address\nCity, State, ZIP\nCountry",
-          phone: "+1 (555) 123-4567",
-          email: "info@goldentag.com"
+      // Get related sales order and delivery for additional context
+      let salesOrder = null;
+      let delivery = null;
+      
+      try {
+        if (invoice.salesOrderId) {
+          salesOrder = await storage.getSalesOrder(invoice.salesOrderId);
         }
+        if (invoice.deliveryId) {
+          delivery = await storage.getDelivery(invoice.deliveryId);
+        }
+      } catch (error) {
+        console.warn('Could not fetch related order/delivery data:', error);
+      }
+
+      // Generate comprehensive PDF with all material specifications
+      const pdfBuffer = pdfService.generateComprehensiveInvoicePDF({
+        invoice,
+        items: enhancedItems,
+        customer,
+        salesOrder,
+        delivery
       });
 
-      // Set response headers
+      // Set response headers for PDF download
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoice.invoiceNumber}.pdf"`);
       res.setHeader('Content-Length', pdfBuffer.length);
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
 
       res.send(pdfBuffer);
     } catch (error) {
-      console.error("Error generating invoice PDF:", error);
-      res.status(500).json({ message: "Failed to generate invoice PDF" });
+      console.error("Error generating comprehensive invoice PDF:", error);
+      res.status(500).json({ 
+        message: "Failed to generate invoice PDF", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
     }
   });
 }

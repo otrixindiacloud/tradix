@@ -25,7 +25,7 @@ import { registerUtilityRoutes } from "./utility";
 import auditRoutes from "./audit";
 import userRoutes from "./users";
 import settingsRoutes from "./settings";
-import analyticsRoutes from "./analytics";
+import { analyticsRouter } from "./analytics";
 import { registerRecentActivitiesRoutes } from "./recent-activities";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -56,7 +56,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/audit", auditRoutes);
   app.use("/api/users", userRoutes);
   app.use("/api/settings", settingsRoutes);
-  app.use("/api/analytics", analyticsRoutes);
+  app.use("/api/analytics", analyticsRouter);
 
   const httpServer = createServer(app);
   return httpServer;

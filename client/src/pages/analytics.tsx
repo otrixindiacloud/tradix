@@ -439,12 +439,30 @@ export default function AnalyticsPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="sales">Sales</TabsTrigger>
-          <TabsTrigger value="inventory">Inventory</TabsTrigger>
-          <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
-          <TabsTrigger value="financial">Financial</TabsTrigger>
-          <TabsTrigger value="compliance">Compliance</TabsTrigger>
+          <TabsTrigger value="overview">
+            <BarChart3 className="inline-block mr-2 h-4 w-4" />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="sales">
+            <TrendingUp className="inline-block mr-2 h-4 w-4" />
+            Sales
+          </TabsTrigger>
+          <TabsTrigger value="inventory">
+            <Warehouse className="inline-block mr-2 h-4 w-4" />
+            Inventory
+          </TabsTrigger>
+          <TabsTrigger value="suppliers">
+            <Truck className="inline-block mr-2 h-4 w-4" />
+            Suppliers
+          </TabsTrigger>
+          <TabsTrigger value="financial">
+            <DollarSign className="inline-block mr-2 h-4 w-4" />
+            Financial
+          </TabsTrigger>
+          <TabsTrigger value="compliance">
+            <Shield className="inline-block mr-2 h-4 w-4" />
+            Compliance
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -463,12 +481,12 @@ export default function AnalyticsPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Enquiries</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
+                <CardHeader className="flex flex-row items-center space-y-0 pb-2">
+                  <Users className="h-6 w-6 text-blue-600 mr-2" />
+                  <CardTitle className="text-base font-bold">Total Enquiries</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{formatNumber(kpis.enquiries?.total_enquiries || 0)}</div>
+                  <div className="text-2xl font-bold text-blue-600 pl-8">{formatNumber(kpis.enquiries?.total_enquiries || 0)}</div>
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     {getTrendIcon(kpis.enquiries?.total_enquiries || 0, 0)}
                     <span>All time</span>
@@ -477,12 +495,12 @@ export default function AnalyticsPage() {
               </Card>
 
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Quotations</CardTitle>
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <CardHeader className="flex flex-row items-center space-y-0 pb-2">
+                  <DollarSign className="h-6 w-6 text-green-600 mr-2" />
+                  <CardTitle className="text-base font-bold">Total Quotations</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{formatNumber(kpis.quotations?.total_quotations || 0)}</div>
+                  <div className="text-2xl font-bold text-green-600 pl-8">{formatNumber(kpis.quotations?.total_quotations || 0)}</div>
                   <div className="text-xs text-muted-foreground">
                     Value: {formatCurrency(kpis.quotations?.total_quotation_value || 0)}
                   </div>
@@ -490,12 +508,12 @@ export default function AnalyticsPage() {
               </Card>
 
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Sales Orders</CardTitle>
-                  <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                <CardHeader className="flex flex-row items-center space-y-0 pb-2">
+                  <ShoppingCart className="h-6 w-6 text-purple-600 mr-2" />
+                  <CardTitle className="text-base font-bold">Sales Orders</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{formatNumber(kpis.salesOrders?.total_orders || 0)}</div>
+                  <div className="text-2xl font-bold text-purple-600 pl-8">{formatNumber(kpis.salesOrders?.total_orders || 0)}</div>
                   <div className="text-xs text-muted-foreground">
                     Value: {formatCurrency(kpis.salesOrders?.total_order_value || 0)}
                   </div>
@@ -503,12 +521,12 @@ export default function AnalyticsPage() {
               </Card>
 
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Revenue</CardTitle>
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <CardHeader className="flex flex-row items-center space-y-0 pb-2">
+                  <DollarSign className="h-6 w-6 text-yellow-500 mr-2" />
+                  <CardTitle className="text-base font-bold">Revenue</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{formatCurrency(kpis.invoices?.total_paid_amount || 0)}</div>
+                  <div className="text-2xl font-bold text-yellow-500 pl-8">{formatCurrency(kpis.invoices?.total_paid_amount || 0)}</div>
                   <div className="text-xs text-muted-foreground">
                     of {formatCurrency(kpis.invoices?.total_invoice_value || 0)} invoiced
                   </div>
@@ -605,7 +623,7 @@ export default function AnalyticsPage() {
             <CardContent>
               <div className="h-[400px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={salesTrends}>
+                  <AreaChart data={salesTrends || []}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="period" />
                     <YAxis />
@@ -632,7 +650,7 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {topCustomers.map((customer, index) => (
+                  {topCustomers && topCustomers.length > 0 ? topCustomers.map((customer, index) => (
                     <div key={customer.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center space-x-4">
                         <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
@@ -652,7 +670,11 @@ export default function AnalyticsPage() {
                         </div>
                       </div>
                     </div>
-                  ))}
+                  )) : (
+                    <div className="text-center py-4 text-muted-foreground">
+                      No customer data available
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -664,7 +686,7 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {topProducts.map((product, index) => (
+                  {topProducts && topProducts.length > 0 ? topProducts.map((product, index) => (
                     <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center space-x-4">
                         <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
@@ -684,7 +706,11 @@ export default function AnalyticsPage() {
                         </div>
                       </div>
                     </div>
-                  ))}
+                  )) : (
+                    <div className="text-center py-4 text-muted-foreground">
+                      No product data available
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -783,23 +809,23 @@ export default function AnalyticsPage() {
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold">{enquirySourceAnalytics.email}</div>
+                    <div className="text-2xl font-bold">{enquirySourceAnalytics?.email || 0}</div>
                     <div className="text-sm text-muted-foreground">Email</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold">{enquirySourceAnalytics.phone}</div>
+                    <div className="text-2xl font-bold">{enquirySourceAnalytics?.phone || 0}</div>
                     <div className="text-sm text-muted-foreground">Phone</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold">{enquirySourceAnalytics.web_form}</div>
+                    <div className="text-2xl font-bold">{enquirySourceAnalytics?.web_form || 0}</div>
                     <div className="text-sm text-muted-foreground">Web Form</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold">{enquirySourceAnalytics.walk_in}</div>
+                    <div className="text-2xl font-bold">{enquirySourceAnalytics?.walk_in || 0}</div>
                     <div className="text-sm text-muted-foreground">Walk-in</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold">{enquirySourceAnalytics.referral}</div>
+                    <div className="text-2xl font-bold">{enquirySourceAnalytics?.referral || 0}</div>
                     <div className="text-sm text-muted-foreground">Referral</div>
                   </div>
                 </div>
@@ -878,7 +904,7 @@ export default function AnalyticsPage() {
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
-                          data={inventoryAnalytics.category_breakdown}
+                          data={inventoryAnalytics?.category_breakdown || []}
                           cx="50%"
                           cy="50%"
                           labelLine={false}
@@ -887,9 +913,9 @@ export default function AnalyticsPage() {
                           fill="#8884d8"
                           dataKey="value"
                         >
-                          {inventoryAnalytics.category_breakdown.map((entry, index) => (
+                          {inventoryAnalytics.category_breakdown && inventoryAnalytics.category_breakdown.length > 0 ? inventoryAnalytics.category_breakdown.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                          ))}
+                          )) : null}
                         </Pie>
                         <Tooltip formatter={(value) => formatCurrency(value as number)} />
                       </PieChart>
@@ -907,7 +933,7 @@ export default function AnalyticsPage() {
                 <CardContent>
                   <div className="h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={inventoryAnalytics.stock_movements}>
+                      <BarChart data={inventoryAnalytics?.stock_movements || []}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="date" />
                         <YAxis />
@@ -950,7 +976,7 @@ export default function AnalyticsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      {supplierAnalytics.top_suppliers.length > 0 
+                      {supplierAnalytics?.top_suppliers && supplierAnalytics.top_suppliers.length > 0 
                         ? Math.round(supplierAnalytics.top_suppliers.reduce((acc, s) => acc + s.avg_delivery_time, 0) / supplierAnalytics.top_suppliers.length)
                         : 0} days
                     </div>
@@ -967,7 +993,7 @@ export default function AnalyticsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      {supplierAnalytics.top_suppliers.length > 0 
+                      {supplierAnalytics?.top_suppliers && supplierAnalytics.top_suppliers.length > 0 
                         ? (supplierAnalytics.top_suppliers.reduce((acc, s) => acc + s.quality_rating, 0) / supplierAnalytics.top_suppliers.length).toFixed(1)
                         : 0}/5
                     </div>
@@ -986,7 +1012,7 @@ export default function AnalyticsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {supplierAnalytics.top_suppliers.map((supplier, index) => (
+                    {supplierAnalytics.top_suppliers && supplierAnalytics.top_suppliers.length > 0 ? supplierAnalytics.top_suppliers.map((supplier, index) => (
                       <div key={supplier.id} className="flex items-center justify-between p-4 border rounded-lg">
                         <div className="flex items-center space-x-4">
                           <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
@@ -1006,7 +1032,11 @@ export default function AnalyticsPage() {
                           </div>
                         </div>
                       </div>
-                    ))}
+                    )) : (
+                      <div className="text-center py-4 text-muted-foreground">
+                        No supplier data available
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -1020,7 +1050,7 @@ export default function AnalyticsPage() {
                 <CardContent>
                   <div className="h-[400px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <ScatterChart data={supplierAnalytics.supplier_performance}>
+                      <ScatterChart data={supplierAnalytics?.supplier_performance || []}>
                         <CartesianGrid />
                         <XAxis 
                           type="number" 
@@ -1064,10 +1094,10 @@ export default function AnalyticsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-green-600">
-                      {formatCurrency(financialAnalytics.revenue.total_revenue)}
+                      {formatCurrency(financialAnalytics?.revenue?.total_revenue || 0)}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {financialAnalytics.revenue.monthly_growth > 0 ? '+' : ''}{financialAnalytics.revenue.monthly_growth}% growth
+                      {(financialAnalytics?.revenue?.monthly_growth || 0) > 0 ? '+' : ''}{financialAnalytics?.revenue?.monthly_growth || 0}% growth
                     </div>
                   </CardContent>
                 </Card>
@@ -1079,10 +1109,10 @@ export default function AnalyticsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-blue-600">
-                      {formatCurrency(financialAnalytics.profitability.gross_profit)}
+                      {formatCurrency(financialAnalytics?.profitability?.gross_profit || 0)}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {financialAnalytics.profitability.gross_margin}% margin
+                      {financialAnalytics?.profitability?.gross_margin || 0}% margin
                     </div>
                   </CardContent>
                 </Card>
@@ -1094,10 +1124,10 @@ export default function AnalyticsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-purple-600">
-                      {formatCurrency(financialAnalytics.profitability.net_profit)}
+                      {formatCurrency(financialAnalytics?.profitability?.net_profit || 0)}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {financialAnalytics.profitability.net_margin}% margin
+                      {financialAnalytics?.profitability?.net_margin || 0}% margin
                     </div>
                   </CardContent>
                 </Card>
@@ -1109,10 +1139,10 @@ export default function AnalyticsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-orange-600">
-                      {formatCurrency(financialAnalytics.costs.cost_of_goods_sold)}
+                      {formatCurrency(financialAnalytics?.costs?.cost_of_goods_sold || 0)}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {formatCurrency(financialAnalytics.costs.total_costs)} total costs
+                      {formatCurrency(financialAnalytics?.costs?.total_costs || 0)} total costs
                     </div>
                   </CardContent>
                 </Card>
@@ -1131,8 +1161,8 @@ export default function AnalyticsPage() {
                         <PieChart>
                           <Pie
                             data={[
-                              { name: 'Retail', value: financialAnalytics.revenue.retail_revenue, color: '#8884d8' },
-                              { name: 'Wholesale', value: financialAnalytics.revenue.wholesale_revenue, color: '#82ca9d' }
+                              { name: 'Retail', value: financialAnalytics?.revenue?.retail_revenue || 0, color: '#8884d8' },
+                              { name: 'Wholesale', value: financialAnalytics?.revenue?.wholesale_revenue || 0, color: '#82ca9d' }
                             ]}
                             cx="50%"
                             cy="50%"
@@ -1161,25 +1191,25 @@ export default function AnalyticsPage() {
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
                         <span className="text-sm">Retail Markup</span>
-                        <Badge variant="outline">{financialAnalytics.pricing_analysis.avg_retail_markup}%</Badge>
+                        <Badge variant="outline">{financialAnalytics?.pricing_analysis?.avg_retail_markup || 0}%</Badge>
                       </div>
-                      <Progress value={financialAnalytics.pricing_analysis.avg_retail_markup} className="h-2" />
+                      <Progress value={financialAnalytics?.pricing_analysis?.avg_retail_markup || 0} className="h-2" />
                     </div>
                     
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
                         <span className="text-sm">Wholesale Markup</span>
-                        <Badge variant="outline">{financialAnalytics.pricing_analysis.avg_wholesale_markup}%</Badge>
+                        <Badge variant="outline">{financialAnalytics?.pricing_analysis?.avg_wholesale_markup || 0}%</Badge>
                       </div>
-                      <Progress value={financialAnalytics.pricing_analysis.avg_wholesale_markup} className="h-2" />
+                      <Progress value={financialAnalytics?.pricing_analysis?.avg_wholesale_markup || 0} className="h-2" />
                     </div>
                     
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
                         <span className="text-sm">Price Variance</span>
-                        <Badge variant="outline">{financialAnalytics.pricing_analysis.price_variance}%</Badge>
+                        <Badge variant="outline">{financialAnalytics?.pricing_analysis?.price_variance || 0}%</Badge>
                       </div>
-                      <Progress value={Math.abs(financialAnalytics.pricing_analysis.price_variance)} className="h-2" />
+                      <Progress value={Math.abs(financialAnalytics?.pricing_analysis?.price_variance || 0)} className="h-2" />
                     </div>
                   </CardContent>
                 </Card>
@@ -1226,7 +1256,7 @@ export default function AnalyticsPage() {
                     <Users className="h-4 w-4 text-blue-600" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-blue-600">{auditTrailAnalytics.user_activity.length}</div>
+                    <div className="text-2xl font-bold text-blue-600">{auditTrailAnalytics?.user_activity?.length || 0}</div>
                     <div className="text-xs text-muted-foreground">
                       Users with recent activity
                     </div>
@@ -1242,11 +1272,11 @@ export default function AnalyticsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {auditTrailAnalytics.user_activity.map((user, index) => (
+                    {auditTrailAnalytics.user_activity && auditTrailAnalytics.user_activity.length > 0 ? auditTrailAnalytics.user_activity.map((user, index) => (
                       <div key={user.user_id} className="flex items-center justify-between p-4 border rounded-lg">
                         <div className="flex items-center space-x-4">
                           <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
-                            {user.user_name.charAt(0).toUpperCase()}
+                            {(user.user_name || 'U').charAt(0).toUpperCase()}
                           </div>
                           <div>
                             <div className="font-medium">{user.user_name}</div>
@@ -1262,7 +1292,11 @@ export default function AnalyticsPage() {
                           </div>
                         </div>
                       </div>
-                    ))}
+                    )) : (
+                      <div className="text-center py-4 text-muted-foreground">
+                        No user activity data available
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -1275,7 +1309,7 @@ export default function AnalyticsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {auditTrailAnalytics.critical_actions.map((action, index) => (
+                    {auditTrailAnalytics.critical_actions && auditTrailAnalytics.critical_actions.length > 0 ? auditTrailAnalytics.critical_actions.map((action, index) => (
                       <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
                         <div className="flex items-center space-x-4">
                           <AlertTriangle className="h-5 w-5 text-orange-500" />
@@ -1288,7 +1322,11 @@ export default function AnalyticsPage() {
                         </div>
                         <Badge variant="destructive">{action.count} times</Badge>
                       </div>
-                    ))}
+                    )) : (
+                      <div className="text-center py-4 text-muted-foreground">
+                        No critical actions data available
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>

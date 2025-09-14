@@ -269,76 +269,76 @@ export default function Delivery() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mt-1">
+                <Truck className="h-6 w-6 text-blue-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-600">Ready for Delivery</p>
+                <p className="text-sm font-bold text-gray-900">Ready for Delivery</p>
                 <p className="text-2xl font-bold text-blue-600" data-testid="stat-ready-delivery">
                   {deliveryStats.readyForDelivery}
                 </p>
+                <div className="mt-2 text-sm text-gray-600">
+                  Shipped orders awaiting delivery
+                </div>
               </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Truck className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-            <div className="mt-2 text-sm text-gray-600">
-              Shipped orders awaiting delivery
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mt-1">
+                <Clock className="h-6 w-6 text-orange-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-600">Pending Delivery</p>
+                <p className="text-sm font-bold text-gray-900">Pending Delivery</p>
                 <p className="text-2xl font-bold text-orange-600" data-testid="stat-pending-delivery">
                   {deliveryStats.pendingDelivery}
                 </p>
+                <div className="mt-2 text-sm text-gray-600">
+                  Deliveries in progress
+                </div>
               </div>
-              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                <Clock className="h-6 w-6 text-orange-600" />
-              </div>
-            </div>
-            <div className="mt-2 text-sm text-gray-600">
-              Deliveries in progress
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center mt-1">
+                <AlertCircle className="h-6 w-6 text-amber-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-600">Partial Delivery</p>
+                <p className="text-sm font-bold text-gray-900">Partial Delivery</p>
                 <p className="text-2xl font-bold text-amber-600" data-testid="stat-partial-delivery">
                   {deliveryStats.partialDelivery}
                 </p>
+                <div className="mt-2 text-sm text-gray-600">
+                  Partially delivered orders
+                </div>
               </div>
-              <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
-                <AlertCircle className="h-6 w-6 text-amber-600" />
-              </div>
-            </div>
-            <div className="mt-2 text-sm text-gray-600">
-              Partially delivered orders
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mt-1">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-600">Complete Delivery</p>
+                <p className="text-sm font-bold text-gray-900">Complete Delivery</p>
                 <p className="text-2xl font-bold text-green-600" data-testid="stat-complete-delivery">
                   {deliveryStats.completeDelivery}
                 </p>
+                <div className="mt-2 text-sm text-gray-600">
+                  Successfully delivered orders
+                </div>
               </div>
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-            <div className="mt-2 text-sm text-gray-600">
-              Successfully delivered orders
             </div>
           </CardContent>
         </Card>
