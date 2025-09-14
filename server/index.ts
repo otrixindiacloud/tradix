@@ -91,6 +91,15 @@ app.use((req, res, next) => {
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
   server.listen(port, "localhost", () => {
-    log(`serving on port ${port}`);
+    // Lazy import dynamic storage (may still be initializing); log constructor when available
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const storageModule = require('./storage');
+      const activeStorage = storageModule.storage;
+      const ctorName = activeStorage ? activeStorage.constructor?.name : 'undefined';
+      log(`serving on port ${port} (storage=${ctorName})`);
+    } catch (e) {
+      log(`serving on port ${port} (storage=load-error)`);
+    }
   });
 })();

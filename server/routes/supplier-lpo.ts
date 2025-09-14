@@ -35,11 +35,11 @@ export function registerSupplierLpoRoutes(app: Express) {
   // Convenience: create Supplier LPO from a single sales order
   app.post("/api/supplier-lpos/from-sales-order", async (req, res) => {
     try {
-      const { salesOrderId } = req.body;
+      const { salesOrderId, supplierId } = req.body;
       if (!salesOrderId) {
         return res.status(400).json({ message: "salesOrderId required" });
       }
-      const lpos = await storage.createSupplierLposFromSalesOrders([salesOrderId], "supplier", getAttributingUserId(req));
+      const lpos = await storage.createSupplierLposFromSalesOrders([salesOrderId], "supplier", getAttributingUserId(req), supplierId);
       if (!lpos || lpos.length === 0) {
         return res.status(500).json({ message: "No Supplier LPO created" });
       }
@@ -58,11 +58,11 @@ export function registerSupplierLpoRoutes(app: Express) {
   // Batch: create Supplier LPOs from multiple sales orders
   app.post("/api/supplier-lpos/from-sales-orders", async (req, res) => {
     try {
-      const { salesOrderIds, groupBy = 'supplier' } = req.body;
+      const { salesOrderIds, groupBy = 'supplier', supplierId } = req.body;
       if (!Array.isArray(salesOrderIds) || salesOrderIds.length === 0) {
         return res.status(400).json({ message: "salesOrderIds array required" });
       }
-      const lpos = await storage.createSupplierLposFromSalesOrders(salesOrderIds, groupBy, getAttributingUserId(req));
+      const lpos = await storage.createSupplierLposFromSalesOrders(salesOrderIds, groupBy, getAttributingUserId(req), supplierId);
       res.status(201).json(lpos);
     } catch (error) {
       console.error("[SUPPLIER-LPO:BATCH] Error creating supplier LPOs from sales orders. Payload=", req.body);

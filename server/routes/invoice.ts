@@ -5,7 +5,9 @@ import {
   insertInvoiceItemSchema
 } from "@shared/schema";
 import { z } from "zod";
-import { generateInvoicePDF } from '../pdf-service-simple';
+// Unified PDF utilities
+import { generateInvoicePdf } from '../pdf/pdf-utils';
+import { sendPdf } from '../utils/pdf-response';
 
 export function registerInvoiceRoutes(app: Express) {
   // Invoice routes
@@ -251,7 +253,7 @@ export function registerInvoiceRoutes(app: Express) {
     }
   });
 
-  // Generate PDF for invoice with comprehensive information
+  // Generate PDF for invoice (unified service)
   app.get("/api/invoices/:id/pdf", async (req, res) => {
     try {
       const invoiceId = req.params.id;
@@ -304,24 +306,16 @@ export function registerInvoiceRoutes(app: Express) {
         console.warn('Could not fetch related order/delivery data:', error);
       }
 
-      // Generate comprehensive PDF with all material specifications
-      const pdfBuffer = pdfService.generateComprehensiveInvoicePDF({
-        invoice,
-        items: enhancedItems,
-        customer,
-        salesOrder,
-        delivery
+      // Build PDF
+      const result = generateInvoicePdf({
+        invoice: invoice as any,
+        items: enhancedItems as any,
+        customer: customer as any,
+        related: { salesOrder, delivery },
+        mode: 'enhanced'
       });
 
-      // Set response headers for PDF download
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoice.invoiceNumber}.pdf"`);
-      res.setHeader('Content-Length', pdfBuffer.length);
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-
-      res.send(pdfBuffer);
+  sendPdf(res, result);
     } catch (error) {
       console.error("Error generating comprehensive invoice PDF:", error);
       res.status(500).json({ 

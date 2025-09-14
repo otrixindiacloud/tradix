@@ -6,9 +6,17 @@ echo "=== Direct PDF Generation Test ==="
 echo "Waiting for server to start..."
 sleep 5
 
-# Test PDF generation with a simple GET request
-echo "Testing PDF generation endpoint..."
-curl -v -o test_invoice.pdf "http://localhost:5000/api/invoice/download?id=test-invoice" 2>&1
+# Resolve an existing invoice ID
+INVOICE_ID=$(curl -s "http://localhost:5000/api/invoices" | jq -r '.[0].id // empty')
+if [ -z "$INVOICE_ID" ]; then
+    echo "No invoices found via API. Cannot test invoice PDF endpoint. Create an invoice first."
+    exit 1
+fi
+
+# Test PDF generation with the unified endpoint
+echo "Testing invoice PDF endpoint (/api/invoices/$INVOICE_ID/pdf)..."
+curl -s -D headers.txt -o test_invoice.pdf "http://localhost:5000/api/invoices/$INVOICE_ID/pdf" -w "HTTP_STATUS:%{http_code}\n"
+grep -i "content-type" headers.txt || true
 
 # Check if PDF was generated
 if [ -f "test_invoice.pdf" ]; then

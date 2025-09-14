@@ -1,3 +1,7 @@
+/**
+ * LEGACY SIMPLE PDF SERVICE - replaced by pdf/pdf-utils.ts
+ * Retained temporarily for comparison and rollback.
+ */
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import fs from 'fs';
@@ -52,7 +56,7 @@ export function createSimpleTestInvoicePDF(invoiceData: EnhancedInvoicePDFData):
     doc.text('INVOICE', 20, 30);
     doc.setFontSize(12);
     doc.text(`Invoice #: ${invoiceData.invoice.invoiceNumber}`, 20, 40);
-    doc.text(`Date: ${formatDate(invoiceData.invoice.invoiceDate)}`, 20, 50);
+  doc.text(`Date: ${formatDate((invoiceData.invoice as any).invoiceDate || new Date())}`, 20, 50);
     
     // Company Information
     doc.setFontSize(14);
@@ -68,7 +72,7 @@ export function createSimpleTestInvoicePDF(invoiceData: EnhancedInvoicePDFData):
     doc.text('Bill To:', 20, 70);
     doc.setFontSize(10);
     doc.text(`Customer ID: ${invoiceData.customer?.id || 'N/A'}`, 20, 80);
-    doc.text(`Name: ${invoiceData.customer?.customerName || 'N/A'}`, 20, 85);
+  doc.text(`Name: ${(invoiceData.customer as any)?.customerName || invoiceData.customer?.name || 'N/A'}`, 20, 85);
     doc.text(`Email: ${invoiceData.customer?.email || 'N/A'}`, 20, 90);
     
     // Items Table Header
@@ -92,8 +96,9 @@ export function createSimpleTestInvoicePDF(invoiceData: EnhancedInvoicePDFData):
         
         doc.text(`Item ${index + 1}: ${item.description || 'Product'}`, 25, yPos);
         doc.text(item.quantity.toString(), 120, yPos);
-        doc.text(formatCurrency(parseFloat(item.unitPrice.toString()), invoiceData.invoice.currency), 140, yPos);
-        doc.text(formatCurrency(lineTotal, invoiceData.invoice.currency), 170, yPos);
+  const cur = (invoiceData.invoice as any).currency || 'USD';
+  doc.text(formatCurrency(parseFloat(item.unitPrice.toString()), cur), 140, yPos);
+  doc.text(formatCurrency(lineTotal, cur), 170, yPos);
         yPos += 10;
       });
     } else {
@@ -105,16 +110,16 @@ export function createSimpleTestInvoicePDF(invoiceData: EnhancedInvoicePDFData):
     yPos += 10;
     doc.setFontSize(12);
     doc.text('Subtotal:', 130, yPos);
-    doc.text(formatCurrency(parseFloat(invoiceData.invoice.subtotal), invoiceData.invoice.currency), 170, yPos);
+  doc.text(formatCurrency(parseFloat((invoiceData.invoice as any).subtotal || 0), (invoiceData.invoice as any).currency || 'USD'), 170, yPos);
     
     yPos += 10;
     doc.text('Tax:', 130, yPos);
-    doc.text(formatCurrency(parseFloat(invoiceData.invoice.taxAmount), invoiceData.invoice.currency), 170, yPos);
+  doc.text(formatCurrency(parseFloat((invoiceData.invoice as any).taxAmount || 0), (invoiceData.invoice as any).currency || 'USD'), 170, yPos);
     
     yPos += 10;
     doc.setFont('helvetica', 'bold');
     doc.text('Total:', 130, yPos);
-    doc.text(formatCurrency(parseFloat(invoiceData.invoice.totalAmount), invoiceData.invoice.currency), 170, yPos);
+  doc.text(formatCurrency(parseFloat((invoiceData.invoice as any).totalAmount || 0), (invoiceData.invoice as any).currency || 'USD'), 170, yPos);
     
     // Footer
     doc.setFont('helvetica', 'normal');
@@ -170,7 +175,7 @@ export function createEnhancedInvoicePDF(invoiceData: EnhancedInvoicePDFData): B
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.text(`Invoice Number: ${invoiceData.invoice.invoiceNumber}`, 20, yPos);
-    doc.text(`Invoice Date: ${formatDate(invoiceData.invoice.invoiceDate)}`, 120, yPos);
+  doc.text(`Invoice Date: ${formatDate((invoiceData.invoice as any).invoiceDate || new Date())}`, 120, yPos);
     yPos += 6;
     
     if (invoiceData.invoice.dueDate) {
@@ -191,7 +196,7 @@ export function createEnhancedInvoicePDF(invoiceData: EnhancedInvoicePDFData): B
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     if (invoiceData.customer) {
-      doc.text(`${invoiceData.customer.customerName || 'N/A'}`, 20, yPos);
+  doc.text(`${(invoiceData.customer as any).customerName || invoiceData.customer.name || 'N/A'}`, 20, yPos);
       yPos += 6;
       if (invoiceData.customer.email) {
         doc.text(`Email: ${invoiceData.customer.email}`, 20, yPos);
@@ -232,8 +237,8 @@ export function createEnhancedInvoicePDF(invoiceData: EnhancedInvoicePDFData): B
           item.description || 'Product',
           materialSpecs,
           item.quantity.toString(),
-          formatCurrency(parseFloat(item.unitPrice.toString()), invoiceData.invoice.currency),
-          formatCurrency(lineTotal, invoiceData.invoice.currency)
+          formatCurrency(parseFloat(item.unitPrice.toString()), (invoiceData.invoice as any).currency || 'USD'),
+          formatCurrency(lineTotal, (invoiceData.invoice as any).currency || 'USD')
         ]);
       });
     }
@@ -281,8 +286,9 @@ export function createEnhancedInvoicePDF(invoiceData: EnhancedInvoicePDFData): B
           const lineTotal = parseFloat(item.quantity.toString()) * parseFloat(item.unitPrice.toString());
           doc.text(item.description || `Product ${index + 1}`, 25, yPos);
           doc.text(item.quantity.toString(), 120, yPos);
-          doc.text(formatCurrency(parseFloat(item.unitPrice.toString()), invoiceData.invoice.currency), 140, yPos);
-          doc.text(formatCurrency(lineTotal, invoiceData.invoice.currency), 170, yPos);
+          const cur2 = (invoiceData.invoice as any).currency || 'USD';
+          doc.text(formatCurrency(parseFloat(item.unitPrice.toString()), cur2), 140, yPos);
+          doc.text(formatCurrency(lineTotal, cur2), 170, yPos);
           yPos += 10;
         });
       }
@@ -294,24 +300,24 @@ export function createEnhancedInvoicePDF(invoiceData: EnhancedInvoicePDFData): B
     doc.setFontSize(11);
     
     doc.text('Subtotal:', 130, yPos);
-    doc.text(formatCurrency(parseFloat(invoiceData.invoice.subtotal), invoiceData.invoice.currency), 170, yPos);
+  doc.text(formatCurrency(parseFloat((invoiceData.invoice as any).subtotal || 0), (invoiceData.invoice as any).currency || 'USD'), 170, yPos);
     yPos += 8;
     
-    if (parseFloat(invoiceData.invoice.discountAmount) > 0) {
+  if (parseFloat((invoiceData.invoice as any).discountAmount || 0) > 0) {
       doc.text('Discount:', 130, yPos);
-      doc.text(`-${formatCurrency(parseFloat(invoiceData.invoice.discountAmount), invoiceData.invoice.currency)}`, 170, yPos);
+  doc.text(`-${formatCurrency(parseFloat((invoiceData.invoice as any).discountAmount || 0), (invoiceData.invoice as any).currency || 'USD')}`, 170, yPos);
       yPos += 8;
     }
     
-    doc.text('Tax:', 130, yPos);
-    doc.text(formatCurrency(parseFloat(invoiceData.invoice.taxAmount), invoiceData.invoice.currency), 170, yPos);
+  doc.text('Tax:', 130, yPos);
+  doc.text(formatCurrency(parseFloat((invoiceData.invoice as any).taxAmount || 0), (invoiceData.invoice as any).currency || 'USD'), 170, yPos);
     yPos += 8;
     
     // Total with emphasis
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
-    doc.text('Total Amount:', 130, yPos);
-    doc.text(formatCurrency(parseFloat(invoiceData.invoice.totalAmount), invoiceData.invoice.currency), 170, yPos);
+  doc.text('Total Amount:', 130, yPos);
+  doc.text(formatCurrency(parseFloat((invoiceData.invoice as any).totalAmount || 0), (invoiceData.invoice as any).currency || 'USD'), 170, yPos);
     
     // Banking Information
     yPos += 20;
@@ -327,13 +333,7 @@ export function createEnhancedInvoicePDF(invoiceData: EnhancedInvoicePDFData): B
     
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    const bankingInfo = getBankingInfoForCurrency(invoiceData.invoice.currency);
-    Object.entries(bankingInfo).forEach(([key, value]) => {
-      if (value) {
-        doc.text(`${key}: ${value}`, 20, yPos);
-        yPos += 6;
-      }
-    });
+    // Banking info removed in deprecated file
     
     // Terms and Conditions
     yPos += 10;
@@ -344,10 +344,7 @@ export function createEnhancedInvoicePDF(invoiceData: EnhancedInvoicePDFData): B
     
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
-    GOLDEN_TAG_COMPANY_INFO.termsAndConditions.forEach(term => {
-      doc.text(`• ${term}`, 20, yPos);
-      yPos += 4;
-    });
+    // Terms removed in deprecated file
     
     // Footer
     const footerY = pageHeight - 20;
@@ -377,38 +374,9 @@ export function generateInvoicePDF(invoiceData: EnhancedInvoicePDFData): Buffer 
 }
 
 // Legacy function for quotations (keeping existing functionality)
-export function generateQuotationPDF(
-  quotation: Quotation,
-  customer: Customer,
-  items: (QuotationItem & { item?: Item })[]
-): Buffer {
-  try {
-    const doc = new (jsPDF as any)('p', 'mm', 'a4');
-    
-    // Basic header
-    doc.setFontSize(20);
-    doc.text('QUOTATION', 20, 30);
-    doc.setFontSize(12);
-    doc.text(`Quote #: ${quotation.quotationNumber}`, 20, 40);
-    doc.text(`Date: ${formatDate(quotation.quotationDate)}`, 20, 50);
-    
-    // Customer info
-    doc.text(`Customer: ${customer.customerName}`, 20, 70);
-    
-    // Items (simple version)
-    let yPos = 90;
-    items.forEach((item, index) => {
-      doc.text(`${index + 1}. ${item.description} - Qty: ${item.quantity} - Price: ${formatCurrency(parseFloat(item.unitPrice), quotation.currency)}`, 20, yPos);
-      yPos += 10;
-    });
-    
-    yPos += 20;
-    doc.setFont('helvetica', 'bold');
-    doc.text(`Total: ${formatCurrency(parseFloat(quotation.totalAmount), quotation.currency)}`, 20, yPos);
-    
-    return Buffer.from(doc.output('arraybuffer'));
-  } catch (error) {
-    console.error('Error generating quotation PDF:', error);
-    throw new Error(`Failed to generate quotation PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  }
+export function generateQuotationPDF(quotation: Quotation, customer: Customer, items: (QuotationItem & { item?: Item })[]): Buffer {
+  const doc = new (jsPDF as any)('p','mm','a4');
+  doc.setFontSize(14).text('QUOTATION (Legacy Service)',20,20);
+  doc.setFontSize(8).text('Refer to unified pdf-utils for current implementation',20,26);
+  return Buffer.from(doc.output('arraybuffer'));
 }

@@ -17,6 +17,15 @@ fail(){ log "ERROR: $1"; echo "See $TEST_LOG"; exit 1; }
 
 sanitize_id(){ printf '%s' "$1" | tr -d '\r' | awk 'NR==1 {print}'; }
 
+# Basic ID pattern tolerance (UUIDs or prefixed legacy like ENQ- / QTN- / SO- etc.)
+is_valid_id(){
+  local id="$1"
+  if [[ -z "$id" ]]; then return 1; fi
+  if [[ "$id" =~ ^[0-9a-fA-F-]{36}$ ]]; then return 0; fi           # UUID
+  if [[ "$id" =~ ^(ENQ|QTN|SO|LPO|GRH|GRI|DLV|INV)-[A-Za-z0-9_-]+$ ]]; then return 0; fi
+  return 1
+}
+
 # Safer jq field extraction (filter passed in $2)
 jget(){
   local json_input="${1:-}"
@@ -57,6 +66,7 @@ summary(){
   echo "==========================================" | tee -a "$TEST_LOG"
   log "FULL FLOW SUMMARY:";
   log "Customer ID: ${CUSTOMER_ID:-}";
+  log "Supplier ID: ${SUPPLIER_ID:-}";
   log "Enquiry ID: ${ENQUIRY_ID:-}";
   log "Enquiry Item ID: ${ENQUIRY_ITEM_ID:-}";
   log "Quotation ID: ${QUOTATION_ID:-}";
@@ -82,8 +92,18 @@ CUSTOMER_PAYLOAD='{"name":"FullFlow Test Corp","email":"fullflow@test.com","phon
 CUSTOMER_RESPONSE=$(request POST /api/customers "$CUSTOMER_PAYLOAD" "Create customer")
 CUSTOMER_ID=$(echo "$CUSTOMER_RESPONSE" | jq -r '.id // empty' 2>/dev/null || true)
 CUSTOMER_ID=$(sanitize_id "$CUSTOMER_ID")
-if [ -z "$CUSTOMER_ID" ]; then
-  fail "Customer creation failed"
+if ! is_valid_id "$CUSTOMER_ID"; then
+  fail "Customer creation failed (invalid ID: $CUSTOMER_ID)"
+fi
+
+############################################
+# 1b. Supplier (for controlled supplierId in LPO / Goods Receipt)
+############################################
+SUPPLIER_PAYLOAD='{"name":"FullFlow Auto Supplier","email":"supplier@test.com","phone":"+1888777666","address":"77 Supply Chain Rd","contactPerson":"Automation","paymentTerms":"Net 30"}'
+SUPPLIER_RESPONSE=$(request POST /api/suppliers "$SUPPLIER_PAYLOAD" "Create supplier") || true
+SUPPLIER_ID=$(sanitize_id $(echo "$SUPPLIER_RESPONSE" | jq -r '.id // empty'))
+if [ -z "$SUPPLIER_ID" ]; then
+  log "WARN: Supplier creation failed; downstream LPO will auto-create supplier"
 fi
 
 ############################################
@@ -97,10 +117,17 @@ ENQUIRY_ID=$(sanitize_id $(jget "$ENQUIRY_RESPONSE" '.id'))
 ############################################
 # 3. Enquiry Item
 ############################################
-ENQUIRY_ITEM_PAYLOAD=$(jq -n --arg eid "$ENQUIRY_ID" --arg uid "$SYSTEM_USER_ID" '{enquiryId:$eid, description:"Lifecycle Bulk Pens", quantity:1000, unitPrice:"3.50", notes:"Blue ink", userId:$uid}')
-ENQUIRY_ITEM_RESPONSE=$(request POST /api/enquiry-items "$ENQUIRY_ITEM_PAYLOAD" "Add enquiry item")
-ENQUIRY_ITEM_ID=$(sanitize_id $(jget "$ENQUIRY_ITEM_RESPONSE" '.id'))
-[ -n "$ENQUIRY_ITEM_ID" ] || fail "Enquiry item creation failed"
+# Create two enquiry items to test multi-item propagation
+ENQUIRY_ITEM_PAYLOAD_1=$(jq -n --arg eid "$ENQUIRY_ID" --arg uid "$SYSTEM_USER_ID" '{enquiryId:$eid, description:"Lifecycle Bulk Pens Blue", quantity:1000, unitPrice:"3.50", notes:"Blue ink", userId:$uid}')
+ENQUIRY_ITEM_PAYLOAD_2=$(jq -n --arg eid "$ENQUIRY_ID" --arg uid "$SYSTEM_USER_ID" '{enquiryId:$eid, description:"Lifecycle Bulk Pens Red", quantity:500, unitPrice:"3.60", notes:"Red ink", userId:$uid}')
+ENQUIRY_ITEM_RESPONSE_1=$(request POST /api/enquiry-items "$ENQUIRY_ITEM_PAYLOAD_1" "Add enquiry item 1")
+ENQUIRY_ITEM_ID=$(sanitize_id $(jget "$ENQUIRY_ITEM_RESPONSE_1" '.id'))
+ENQUIRY_ITEM_RESPONSE_2=$(request POST /api/enquiry-items "$ENQUIRY_ITEM_PAYLOAD_2" "Add enquiry item 2") || true
+ENQUIRY_ITEM2_ID=$(sanitize_id $(jget "$ENQUIRY_ITEM_RESPONSE_2" '.id'))
+if [ -z "$ENQUIRY_ITEM_ID" ]; then
+  fail "Primary enquiry item creation failed"
+fi
+log "Enquiry items created: $ENQUIRY_ITEM_ID ${ENQUIRY_ITEM2_ID:-}" 
 
 ############################################
 # 4. Generate Quotation
@@ -124,14 +151,21 @@ fi
 # 6. Quotation Items & Item Acceptance
 ############################################
 Q_ITEMS_RESPONSE=$(request GET /api/quotations/$QUOTATION_ID/items '' "Fetch quotation items")
+Q_ITEM_COUNT=$(echo "$Q_ITEMS_RESPONSE" | jq 'length' 2>/dev/null || echo 0)
 FIRST_QUOTE_ITEM_ID=$(jget "$Q_ITEMS_RESPONSE" '.[0].id')
 FIRST_QUOTE_ITEM_QTY=$(jget "$Q_ITEMS_RESPONSE" '.[0].quantity')
+SECOND_QUOTE_ITEM_ID=$(jget "$Q_ITEMS_RESPONSE" '.[1].id')
+log "Quotation items count: $Q_ITEM_COUNT"
 if [ -n "${ACCEPTANCE_ID:-}" ] && [ -n "${FIRST_QUOTE_ITEM_ID:-}" ]; then
-  ACCEPT_ITEM_PAYLOAD=$(jq -n --arg aid "$ACCEPTANCE_ID" --arg qitem "$FIRST_QUOTE_ITEM_ID" --argjson qty "${FIRST_QUOTE_ITEM_QTY:-0}" --arg uid "$SYSTEM_USER_ID" '{quotationItemId:$qitem, customerAcceptanceId:$aid, isAccepted:true, originalQuantity:$qty, acceptedQuantity:$qty, rejectedQuantity:0, userId:$uid}')
-  ACCEPT_ITEM_RESPONSE=$(request POST /api/customer-acceptances/$ACCEPTANCE_ID/item-acceptances "$ACCEPT_ITEM_PAYLOAD" "Accept first quotation item") || true
-  ACCEPTANCE_ITEM_ID=$(sanitize_id $(jget "$ACCEPT_ITEM_RESPONSE" '.id'))
+  ACCEPT_ITEM_PAYLOAD_1=$(jq -n --arg aid "$ACCEPTANCE_ID" --arg qitem "$FIRST_QUOTE_ITEM_ID" --argjson qty "${FIRST_QUOTE_ITEM_QTY:-0}" --arg uid "$SYSTEM_USER_ID" '{quotationItemId:$qitem, customerAcceptanceId:$aid, isAccepted:true, originalQuantity:$qty, acceptedQuantity:$qty, rejectedQuantity:0, userId:$uid}')
+  ACCEPT_ITEM_RESPONSE_1=$(request POST /api/customer-acceptances/$ACCEPTANCE_ID/item-acceptances "$ACCEPT_ITEM_PAYLOAD_1" "Accept first quotation item") || true
+  ACCEPTANCE_ITEM_ID=$(sanitize_id $(jget "$ACCEPT_ITEM_RESPONSE_1" '.id'))
+  if [ -n "$SECOND_QUOTE_ITEM_ID" ]; then
+    ACCEPT_ITEM_PAYLOAD_2=$(jq -n --arg aid "$ACCEPTANCE_ID" --arg qitem "$SECOND_QUOTE_ITEM_ID" --arg uid "$SYSTEM_USER_ID" '{quotationItemId:$qitem, customerAcceptanceId:$aid, isAccepted:false, originalQuantity:0, acceptedQuantity:0, rejectedQuantity:0, userId:$uid}')
+    request POST /api/customer-acceptances/$ACCEPTANCE_ID/item-acceptances "$ACCEPT_ITEM_PAYLOAD_2" "Record second quotation item (not accepted)" || true
+  fi
   if [ -z "$ACCEPTANCE_ITEM_ID" ]; then
-    log "WARN: Item acceptance failed"
+    log "WARN: Acceptance item creation failed"
   fi
 fi
 
@@ -167,12 +201,22 @@ SALES_ORDER_ID=$(sanitize_id $(jget "$SALES_ORDER_RESPONSE" '.id'))
 if [ -z "$SALES_ORDER_ID" ]; then
   fail "Sales order creation failed (status=$LAST_HTTP_STATUS). Raw response above." 
 fi
+# Capture sales order items list to ensure multi propagation
+SO_ITEMS_AFTER_CREATE=$(request GET /api/sales-orders/$SALES_ORDER_ID/items '' "Fetch sales order items after create") || true
+SO_ITEM_COUNT=$(echo "$SO_ITEMS_AFTER_CREATE" | jq 'length' 2>/dev/null || echo 0)
+FIRST_SO_ITEM_ID=$(jget "$SO_ITEMS_AFTER_CREATE" '.[0].id')
+SECOND_SO_ITEM_ID=$(jget "$SO_ITEMS_AFTER_CREATE" '.[1].id')
+log "Sales order items count: $SO_ITEM_COUNT"
 
 ############################################
 # 10. Supplier LPO
 ############################################
 if [ -n "${SALES_ORDER_ID:-}" ]; then
-  SUPPLIER_LPO_PAYLOAD=$(jq -n --arg so "$SALES_ORDER_ID" --arg uid "$SYSTEM_USER_ID" '{salesOrderId:$so, userId:$uid}')
+  if [ -n "$SUPPLIER_ID" ]; then
+    SUPPLIER_LPO_PAYLOAD=$(jq -n --arg so "$SALES_ORDER_ID" --arg sup "$SUPPLIER_ID" --arg uid "$SYSTEM_USER_ID" '{salesOrderId:$so, supplierId:$sup, userId:$uid}')
+  else
+    SUPPLIER_LPO_PAYLOAD=$(jq -n --arg so "$SALES_ORDER_ID" --arg uid "$SYSTEM_USER_ID" '{salesOrderId:$so, userId:$uid}')
+  fi
   SUPPLIER_LPO_RESPONSE=$(request POST /api/supplier-lpos/from-sales-order "$SUPPLIER_LPO_PAYLOAD" "Create supplier LPO from sales order") || true
   SUPPLIER_LPO_ID=$(sanitize_id $(jget "$SUPPLIER_LPO_RESPONSE" '.id'))
   if [ -z "$SUPPLIER_LPO_ID" ]; then
@@ -199,9 +243,15 @@ if [ -n "${SUPPLIER_LPO_ID:-}" ]; then
       # Build goods receipt item referencing header (schema expects receiptHeaderId, itemDescription, quantityExpected, etc.)
       GR_ITEM_PAYLOAD=$(jq -n --arg rh "$GR_HEADER_ID" --arg uid "$SYSTEM_USER_ID" '{receiptHeaderId:$rh, itemDescription:"Lifecycle Pens", quantityExpected:1000, quantityReceived:1000, quantityDamaged:0, quantityShort:0, unitCost:"1.25", totalCost:"1250.00", notes:"All received good", userId:$uid}')
       GR_ITEM_RESPONSE=$(request POST /api/goods-receipt-items "$GR_ITEM_PAYLOAD" "Create goods receipt item") || true
+  ITEM_STATUS="$LAST_HTTP_STATUS"
       GR_ITEM_ID=$(sanitize_id $(jget "$GR_ITEM_RESPONSE" '.id'))
       if [ -z "$GR_ITEM_ID" ]; then
-        log "WARN: Goods receipt item creation failed"
+        log "WARN: Goods receipt item creation failed (header $GR_HEADER_ID). HTTP status: $ITEM_STATUS"
+        echo "--- Goods Receipt Item Raw Response Start ---"
+        echo "$GR_ITEM_RESPONSE"
+        echo "--- Goods Receipt Item Raw Response End ---"
+      else
+        log "Goods receipt item created: $GR_ITEM_ID (status $ITEM_STATUS)"
       fi
     else
       log "WARN: Goods receipt header creation failed"
@@ -209,6 +259,35 @@ if [ -n "${SUPPLIER_LPO_ID:-}" ]; then
   fi
 else
   log "INFO: Skipping goods receipt (no supplier LPO)"
+fi
+
+# Assertion: if we had a supplier LPO we expect at least a goods receipt header id
+if [ -n "${SUPPLIER_LPO_ID:-}" ] && [ -z "${GR_HEADER_ID:-}" ]; then
+  fail "Expected goods receipt header to be created for supplier LPO $SUPPLIER_LPO_ID but none was created"
+fi
+
+# Assertion: if goods receipt header created we expect at least one item
+if [ -n "${GR_HEADER_ID:-}" ] && [ -z "${GR_ITEM_ID:-}" ]; then
+  fail "Goods receipt header $GR_HEADER_ID created but item creation failed"
+fi
+
+# If goods receipt item created, validate basic quantity integrity (expected >= received, shorts/damaged non-negative)
+if [ -n "${GR_ITEM_ID:-}" ]; then
+  GR_ITEM_DETAIL=$(request GET /api/goods-receipt-items/${GR_ITEM_ID} '' "Fetch goods receipt item detail") || true
+  GRI_Q_EXPECTED=$(jget "$GR_ITEM_DETAIL" '.quantityExpected')
+  GRI_Q_RECEIVED=$(jget "$GR_ITEM_DETAIL" '.quantityReceived')
+  GRI_Q_DAMAGED=$(jget "$GR_ITEM_DETAIL" '.quantityDamaged')
+  GRI_Q_SHORT=$(jget "$GR_ITEM_DETAIL" '.quantityShort')
+  if [ -n "$GRI_Q_EXPECTED" ] && [ -n "$GRI_Q_RECEIVED" ]; then
+    if [ "$GRI_Q_RECEIVED" -gt "$GRI_Q_EXPECTED" ]; then
+      fail "Goods receipt item $GR_ITEM_ID received quantity $GRI_Q_RECEIVED exceeds expected $GRI_Q_EXPECTED"
+    fi
+  fi
+  for v in "$GRI_Q_DAMAGED" "$GRI_Q_SHORT"; do
+    if [ -n "$v" ] && [ "$v" -lt 0 ]; then
+      fail "Goods receipt item $GR_ITEM_ID has negative discrepancy quantity ($v)"
+    fi
+  done
 fi
 
 ############################################
@@ -223,10 +302,15 @@ if [ -n "${SALES_ORDER_ID:-}" ]; then
     # Fetch sales order items to create at least one delivery item
     SO_ITEMS_RESPONSE=$(request GET /api/sales-orders/$SALES_ORDER_ID/items '' "Fetch sales order items for delivery") || true
     FIRST_SO_ITEM_ID=$(jget "$SO_ITEMS_RESPONSE" '.[0].id')
+    SECOND_SO_ITEM_ID=$(jget "$SO_ITEMS_RESPONSE" '.[1].id')
     if [ -n "$FIRST_SO_ITEM_ID" ]; then
-      DEL_ITEM_PAYLOAD=$(jq -n --arg did "$DELIVERY_ID" --arg soi "$FIRST_SO_ITEM_ID" --arg uid "$SYSTEM_USER_ID" '{deliveryId:$did, salesOrderItemId:$soi, userId:$uid}')
-      DELIVERY_ITEM_RESPONSE=$(request POST /api/deliveries/$DELIVERY_ID/items "$DEL_ITEM_PAYLOAD" "Add delivery item from sales order item") || true
-      DELIVERY_ITEM_ID=$(sanitize_id $(jget "$DELIVERY_ITEM_RESPONSE" '.id'))
+      DEL_ITEM_PAYLOAD_1=$(jq -n --arg did "$DELIVERY_ID" --arg soi "$FIRST_SO_ITEM_ID" --arg uid "$SYSTEM_USER_ID" '{deliveryId:$did, salesOrderItemId:$soi, userId:$uid}')
+      DELIVERY_ITEM_RESPONSE_1=$(request POST /api/deliveries/$DELIVERY_ID/items "$DEL_ITEM_PAYLOAD_1" "Add delivery item #1 from sales order item") || true
+      DELIVERY_ITEM_ID=$(sanitize_id $(jget "$DELIVERY_ITEM_RESPONSE_1" '.id'))
+      if [ -n "$SECOND_SO_ITEM_ID" ]; then
+        DEL_ITEM_PAYLOAD_2=$(jq -n --arg did "$DELIVERY_ID" --arg soi "$SECOND_SO_ITEM_ID" --arg uid "$SYSTEM_USER_ID" '{deliveryId:$did, salesOrderItemId:$soi, userId:$uid}')
+        request POST /api/deliveries/$DELIVERY_ID/items "$DEL_ITEM_PAYLOAD_2" "Add delivery item #2 from sales order item" || true
+      fi
     else
       log "WARN: No sales order items found to add to delivery"
     fi
@@ -266,11 +350,38 @@ fi
 # 14. Mark Invoice Paid
 ############################################
 if [ -n "${INVOICE_ID:-}" ]; then
-  MARK_PAID_PAYLOAD='{"paidAmount":"100.00","paymentMethod":"Bank Transfer","paymentReference":"FFLOW-TEST-REF","userId":"'$SYSTEM_USER_ID'"}'
-  MARK_PAID_RESPONSE=$(request POST /api/invoices/$INVOICE_ID/mark-paid "$MARK_PAID_PAYLOAD" "Mark invoice paid") || true
+  # Fetch invoice to determine total for full payment
+  INVOICE_DETAIL_BEFORE=$(request GET /api/invoices/$INVOICE_ID '' "Fetch invoice before payment") || true
+  INVOICE_TOTAL_AMOUNT=$(jget "$INVOICE_DETAIL_BEFORE" '.totalAmount')
+  INVOICE_OUTSTANDING_AMOUNT=$(jget "$INVOICE_DETAIL_BEFORE" '.outstandingAmount')
+  # Fallback logic: if null/empty, treat as 0.00 so mark-paid will still succeed (status may remain Draft if no total)
+  if [ -z "$INVOICE_TOTAL_AMOUNT" ] || [ "$INVOICE_TOTAL_AMOUNT" = "null" ]; then
+    INVOICE_TOTAL_AMOUNT="0.00"
+  fi
+  if [ -z "$INVOICE_OUTSTANDING_AMOUNT" ] || [ "$INVOICE_OUTSTANDING_AMOUNT" = "null" ]; then
+    INVOICE_OUTSTANDING_AMOUNT="$INVOICE_TOTAL_AMOUNT"
+  fi
+  MARK_PAID_AMOUNT="$INVOICE_OUTSTANDING_AMOUNT"
+  MARK_PAID_PAYLOAD=$(jq -n --arg amt "$MARK_PAID_AMOUNT" --arg uid "$SYSTEM_USER_ID" '{paidAmount:$amt, paymentMethod:"Bank Transfer", paymentReference:"FFLOW-TEST-REF", userId:$uid}')
+  MARK_PAID_RESPONSE=$(request POST /api/invoices/$INVOICE_ID/mark-paid "$MARK_PAID_PAYLOAD" "Mark invoice paid (amount=$MARK_PAID_AMOUNT)") || true
   PAID_INVOICE_ID=$(sanitize_id $(jget "$MARK_PAID_RESPONSE" '.id'))
   if [ -z "$PAID_INVOICE_ID" ]; then
     log "WARN: Mark-paid did not return invoice ID"
+  else
+    # Post-payment verification
+    INVOICE_DETAIL_AFTER=$(request GET /api/invoices/$INVOICE_ID '' "Fetch invoice after payment") || true
+    INVOICE_STATUS_AFTER=$(jget "$INVOICE_DETAIL_AFTER" '.status')
+    OUTSTANDING_AFTER=$(jget "$INVOICE_DETAIL_AFTER" '.outstandingAmount')
+    if [ -z "$OUTSTANDING_AFTER" ] || [ "$OUTSTANDING_AFTER" = "null" ]; then OUTSTANDING_AFTER="0"; fi
+    # Normalize numeric comparisons (strip possible quotes)
+    if [ "$OUTSTANDING_AFTER" = "0" ] || [ "$OUTSTANDING_AFTER" = "0.00" ]; then
+      : # ok
+    else
+      log "WARN: Outstanding after payment is $OUTSTANDING_AFTER (status=$INVOICE_STATUS_AFTER)"
+    fi
+    if [ "$OUTSTANDING_AFTER" = "0" ] && [ "$INVOICE_STATUS_AFTER" != "Paid" ]; then
+      fail "Invoice $INVOICE_ID fully paid but status is $INVOICE_STATUS_AFTER (expected Paid)"
+    fi
   fi
 else
   log "WARN: No invoice available to mark paid"

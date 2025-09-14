@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { storage } from "../storage";
+import { receiveStock } from "../services/stock-service.js";
 import { 
   insertGoodsReceiptHeaderSchema,
   insertGoodsReceiptItemSchema,
@@ -22,15 +23,17 @@ export function registerGoodsReceiptRoutes(app: Express) {
       const createdItems = await storage.bulkCreateGoodsReceiptItems(itemsWithHeaderId);
       for (const item of createdItems) {
         const qtyMoved = item.quantityReceived || item.quantityExpected || 0;
-        await storage.createStockMovement({
-          movementType: "IN",
-          itemId: item.itemId,
-          quantityBefore: 0,
-          quantityMoved: qtyMoved,
-          quantityAfter: qtyMoved,
-          referenceType: "GoodsReceipt",
-          referenceId: createdHeader.id
-        });
+        if (qtyMoved > 0 && item.itemId) {
+          await receiveStock({
+            itemId: item.itemId,
+            quantity: qtyMoved,
+            referenceType: "GoodsReceipt",
+            referenceId: createdHeader.id,
+            location: 'MAIN',
+            reason: 'Goods receipt',
+            createdBy: header?.receivedBy || 'system'
+          });
+        }
       }
       res.status(201).json({ header: createdHeader, items: createdItems });
     } catch (error) {
@@ -77,22 +80,46 @@ export function registerGoodsReceiptRoutes(app: Express) {
   app.post("/api/goods-receipt-headers", async (req, res) => {
     try {
       console.log('[GR HEADER][RAW BODY]', req.body);
+      const startTs = Date.now();
       try {
+        // Supplier existence validation (prevent opaque FK 500)
+        if (!req.body?.supplierId) {
+          return res.status(400).json({ message: "supplierId is required" });
+        }
+        const supplier = await storage.getSupplier(req.body.supplierId);
+        if (!supplier) {
+          return res.status(400).json({ message: `supplierId ${req.body.supplierId} does not exist` });
+        }
+        // If supplierLpoId provided but supplierId mismatch, warn (don't block yet)
+        if (req.body.supplierLpoId) {
+          try {
+            const lpo = await storage.getSupplierLpo(req.body.supplierLpoId);
+            if (lpo && lpo.supplierId && lpo.supplierId !== req.body.supplierId) {
+              console.warn('[GR HEADER][SUPPLIER MISMATCH]', { headerSupplierId: req.body.supplierId, lpoSupplierId: lpo.supplierId });
+            }
+          } catch (e) {
+            console.warn('[GR HEADER][LPO LOOKUP FAILED]', req.body.supplierLpoId, e);
+          }
+        }
         const headerData = insertGoodsReceiptHeaderSchema.parse(req.body);
+        console.log('[GR HEADER][PARSED]', headerData);
         const header = await storage.createGoodsReceiptHeader(headerData);
+        console.log('[GR HEADER][CREATED]', { id: header.id, supplierId: header.supplierId, status: header.status, processingMs: Date.now() - startTs });
         return res.status(201).json(header);
       } catch (zerr) {
         if (zerr instanceof z.ZodError) {
           console.error('[GR HEADER][VALIDATION ERROR]', JSON.stringify(zerr.errors, null, 2));
           return res.status(400).json({ message: "Invalid goods receipt header data", errors: zerr.errors, raw: req.body });
         }
-        throw zerr;
+        // Likely a database error or FK/unique violation
+        console.error('[GR HEADER][UNEXPECTED ERROR BEFORE RESPONSE]', zerr);
+        return res.status(500).json({ message: 'Failed to create goods receipt header', detail: (zerr as any)?.message });
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid goods receipt header data", errors: error.errors });
       }
-      console.error("Error creating goods receipt header:", error);
+      console.error("[GR HEADER][FINAL CATCH] Error creating goods receipt header:", error);
       res.status(500).json({ message: "Failed to create goods receipt header" });
     }
   });
@@ -131,8 +158,10 @@ export function registerGoodsReceiptRoutes(app: Express) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid goods receipt item data", errors: error.errors });
       }
-      console.error("Error creating goods receipt item:", error);
-      res.status(500).json({ message: "Failed to create goods receipt item" });
+      const devErr: any = error as any;
+      const dbInfo = devErr?.db ? { db: devErr.db } : {};
+      console.error("Error creating goods receipt item:", { message: devErr?.message, stack: devErr?.stack, ...dbInfo });
+      res.status(500).json({ message: "Failed to create goods receipt item", devError: devErr?.message, ...dbInfo });
     }
   });
 
@@ -246,6 +275,49 @@ export function registerGoodsReceiptRoutes(app: Express) {
       }
       console.error("Error bulk creating scanned items:", error);
       res.status(500).json({ message: "Failed to bulk create scanned items" });
+    }
+  });
+
+  // Finalize scanning session -> aggregate scanned items and create stock movements
+  app.post('/api/scanning-sessions/:id/finalize', async (req, res) => {
+    try {
+      const sessionId = req.params.id;
+      const session = await storage.getScanningSession(sessionId);
+      if (!session) return res.status(404).json({ message: 'Scanning session not found' });
+      if (session.status === 'Completed') {
+        return res.status(200).json({ message: 'Already finalized', session });
+      }
+      const scanned = await storage.getScannedItems(sessionId);
+      const grouped = new Map<string, number>();
+      for (const s of scanned) {
+        const invId: any = (s as any).inventoryItemId;
+        const qty: any = (s as any).quantityScanned;
+        if (!invId || !qty) continue;
+        grouped.set(invId, (grouped.get(invId) || 0) + qty);
+      }
+      const movements: any[] = [];
+      for (const [itemId, qty] of Array.from(grouped.entries())) {
+        if (qty > 0) {
+          try {
+            const mv = await receiveStock({
+              itemId,
+              quantity: qty,
+              referenceType: 'ScanFinalize',
+              referenceId: sessionId,
+              location: 'MAIN',
+              reason: 'Scanning session finalization'
+            });
+            movements.push(mv);
+          } catch (e) {
+            console.error('[ScanningSession][Finalize] Movement error', { itemId, qty, error: (e as any)?.message });
+          }
+        }
+      }
+      const updated = await storage.updateScanningSession(sessionId, { status: 'Completed' } as any);
+      res.json({ session: updated, movements });
+    } catch (error) {
+      console.error('[ScanningSession][Finalize] Error', error);
+      res.status(500).json({ message: 'Failed to finalize scanning session' });
     }
   });
 

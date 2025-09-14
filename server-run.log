@@ -5,581 +5,23 @@
 DATABASE_URL from env: SET
 NODE_ENV: development
 [STORAGE] Using modular database storage
-[dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+[dotenv@17.2.1] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
 [STORAGE] ModularStorage initialized successfully
-8:00:27 PM [express] serving on port 5000
-8:01:31 PM [express] POST /api/customers 201 in 594ms :: {"id":"483af735-d389-4599-a6f8-f1b3c8fba928…
-Received enquiry data: {
-  customerId: '483af735-d389-4599-a6f8-f1b3c8fba928',
-  source: 'Email',
-  targetDeliveryDate: '2025-12-31T00:00:00.000Z',
-  notes: 'Lifecycle test enquiry',
-  userId: '00000000-0000-0000-0000-000000000001'
-}
-insertEnquirySchema shape: {
-  customerId: ZodString {
-    spa: [Function: bound safeParseAsync] AsyncFunction,
-    _def: { checks: [Array], typeName: 'ZodString', coerce: false },
-    parse: [Function: bound parse],
-    safeParse: [Function: bound safeParse],
-    parseAsync: [Function: bound parseAsync] AsyncFunction,
-    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
-    refine: [Function: bound refine],
-    refinement: [Function: bound refinement],
-    superRefine: [Function: bound superRefine],
-    optional: [Function: bound optional],
-    nullable: [Function: bound nullable],
-    nullish: [Function: bound nullish],
-    array: [Function: bound array],
-    promise: [Function: bound promise],
-    or: [Function: bound or],
-    and: [Function: bound and],
-    transform: [Function: bound transform],
-    brand: [Function: bound brand],
-    default: [Function: bound default],
-    catch: [Function: bound catch],
-    describe: [Function: bound describe],
-    pipe: [Function: bound pipe],
-    readonly: [Function: bound readonly],
-    isNullable: [Function: bound isNullable],
-    isOptional: [Function: bound isOptional],
-    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
-  },
-  enquiryDate: ZodOptional {
-    spa: [Function: bound safeParseAsync] AsyncFunction,
-    _def: {
-      innerType: [ZodNullable],
-      typeName: 'ZodOptional',
-      errorMap: [Function: customMap],
-      description: undefined
-    },
-    parse: [Function: bound parse],
-    safeParse: [Function: bound safeParse],
-    parseAsync: [Function: bound parseAsync] AsyncFunction,
-    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
-    refine: [Function: bound refine],
-    refinement: [Function: bound refinement],
-    superRefine: [Function: bound superRefine],
-    optional: [Function: bound optional],
-    nullable: [Function: bound nullable],
-    nullish: [Function: bound nullish],
-    array: [Function: bound array],
-    promise: [Function: bound promise],
-    or: [Function: bound or],
-    and: [Function: bound and],
-    transform: [Function: bound transform],
-    brand: [Function: bound brand],
-    default: [Function: bound default],
-    catch: [Function: bound catch],
-    describe: [Function: bound describe],
-    pipe: [Function: bound pipe],
-    readonly: [Function: bound readonly],
-    isNullable: [Function: bound isNullable],
-    isOptional: [Function: bound isOptional],
-    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
-  },
-  status: ZodOptional {
-    spa: [Function: bound safeParseAsync] AsyncFunction,
-    _def: {
-      innerType: [ZodNullable],
-      typeName: 'ZodOptional',
-      errorMap: [Function: customMap],
-      description: undefined
-    },
-    parse: [Function: bound parse],
-    safeParse: [Function: bound safeParse],
-    parseAsync: [Function: bound parseAsync] AsyncFunction,
-    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
-    refine: [Function: bound refine],
-    refinement: [Function: bound refinement],
-    superRefine: [Function: bound superRefine],
-    optional: [Function: bound optional],
-    nullable: [Function: bound nullable],
-    nullish: [Function: bound nullish],
-    array: [Function: bound array],
-    promise: [Function: bound promise],
-    or: [Function: bound or],
-    and: [Function: bound and],
-    transform: [Function: bound transform],
-    brand: [Function: bound brand],
-    default: [Function: bound default],
-    catch: [Function: bound catch],
-    describe: [Function: bound describe],
-    pipe: [Function: bound pipe],
-    readonly: [Function: bound readonly],
-    isNullable: [Function: bound isNullable],
-    isOptional: [Function: bound isOptional],
-    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
-  },
-  source: ZodEnum {
-    spa: [Function: bound safeParseAsync] AsyncFunction,
-    _def: { values: [Array], typeName: 'ZodEnum' },
-    parse: [Function: bound parse],
-    safeParse: [Function: bound safeParse],
-    parseAsync: [Function: bound parseAsync] AsyncFunction,
-    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
-    refine: [Function: bound refine],
-    refinement: [Function: bound refinement],
-    superRefine: [Function: bound superRefine],
-    optional: [Function: bound optional],
-    nullable: [Function: bound nullable],
-    nullish: [Function: bound nullish],
-    array: [Function: bound array],
-    promise: [Function: bound promise],
-    or: [Function: bound or],
-    and: [Function: bound and],
-    transform: [Function: bound transform],
-    brand: [Function: bound brand],
-    default: [Function: bound default],
-    catch: [Function: bound catch],
-    describe: [Function: bound describe],
-    pipe: [Function: bound pipe],
-    readonly: [Function: bound readonly],
-    isNullable: [Function: bound isNullable],
-    isOptional: [Function: bound isOptional],
-    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
-  },
-  targetDeliveryDate: ZodOptional {
-    spa: [Function: bound safeParseAsync] AsyncFunction,
-    _def: {
-      innerType: [ZodString],
-      typeName: 'ZodOptional',
-      errorMap: [Function: customMap],
-      description: undefined
-    },
-    parse: [Function: bound parse],
-    safeParse: [Function: bound safeParse],
-    parseAsync: [Function: bound parseAsync] AsyncFunction,
-    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
-    refine: [Function: bound refine],
-    refinement: [Function: bound refinement],
-    superRefine: [Function: bound superRefine],
-    optional: [Function: bound optional],
-    nullable: [Function: bound nullable],
-    nullish: [Function: bound nullish],
-    array: [Function: bound array],
-    promise: [Function: bound promise],
-    or: [Function: bound or],
-    and: [Function: bound and],
-    transform: [Function: bound transform],
-    brand: [Function: bound brand],
-    default: [Function: bound default],
-    catch: [Function: bound catch],
-    describe: [Function: bound describe],
-    pipe: [Function: bound pipe],
-    readonly: [Function: bound readonly],
-    isNullable: [Function: bound isNullable],
-    isOptional: [Function: bound isOptional],
-    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
-  },
-  notes: ZodOptional {
-    spa: [Function: bound safeParseAsync] AsyncFunction,
-    _def: {
-      innerType: [ZodNullable],
-      typeName: 'ZodOptional',
-      errorMap: [Function: customMap],
-      description: undefined
-    },
-    parse: [Function: bound parse],
-    safeParse: [Function: bound safeParse],
-    parseAsync: [Function: bound parseAsync] AsyncFunction,
-    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
-    refine: [Function: bound refine],
-    refinement: [Function: bound refinement],
-    superRefine: [Function: bound superRefine],
-    optional: [Function: bound optional],
-    nullable: [Function: bound nullable],
-    nullish: [Function: bound nullish],
-    array: [Function: bound array],
-    promise: [Function: bound promise],
-    or: [Function: bound or],
-    and: [Function: bound and],
-    transform: [Function: bound transform],
-    brand: [Function: bound brand],
-    default: [Function: bound default],
-    catch: [Function: bound catch],
-    describe: [Function: bound describe],
-    pipe: [Function: bound pipe],
-    readonly: [Function: bound readonly],
-    isNullable: [Function: bound isNullable],
-    isOptional: [Function: bound isOptional],
-    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
-  },
-  attachments: ZodOptional {
-    spa: [Function: bound safeParseAsync] AsyncFunction,
-    _def: {
-      innerType: [ZodNullable],
-      typeName: 'ZodOptional',
-      errorMap: [Function: customMap],
-      description: undefined
-    },
-    parse: [Function: bound parse],
-    safeParse: [Function: bound safeParse],
-    parseAsync: [Function: bound parseAsync] AsyncFunction,
-    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
-    refine: [Function: bound refine],
-    refinement: [Function: bound refinement],
-    superRefine: [Function: bound superRefine],
-    optional: [Function: bound optional],
-    nullable: [Function: bound nullable],
-    nullish: [Function: bound nullish],
-    array: [Function: bound array],
-    promise: [Function: bound promise],
-    or: [Function: bound or],
-    and: [Function: bound and],
-    transform: [Function: bound transform],
-    brand: [Function: bound brand],
-    default: [Function: bound default],
-    catch: [Function: bound catch],
-    describe: [Function: bound describe],
-    pipe: [Function: bound pipe],
-    readonly: [Function: bound readonly],
-    isNullable: [Function: bound isNullable],
-    isOptional: [Function: bound isOptional],
-    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
-  },
-  createdBy: ZodOptional {
-    spa: [Function: bound safeParseAsync] AsyncFunction,
-    _def: {
-      innerType: [ZodString],
-      typeName: 'ZodOptional',
-      errorMap: [Function: customMap],
-      description: undefined
-    },
-    parse: [Function: bound parse],
-    safeParse: [Function: bound safeParse],
-    parseAsync: [Function: bound parseAsync] AsyncFunction,
-    safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
-    refine: [Function: bound refine],
-    refinement: [Function: bound refinement],
-    superRefine: [Function: bound superRefine],
-    optional: [Function: bound optional],
-    nullable: [Function: bound nullable],
-    nullish: [Function: bound nullish],
-    array: [Function: bound array],
-    promise: [Function: bound promise],
-    or: [Function: bound or],
-    and: [Function: bound and],
-    transform: [Function: bound transform],
-    brand: [Function: bound brand],
-    default: [Function: bound default],
-    catch: [Function: bound catch],
-    describe: [Function: bound describe],
-    pipe: [Function: bound pipe],
-    readonly: [Function: bound readonly],
-    isNullable: [Function: bound isNullable],
-    isOptional: [Function: bound isOptional],
-    '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] }
-  }
-}
-Creating enquiry with data: {
-  customerId: '483af735-d389-4599-a6f8-f1b3c8fba928',
-  source: 'Email',
-  targetDeliveryDate: '2025-12-31T00:00:00.000Z',
-  notes: 'Lifecycle test enquiry'
-}
-Generated enquiry number: ENQ-2024-070
-Processed data: {
-  customerId: '483af735-d389-4599-a6f8-f1b3c8fba928',
-  source: 'Email',
-  targetDeliveryDate: 2025-12-31T00:00:00.000Z,
-  notes: 'Lifecycle test enquiry',
-  enquiryNumber: 'ENQ-2024-070'
-}
-Created enquiry: {
-  id: 'c054233d-43be-4647-9f83-6230cf4e273a',
-  enquiryNumber: 'ENQ-2024-070',
-  customerId: '483af735-d389-4599-a6f8-f1b3c8fba928',
-  enquiryDate: 2025-09-14T20:01:32.225Z,
-  status: 'New',
-  source: 'Email',
-  targetDeliveryDate: 2025-12-31T00:00:00.000Z,
-  notes: 'Lifecycle test enquiry',
-  attachments: null,
-  createdBy: null,
-  createdAt: 2025-09-14T20:01:32.225Z,
-  updatedAt: 2025-09-14T20:01:32.225Z
-}
-8:01:32 PM [express] POST /api/enquiries 201 in 851ms :: {"id":"c054233d-43be-4647-9f83-6230cf4e273a…
-8:01:33 PM [express] POST /api/enquiry-items 201 in 571ms :: {"id":"4484f4ae-4773-44fb-8d1b-df3f077e…
-Generating quotation for enquiry: c054233d-43be-4647-9f83-6230cf4e273a
-generateQuotationFromEnquiry called with: {
-  enquiryId: 'c054233d-43be-4647-9f83-6230cf4e273a',
-  userId: 'e459998e-0a4d-4652-946e-44b2ba161d16'
-}
-Retrieved enquiry and customer: {
-  enquiry: {
-    id: 'c054233d-43be-4647-9f83-6230cf4e273a',
-    notes: 'Lifecycle test enquiry'
-  },
-  customer: {
-    id: '483af735-d389-4599-a6f8-f1b3c8fba928',
-    name: 'FullFlow Test Corp',
-    customerType: 'Wholesale'
-  }
-}
-Retrieved enquiry items: 1 items
-Calculated markup: 0.4
-Creating quotation with data: {
-  customerId: '483af735-d389-4599-a6f8-f1b3c8fba928',
-  customerType: 'Wholesale',
-  enquiryId: 'c054233d-43be-4647-9f83-6230cf4e273a',
-  status: 'Draft',
-  validUntil: 2025-10-14T20:01:33.602Z,
-  subtotal: '0',
-  discountPercentage: '0',
-  discountAmount: '0',
-  taxAmount: '0',
-  totalAmount: '0',
-  notes: 'Generated from enquiry ENQ-2024-070',
-  createdBy: 'e459998e-0a4d-4652-946e-44b2ba161d16'
-}
-Successfully created quotation: {
-  id: '9169b548-a2f8-4166-8e26-c525693ffd97',
-  quoteNumber: 'QT-093602TEBE',
-  revision: 1,
-  parentQuotationId: null,
-  revisionReason: null,
-  supersededAt: null,
-  supersededBy: null,
-  isSuperseded: false,
-  enquiryId: 'c054233d-43be-4647-9f83-6230cf4e273a',
-  customerId: '483af735-d389-4599-a6f8-f1b3c8fba928',
-  customerType: 'Wholesale',
-  status: 'Draft',
-  quoteDate: 2025-09-14T20:01:33.992Z,
-  validUntil: 2025-10-14T20:01:33.602Z,
-  subtotal: '0.00',
-  discountPercentage: '0.00',
-  discountAmount: '0.00',
-  taxAmount: '0.00',
-  totalAmount: '0.00',
-  terms: null,
-  notes: 'Generated from enquiry ENQ-2024-070',
-  approvalStatus: 'Pending',
-  requiredApprovalLevel: null,
-  approvedBy: null,
-  approvedAt: null,
-  rejectionReason: null,
-  createdBy: 'e459998e-0a4d-4652-946e-44b2ba161d16',
-  createdAt: 2025-09-14T20:01:33.898Z,
-  updatedAt: 2025-09-14T20:01:33.898Z
-}
-Creating quotation item: {
-  quotationId: '9169b548-a2f8-4166-8e26-c525693ffd97',
-  description: 'Lifecycle Bulk Pens',
-  quantity: 1000,
-  costPrice: '3.5000',
-  markup: '40.00',
-  unitPrice: '4.9000',
-  lineTotal: '4900.00',
-  notes: 'Blue ink'
-}
-Updating quotation totals: { subtotal: '4900.00', totalAmount: '4900.00' }
-Error logging audit event: error: invalid input syntax for type uuid: "system"
-    at file:///workspaces/tradix/node_modules/@neondatabase/serverless/index.mjs:1345:74
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async QuotationStorage.logAuditEvent (/workspaces/tradix/server/storage/base.ts:28:7)
-    at async QuotationStorage.updateQuotation (/workspaces/tradix/server/storage/quotation-storage.ts:165:5)
-    at async QuotationStorage.generateQuotationFromEnquiry (/workspaces/tradix/server/storage/quotation-storage.ts:282:9)
-    at async <anonymous> (/workspaces/tradix/server/routes/quotations.ts:89:25) {
-  length: 138,
-  severity: 'ERROR',
-  code: '22P02',
-  detail: undefined,
-  hint: undefined,
-  position: undefined,
-  internalPosition: undefined,
-  internalQuery: undefined,
-  where: "unnamed portal parameter $6 = '...'",
-  schema: undefined,
-  table: undefined,
-  column: undefined,
-  dataType: undefined,
-  constraint: undefined,
-  file: 'uuid.c',
-  line: '133',
-  routine: 'string_to_uuid'
-}
-Successfully generated quotation with items from enquiry
-Quotation generated successfully: 9169b548-a2f8-4166-8e26-c525693ffd97
-8:01:35 PM [express] POST /api/quotations/generate/c054233d-43be-4647-9f83-6230cf4e273a 201 in 2822m…
-[ACCEPTANCE] Create request body: {
-  quotationId: '9169b548-a2f8-4166-8e26-c525693ffd97',
-  acceptanceType: 'Full',
-  acceptedBy: 'Auto Tester',
-  customerEmail: 'customer@example.com',
-  customerNotes: 'Automated full acceptance',
-  internalNotes: 'Script acceptance',
-  userId: '00000000-0000-0000-0000-000000000001'
-}
-[ACCEPTANCE] Created acceptance: {
-  id: 'ac93d395-291d-4229-a941-a08f69d97b45',
-  quotationId: '9169b548-a2f8-4166-8e26-c525693ffd97',
-  acceptanceType: 'Full',
-  acceptedAt: 2025-09-14T20:01:35.984Z,
-  acceptedBy: 'Auto Tester',
-  customerEmail: 'customer@example.com',
-  customerNotes: 'Automated full acceptance',
-  totalAcceptedAmount: null,
-  status: 'Active',
-  internalNotes: 'Script acceptance',
-  processedBy: null,
-  processedAt: null,
-  createdAt: 2025-09-14T20:01:35.984Z,
-  updatedAt: 2025-09-14T20:01:35.984Z
-}
-8:01:36 PM [express] POST /api/customer-acceptances 201 in 294ms :: {"id":"ac93d395-291d-4229-a941-a…
-Fetching quotation items for quotation ID: 9169b548-a2f8-4166-8e26-c525693ffd97
-Found quotation items: 1
-8:01:36 PM [express] GET /api/quotations/9169b548-a2f8-4166-8e26-c525693ffd97/items 200 in 279ms :: …
-[ITEM-ACCEPTANCE] Single create body: {
-  quotationItemId: 'fba8e7d0-7164-4cc9-a449-138e664287d5',
-  customerAcceptanceId: 'ac93d395-291d-4229-a941-a08f69d97b45',
-  isAccepted: true,
-  originalQuantity: 1000,
-  acceptedQuantity: 1000,
-  rejectedQuantity: 0,
-  userId: '00000000-0000-0000-0000-000000000001'
-}
-[ITEM-ACCEPTANCE] Created: {
-  id: 'b37873c1-d805-4686-8bc9-c25cbd2c04fa',
-  customerAcceptanceId: 'ac93d395-291d-4229-a941-a08f69d97b45',
-  quotationItemId: 'fba8e7d0-7164-4cc9-a449-138e664287d5',
-  isAccepted: true,
-  originalQuantity: 1000,
-  acceptedQuantity: 1000,
-  rejectedQuantity: 0,
-  rejectionReason: null,
-  customerNotes: null,
-  acceptedUnitPrice: null,
-  acceptedLineTotal: null,
-  deliveryRequirement: null,
-  priority: 'Medium',
-  createdAt: 2025-09-14T20:01:36.609Z,
-  updatedAt: 2025-09-14T20:01:36.609Z
-}
-8:01:36 PM [express] POST /api/customer-acceptances/ac93d395-291d-4229-a941-a08f69d97b45/item-accept…
-Error logging audit event: error: invalid input syntax for type uuid: "system"
-    at file:///workspaces/tradix/node_modules/@neondatabase/serverless/index.mjs:1345:74
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async QuotationStorage.logAuditEvent (/workspaces/tradix/server/storage/base.ts:28:7)
-    at async QuotationStorage.updateQuotation (/workspaces/tradix/server/storage/quotation-storage.ts:165:5)
-    at async <anonymous> (/workspaces/tradix/server/routes/quotations.ts:62:25) {
-  length: 138,
-  severity: 'ERROR',
-  code: '22P02',
-  detail: undefined,
-  hint: undefined,
-  position: undefined,
-  internalPosition: undefined,
-  internalQuery: undefined,
-  where: "unnamed portal parameter $6 = '...'",
-  schema: undefined,
-  table: undefined,
-  column: undefined,
-  dataType: undefined,
-  constraint: undefined,
-  file: 'uuid.c',
-  line: '133',
-  routine: 'string_to_uuid'
-}
-8:01:37 PM [express] PUT /api/quotations/9169b548-a2f8-4166-8e26-c525693ffd97 200 in 830ms :: {"id":…
-[PO-STORAGE] createPurchaseOrder received: { poDateType: 'object', poDateValue: 2025-12-01T00:00:00.000Z }
-8:01:40 PM [express] POST /api/customer-po-upload 201 in 2708ms :: {"id":"2f19c03e-9d79-4bbd-b7da-f8…
-8:01:42 PM [express] POST /api/sales-orders/from-quotation 201 in 1700ms :: {"id":"5a4ce552-6026-441…
-[SupplierLpoStorage.createSupplierLpo] Preparing insert {
-  lpoNumber: 'LPO-102693PR28',
-  supplierId: '93b80e4e-ecf9-4a50-a25c-b819a498cf2f'
-}
-[SupplierLpoStorage.createSupplierLpo] Insert record {
-  lpoNumber: 'LPO-102693PR28',
-  supplierId: '93b80e4e-ecf9-4a50-a25c-b819a498cf2f',
-  status: 'Draft',
-  sourceType: 'Auto',
-  groupingCriteria: 'supplier',
-  subtotal: '4900.00',
-  taxAmount: undefined,
-  totalAmount: '4900.00',
-  currency: 'USD',
-  requiresApproval: false,
-  approvalStatus: 'Not Required',
-  createdBy: 'e459998e-0a4d-4652-946e-44b2ba161d16',
-  createdAt: 2025-09-14T20:01:42.971Z,
-  updatedAt: 2025-09-14T20:01:42.971Z,
-  version: 1,
-  sourceSalesOrderIds: [ '5a4ce552-6026-4417-955f-933516026484' ],
-  sourceQuotationIds: undefined
-}
-[SupplierLpoStorage.createSupplierLpo] Insert result [
-  {
-    id: '889636b7-d8d2-40fe-8733-d33b9fe9ff2e',
-    lpoNumber: 'LPO-102693PR28',
-    supplierId: '93b80e4e-ecf9-4a50-a25c-b819a498cf2f',
-    status: 'Draft',
-    lpoDate: 2025-09-14T20:01:43.064Z,
-    expectedDeliveryDate: null,
-    requestedDeliveryDate: null,
-    sourceType: 'Auto',
-    sourceSalesOrderIds: [ '5a4ce552-6026-4417-955f-933516026484' ],
-    sourceQuotationIds: null,
-    groupingCriteria: 'supplier',
-    subtotal: '4900.00',
-    taxAmount: null,
-    totalAmount: '4900.00',
-    currency: 'USD',
-    supplierContactPerson: null,
-    supplierEmail: null,
-    supplierPhone: null,
-    paymentTerms: null,
-    deliveryTerms: null,
-    termsAndConditions: null,
-    specialInstructions: null,
-    version: 1,
-    parentLpoId: null,
-    amendmentReason: null,
-    amendmentType: null,
-    requiresApproval: false,
-    approvalStatus: 'Not Required',
-    approvedBy: null,
-    approvedAt: null,
-    approvalNotes: null,
-    sentToSupplierAt: null,
-    confirmedBySupplierAt: null,
-    supplierConfirmationReference: null,
-    createdBy: 'e459998e-0a4d-4652-946e-44b2ba161d16',
-    createdAt: 2025-09-14T20:01:42.971Z,
-    updatedAt: 2025-09-14T20:01:42.971Z
-  }
-]
-8:01:43 PM [express] POST /api/supplier-lpos/from-sales-order 201 in 1666ms :: {"id":"889636b7-d8d2-…
-8:01:44 PM [express] GET /api/supplier-lpos/889636b7-d8d2-40fe-8733-d33b9fe9ff2e 200 in 273ms :: {"i…
-[GR HEADER][RAW BODY] {
-  supplierLpoId: '889636b7-d8d2-40fe-8733-d33b9fe9ff2e',
-  supplierId: '93b80e4e-ecf9-4a50-a25c-b819a498cf2f',
-  receiptNumber: 'GR-1757880104',
-  receiptDate: '2025-09-14',
-  status: 'Draft',
-  notes: 'Auto GR header',
-  userId: '00000000-0000-0000-0000-000000000001'
-}
-8:01:44 PM [express] POST /api/goods-receipt-headers 201 in 284ms :: {"id":"T9kk85H3NckOrPBeHaXTh","…
-8:01:44 PM [express] POST /api/goods-receipt-items 201 in 287ms :: {"id":"riZI8fofTAl6V-0oRTBj8","re…
-8:01:45 PM [express] POST /api/deliveries 201 in 285ms :: {"id":"4e43bab5-192e-45ca-8852-c49d31635c1…
-8:01:45 PM [express] GET /api/sales-orders/5a4ce552-6026-4417-955f-933516026484/items 200 in 273ms :…
-8:01:46 PM [express] POST /api/deliveries/4e43bab5-192e-45ca-8852-c49d31635c1b/items 201 in 826ms ::…
-Error confirming delivery: TypeError: Cannot read properties of undefined (reading 'update')
-    at DeliveryStorage.confirmDelivery (/workspaces/tradix/server/storage/delivery-storage.ts:206:10)
-    at Proxy.confirmDelivery (/workspaces/tradix/server/storage/modular-storage-clean.ts:510:33)
-    at <anonymous> (/workspaces/tradix/server/routes/delivery.ts:224:38)
+10:58:14 PM [express] serving on port 5000 (storage=load-error)
+10:58:46 PM [express] GET /api/invoices 200 in 321ms :: [{"id":"fc2ab6a1-b352-478c-9dd4-9bd07e7aa048"…
+10:58:46 PM [express] GET /api/auth/me 304 in 866ms :: {"user":{"id":"8bcd3a5f-10fc-4491-9258-a62b5bf…
+getInventoryItems: Using stub implementation - should be moved to InventoryStorage
+10:58:46 PM [express] GET /api/inventory-items 304 in 1ms :: []
+10:58:47 PM [express] GET /api/suppliers 304 in 285ms :: [{"id":"09c62848-86bd-42de-b9c5-b6c46bb31f38…
+Error fetching inventory levels: Error: Method 'getInventoryLevels' not yet implemented in modular storage. Please implement it in the appropriate storage module.
+    at Proxy.<anonymous> (/workspaces/tradix/server/storage/modular-storage-clean.ts:69:17)
+    at <anonymous> (/workspaces/tradix/server/routes/inventory.ts:178:36)
     at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
     at next (/workspaces/tradix/node_modules/express/lib/router/route.js:149:13)
     at Route.dispatch (/workspaces/tradix/node_modules/express/lib/router/route.js:119:3)
     at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
     at /workspaces/tradix/node_modules/express/lib/router/index.js:284:15
-    at param (/workspaces/tradix/node_modules/express/lib/router/index.js:365:14)
-    at param (/workspaces/tradix/node_modules/express/lib/router/index.js:376:14)
-    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:421:3)
+    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
     at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
     at <anonymous> (/workspaces/tradix/server/index.ts:46:3)
     at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
@@ -593,32 +35,46 @@ Error confirming delivery: TypeError: Cannot read properties of undefined (readi
     at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
     at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
     at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
-    at urlencodedParser (/workspaces/tradix/node_modules/body-parser/lib/types/urlencoded.js:85:7)
+    at urlencodedParser (/workspaces/tradix/node_modules/body-parser/lib/types/urlencoded.js:94:7)
     at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
     at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
     at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
     at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
     at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
-    at /workspaces/tradix/node_modules/body-parser/lib/read.js:137:5
-    at AsyncResource.runInAsyncScope (node:async_hooks:214:14)
-    at invokeCallback (/workspaces/tradix/node_modules/raw-body/index.js:238:16)
-    at done (/workspaces/tradix/node_modules/raw-body/index.js:227:7)
-    at IncomingMessage.onEnd (/workspaces/tradix/node_modules/raw-body/index.js:287:7)
-    at IncomingMessage.emit (node:events:518:28)
-    at endReadableNT (node:internal/streams/readable:1698:12)
-    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
-Error confirming delivery: Error: Failed to confirm delivery
-    at DeliveryStorage.confirmDelivery (/workspaces/tradix/server/storage/delivery-storage.ts:224:13)
-    at Proxy.confirmDelivery (/workspaces/tradix/server/storage/modular-storage-clean.ts:510:33)
-    at <anonymous> (/workspaces/tradix/server/routes/delivery.ts:224:38)
+    at jsonParser (/workspaces/tradix/node_modules/body-parser/lib/types/json.js:113:7)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
+    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
+    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
+    at expressInit (/workspaces/tradix/node_modules/express/lib/middleware/init.js:40:5)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
+    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
+    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
+    at query (/workspaces/tradix/node_modules/express/lib/middleware/query.js:45:5)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
+    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
+    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/workspaces/tradix/node_modules/express/lib/router/index.js:175:3)
+    at Function.handle (/workspaces/tradix/node_modules/express/lib/application.js:181:10)
+    at Server.app (/workspaces/tradix/node_modules/express/lib/express.js:39:9)
+    at Server.emit (node:events:518:28)
+    at parserOnIncoming (node:_http_server:1155:12)
+10:59:45 PM [express] GET /api/inventory-levels 500 in 7ms :: {"message":"Failed to fetch inventory l…
+10:59:48 PM [express] GET /api/goods-receipt-headers 200 in 1656ms :: [{"id":"bd6e0f98-7723-4b20-a9da…
+Error fetching supplier returns: Error: Method 'getSupplierReturns' not yet implemented in modular storage. Please implement it in the appropriate storage module.
+    at Proxy.<anonymous> (/workspaces/tradix/server/storage/modular-storage-clean.ts:69:17)
+    at <anonymous> (/workspaces/tradix/server/routes/goods-receipt.ts:290:37)
     at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
     at next (/workspaces/tradix/node_modules/express/lib/router/route.js:149:13)
     at Route.dispatch (/workspaces/tradix/node_modules/express/lib/router/route.js:119:3)
     at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
     at /workspaces/tradix/node_modules/express/lib/router/index.js:284:15
-    at param (/workspaces/tradix/node_modules/express/lib/router/index.js:365:14)
-    at param (/workspaces/tradix/node_modules/express/lib/router/index.js:376:14)
-    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:421:3)
+    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
     at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
     at <anonymous> (/workspaces/tradix/server/index.ts:46:3)
     at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
@@ -632,60 +88,77 @@ Error confirming delivery: Error: Failed to confirm delivery
     at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
     at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
     at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
-    at urlencodedParser (/workspaces/tradix/node_modules/body-parser/lib/types/urlencoded.js:85:7)
+    at urlencodedParser (/workspaces/tradix/node_modules/body-parser/lib/types/urlencoded.js:94:7)
     at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
     at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
     at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
     at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
     at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
-    at /workspaces/tradix/node_modules/body-parser/lib/read.js:137:5
-    at AsyncResource.runInAsyncScope (node:async_hooks:214:14)
-    at invokeCallback (/workspaces/tradix/node_modules/raw-body/index.js:238:16)
-    at done (/workspaces/tradix/node_modules/raw-body/index.js:227:7)
-    at IncomingMessage.onEnd (/workspaces/tradix/node_modules/raw-body/index.js:287:7)
-    at IncomingMessage.emit (node:events:518:28)
-    at endReadableNT (node:internal/streams/readable:1698:12)
-    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
-8:01:46 PM [express] POST /api/deliveries/4e43bab5-192e-45ca-8852-c49d31635c1b/confirm 500 in 6ms ::…
-8:01:48 PM [express] POST /api/invoices/generate-from-delivery 201 in 1943ms :: {"id":"7ed5bd3c-643d…
-8:01:48 PM [express] POST /api/invoices/7ed5bd3c-643d-4e90-9d88-04714b2b3d56/mark-paid 200 in 554ms …
-8:01:49 PM [express] GET /api/quotations 200 in 547ms :: [{"id":"9169b548-a2f8-4166-8e26-c525693ffd9…
-8:01:49 PM [express] GET /api/sales-orders 200 in 277ms :: [{"id":"5a4ce552-6026-4417-955f-933516026…
-8:01:50 PM [express] GET /api/invoices 200 in 275ms :: [{"id":"7ed5bd3c-643d-4e90-9d88-04714b2b3d56"…
-8:02:34 PM [express] GET /api/auth/me 304 in 830ms :: {"user":{"id":"8bcd3a5f-10fc-4491-9258-a62b5bf…
-8:02:34 PM [express] GET /api/auth/me 401 in 1ms :: {"message":"Not authenticated"}
-getEnquiries called with: { limit: 5, offset: 0, filters: undefined }
-Executing query...
+    at jsonParser (/workspaces/tradix/node_modules/body-parser/lib/types/json.js:113:7)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
+    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
+    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
+    at expressInit (/workspaces/tradix/node_modules/express/lib/middleware/init.js:40:5)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
+    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
+    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
+    at query (/workspaces/tradix/node_modules/express/lib/middleware/query.js:45:5)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
+    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
+    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/workspaces/tradix/node_modules/express/lib/router/index.js:175:3)
+    at Function.handle (/workspaces/tradix/node_modules/express/lib/application.js:181:10)
+    at Server.app (/workspaces/tradix/node_modules/express/lib/express.js:39:9)
+    at Server.emit (node:events:518:28)
+    at parserOnIncoming (node:_http_server:1155:12)
+10:59:49 PM [express] GET /api/supplier-returns 500 in 3ms :: {"message":"Failed to fetch supplier re…
+getStockMovements: Using stub implementation - should be moved to InventoryStorage
+10:59:50 PM [express] GET /api/stock-movements 304 in 1ms :: []
+11:08:28 PM [express] GET /api/items 304 in 2201ms :: [{"id":"c19058e1-fb1c-4cfc-b5be-00ff1f9f891d","…
+11:08:29 PM [express] GET /api/inventory 200 in 3217ms
+11:08:46 PM [express] GET /api/sales-orders 200 in 1707ms :: [{"id":"7a527b1f-43f6-4c1b-9c3d-dd204275…
+11:08:46 PM [express] GET /api/customers 304 in 1890ms :: [{"id":"a844de73-11f9-4395-929c-8c0c2f73b1b…
+11:08:46 PM [express] GET /api/deliveries 304 in 1979ms :: [{"id":"fc8d6d4a-8e46-4a3d-a510-c0fb208c1d…
+11:10:49 PM [express] GET /api/inventory 200 in 4528ms
+getInventoryItems: Using stub implementation - should be moved to InventoryStorage
+11:10:51 PM [express] GET /api/inventory-items 304 in 1ms :: []
+11:10:51 PM [express] GET /api/suppliers 304 in 299ms :: [{"id":"09c62848-86bd-42de-b9c5-b6c46bb31f38…
+11:11:27 PM [express] GET /api/supplier-lpos 304 in 1982ms :: [{"id":"ad145245-8387-4d3d-9ad4-5886894…
+11:11:28 PM [express] GET /api/goods-receipts 200 in 3008ms
+11:11:58 PM [express] GET /api/auth/me 304 in 874ms :: {"user":{"id":"8bcd3a5f-10fc-4491-9258-a62b5bf…
 getEnquiries called with: { limit: 100, offset: 0, filters: undefined }
 Executing query...
-8:02:34 PM [express] GET /api/sales-orders 200 in 279ms :: [{"id":"5a4ce552-6026-4417-955f-933516026…
-Query result: 5 enquiries found
-8:02:34 PM [express] GET /api/enquiries 200 in 293ms :: [{"id":"c054233d-43be-4647-9f83-6230cf4e273a…
-8:02:34 PM [express] GET /api/quotations 200 in 275ms :: [{"id":"9169b548-a2f8-4166-8e26-c525693ffd9…
-Query result: 70 enquiries found
-8:02:34 PM [express] GET /api/dashboard/stats 200 in 554ms :: {"activeEnquiries":70,"pendingQuotes":…
-getEnquiries called with: { limit: 50, offset: 0, filters: undefined }
+getEnquiries called with: { limit: 5, offset: 0, filters: undefined }
 Executing query...
-8:02:37 PM [express] GET /api/customers 200 in 280ms :: [{"id":"483af735-d389-4599-a6f8-f1b3c8fba928…
-Query result: 50 enquiries found
-8:02:37 PM [express] GET /api/enquiries 200 in 558ms :: [{"id":"c054233d-43be-4647-9f83-6230cf4e273a…
-8:02:39 PM [express] GET /api/quotations 200 in 552ms :: [{"id":"9169b548-a2f8-4166-8e26-c525693ffd9…
-8:02:51 PM [express] GET /api/auth/me 304 in 2972ms :: {"user":{"id":"8bcd3a5f-10fc-4491-9258-a62b5b…
-8:02:54 PM [express] GET /api/auth/me 304 in 2167ms :: {"user":{"id":"8bcd3a5f-10fc-4491-9258-a62b5b…
-8:02:56 PM [express] GET /api/invoices 200 in 276ms :: [{"id":"7ed5bd3c-643d-4e90-9d88-04714b2b3d56"…
-8:02:56 PM [express] GET /api/deliveries 200 in 290ms :: [{"id":"4e43bab5-192e-45ca-8852-c49d31635c1…
-8:02:58 PM [express] GET /api/supplier-lpos 200 in 277ms :: [{"id":"889636b7-d8d2-40fe-8733-d33b9fe9…
-8:02:58 PM [express] GET /api/suppliers 304 in 280ms :: [{"id":"ddd4d431-3dc3-458e-b3cb-126207c4839f…
-8:03:00 PM [express] GET /api/supplier-lpos 200 in 278ms :: [{"id":"889636b7-d8d2-40fe-8733-d33b9fe9…
-8:03:01 PM [express] GET /api/goods-receipts 200 in 828ms
-8:04:40 PM [express] GET /api/items 304 in 3694ms :: [{"id":"c19058e1-fb1c-4cfc-b5be-00ff1f9f891d","…
-8:04:41 PM [express] GET /api/inventory 200 in 5134ms
-8:04:46 PM [express] GET /api/deliveries 200 in 349ms :: [{"id":"4e43bab5-192e-45ca-8852-c49d31635c1…
+Query result: 5 enquiries found
+11:11:59 PM [express] GET /api/enquiries 304 in 369ms :: [{"id":"6c8d8a9d-e8c1-4125-8ede-df3767f2699f…
+Query result: 82 enquiries found
+11:11:59 PM [express] GET /api/dashboard/stats 304 in 935ms :: {"activeEnquiries":82,"pendingQuotes":…
+11:12:00 PM [express] GET /api/quotations 304 in 1629ms :: [{"id":"e81b97bc-d43a-40c8-be6e-d278c2f48e…
+11:12:00 PM [express] GET /api/sales-orders 304 in 1659ms :: [{"id":"53fd082c-4a08-41c2-bbf7-5e49e221…
+11:12:02 PM [express] GET /api/deliveries 304 in 325ms :: [{"id":"fc8d6d4a-8e46-4a3d-a510-c0fb208c1db…
+11:12:09 PM [express] GET /api/deliveries 304 in 295ms :: [{"id":"fc8d6d4a-8e46-4a3d-a510-c0fb208c1db…
+11:12:09 PM [express] GET /api/customers 304 in 289ms :: [{"id":"a844de73-11f9-4395-929c-8c0c2f73b1b1…
+11:16:50 PM [express] GET /api/suppliers 304 in 1725ms :: [{"id":"09c62848-86bd-42de-b9c5-b6c46bb31f3…
+11:24:02 PM [express] GET /api/auth/me 304 in 877ms :: {"user":{"id":"8bcd3a5f-10fc-4491-9258-a62b5bf…
+11:24:03 PM [express] GET /api/suppliers 304 in 310ms :: [{"id":"09c62848-86bd-42de-b9c5-b6c46bb31f38…
+11:24:07 PM [express] GET /api/sales-orders 304 in 324ms :: [{"id":"7a527b1f-43f6-4c1b-9c3d-dd204275c…
+11:24:07 PM [express] GET /api/customers 304 in 261ms :: [{"id":"a844de73-11f9-4395-929c-8c0c2f73b1b1…
+11:24:07 PM [express] GET /api/deliveries 304 in 339ms :: [{"id":"fc8d6d4a-8e46-4a3d-a510-c0fb208c1db…
+11:24:18 PM [express] GET /api/items 304 in 313ms :: [{"id":"c19058e1-fb1c-4cfc-b5be-00ff1f9f891d","s…
+11:24:20 PM [express] GET /api/inventory 200 in 2236ms
+11:24:31 PM [express] GET /api/inventory 200 in 826ms
 getInventoryItems: Using stub implementation - should be moved to InventoryStorage
-8:04:48 PM [express] GET /api/inventory-items 304 in 1ms :: []
-Error fetching product categories: Error: Method 'getProductCategories' not yet implemented in modular storage. Please implement it in the appropriate storage module.
+11:24:32 PM [express] GET /api/inventory-items 304 in 0ms :: []
+Error fetching inventory levels: Error: Method 'getInventoryLevels' not yet implemented in modular storage. Please implement it in the appropriate storage module.
     at Proxy.<anonymous> (/workspaces/tradix/server/storage/modular-storage-clean.ts:69:17)
-    at <anonymous> (/workspaces/tradix/server/routes/pricing.ts:25:40)
+    at <anonymous> (/workspaces/tradix/server/routes/inventory.ts:178:36)
     at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
     at next (/workspaces/tradix/node_modules/express/lib/router/route.js:149:13)
     at Route.dispatch (/workspaces/tradix/node_modules/express/lib/router/route.js:119:3)
@@ -734,10 +207,11 @@ Error fetching product categories: Error: Method 'getProductCategories' not yet 
     at Server.app (/workspaces/tradix/node_modules/express/lib/express.js:39:9)
     at Server.emit (node:events:518:28)
     at parserOnIncoming (node:_http_server:1155:12)
-8:04:50 PM [express] GET /api/product-categories 500 in 2ms :: {"error":"Failed to fetch product cat…
-Error fetching markup configurations: Error: Method 'getMarkupConfigurations' not yet implemented in modular storage. Please implement it in the appropriate storage module.
+11:24:34 PM [express] GET /api/inventory-levels 500 in 1ms :: {"message":"Failed to fetch inventory l…
+11:24:35 PM [express] GET /api/goods-receipt-headers 304 in 288ms :: [{"id":"bd6e0f98-7723-4b20-a9da-…
+Error fetching supplier returns: Error: Method 'getSupplierReturns' not yet implemented in modular storage. Please implement it in the appropriate storage module.
     at Proxy.<anonymous> (/workspaces/tradix/server/storage/modular-storage-clean.ts:69:17)
-    at <anonymous> (/workspaces/tradix/server/routes/pricing.ts:93:44)
+    at <anonymous> (/workspaces/tradix/server/routes/goods-receipt.ts:290:37)
     at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
     at next (/workspaces/tradix/node_modules/express/lib/router/route.js:149:13)
     at Route.dispatch (/workspaces/tradix/node_modules/express/lib/router/route.js:119:3)
@@ -786,144 +260,6 @@ Error fetching markup configurations: Error: Method 'getMarkupConfigurations' no
     at Server.app (/workspaces/tradix/node_modules/express/lib/express.js:39:9)
     at Server.emit (node:events:518:28)
     at parserOnIncoming (node:_http_server:1155:12)
-8:04:50 PM [express] GET /api/markup-configurations 500 in 1ms :: {"error":"Failed to fetch markup c…
-Error fetching price lists: Error: Method 'getPriceLists' not yet implemented in modular storage. Please implement it in the appropriate storage module.
-    at Proxy.<anonymous> (/workspaces/tradix/server/storage/modular-storage-clean.ts:69:17)
-    at <anonymous> (/workspaces/tradix/server/routes/pricing.ts:326:40)
-    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
-    at next (/workspaces/tradix/node_modules/express/lib/router/route.js:149:13)
-    at Route.dispatch (/workspaces/tradix/node_modules/express/lib/router/route.js:119:3)
-    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
-    at /workspaces/tradix/node_modules/express/lib/router/index.js:284:15
-    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
-    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
-    at <anonymous> (/workspaces/tradix/server/index.ts:46:3)
-    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
-    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
-    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
-    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
-    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
-    at resolveUserId (/workspaces/tradix/server/middleware/user-resolution.ts:27:3)
-    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
-    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
-    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
-    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
-    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
-    at urlencodedParser (/workspaces/tradix/node_modules/body-parser/lib/types/urlencoded.js:94:7)
-    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
-    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
-    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
-    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
-    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
-    at jsonParser (/workspaces/tradix/node_modules/body-parser/lib/types/json.js:113:7)
-    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
-    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
-    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
-    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
-    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
-    at expressInit (/workspaces/tradix/node_modules/express/lib/middleware/init.js:40:5)
-    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
-    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
-    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
-    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
-    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
-    at query (/workspaces/tradix/node_modules/express/lib/middleware/query.js:45:5)
-    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
-    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
-    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
-    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
-    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
-    at Function.handle (/workspaces/tradix/node_modules/express/lib/router/index.js:175:3)
-    at Function.handle (/workspaces/tradix/node_modules/express/lib/application.js:181:10)
-    at Server.app (/workspaces/tradix/node_modules/express/lib/express.js:39:9)
-    at Server.emit (node:events:518:28)
-    at parserOnIncoming (node:_http_server:1155:12)
-8:04:50 PM [express] GET /api/price-lists 500 in 1ms :: {"error":"Failed to fetch price lists"}
-Error fetching item pricing: Error: Method 'getAllItemPricing' not yet implemented in modular storage. Please implement it in the appropriate storage module.
-    at Proxy.<anonymous> (/workspaces/tradix/server/storage/modular-storage-clean.ts:69:17)
-    at <anonymous> (/workspaces/tradix/server/routes/pricing.ts:167:37)
-    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
-    at next (/workspaces/tradix/node_modules/express/lib/router/route.js:149:13)
-    at Route.dispatch (/workspaces/tradix/node_modules/express/lib/router/route.js:119:3)
-    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
-    at /workspaces/tradix/node_modules/express/lib/router/index.js:284:15
-    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
-    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
-    at <anonymous> (/workspaces/tradix/server/index.ts:46:3)
-    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
-    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
-    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
-    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
-    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
-    at resolveUserId (/workspaces/tradix/server/middleware/user-resolution.ts:27:3)
-    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
-    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
-    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
-    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
-    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
-    at urlencodedParser (/workspaces/tradix/node_modules/body-parser/lib/types/urlencoded.js:94:7)
-    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
-    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
-    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
-    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
-    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
-    at jsonParser (/workspaces/tradix/node_modules/body-parser/lib/types/json.js:113:7)
-    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
-    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
-    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
-    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
-    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
-    at expressInit (/workspaces/tradix/node_modules/express/lib/middleware/init.js:40:5)
-    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
-    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
-    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
-    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
-    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
-    at query (/workspaces/tradix/node_modules/express/lib/middleware/query.js:45:5)
-    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
-    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
-    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
-    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
-    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
-    at Function.handle (/workspaces/tradix/node_modules/express/lib/router/index.js:175:3)
-    at Function.handle (/workspaces/tradix/node_modules/express/lib/application.js:181:10)
-    at Server.app (/workspaces/tradix/node_modules/express/lib/express.js:39:9)
-    at Server.emit (node:events:518:28)
-    at parserOnIncoming (node:_http_server:1155:12)
-8:04:50 PM [express] GET /api/item-pricing 500 in 1ms :: {"error":"Failed to fetch item pricing"}
-8:04:52 PM [express] GET /api/recent-activities 200 in 1ms :: {"activities":[],"pagination":{"page":…
-8:04:52 PM [express] GET /api/recent-activities/stats 200 in 0ms :: {"total":1250,"today":45,"thisWe…
-8:05:23 PM [express] GET /api/recent-activities 304 in 0ms :: {"activities":[],"pagination":{"page":…
-8:05:23 PM [express] GET /api/recent-activities/stats 304 in 0ms :: {"total":1250,"today":45,"thisWe…
-8:05:55 PM [express] GET /api/recent-activities 304 in 0ms :: {"activities":[],"pagination":{"page":…
-8:05:55 PM [express] GET /api/recent-activities/stats 304 in 0ms :: {"total":1250,"today":45,"thisWe…
-8:06:23 PM [express] GET /api/recent-activities 304 in 0ms :: {"activities":[],"pagination":{"page":…
-8:06:23 PM [express] GET /api/recent-activities/stats 304 in 0ms :: {"total":1250,"today":45,"thisWe…
-8:06:53 PM [express] GET /api/recent-activities 304 in 1ms :: {"activities":[],"pagination":{"page":…
-8:06:53 PM [express] GET /api/recent-activities/stats 304 in 1ms :: {"total":1250,"today":45,"thisWe…
-8:07:23 PM [express] GET /api/recent-activities 304 in 0ms :: {"activities":[],"pagination":{"page":…
-8:07:23 PM [express] GET /api/recent-activities/stats 304 in 0ms :: {"total":1250,"today":45,"thisWe…
-8:07:53 PM [express] GET /api/recent-activities 304 in 1ms :: {"activities":[],"pagination":{"page":…
-8:07:53 PM [express] GET /api/recent-activities/stats 304 in 0ms :: {"total":1250,"today":45,"thisWe…
-8:08:11 PM [vite] hmr update /src/pages/enquiry-detail.tsx, /src/index.css?v=kfpbp1ckrQLLed3eJxDhO, /src/pages/quotation-detail.tsx, /src/pages/sales-orders.tsx, /src/pages/supplier-lpo.tsx, /src/components/forms/quotation-form.tsx
-8:09:02 PM [vite] hmr update /src/pages/enquiry-detail.tsx, /src/index.css?v=kfpbp1ckrQLLed3eJxDhO, /src/pages/quotation-detail.tsx, /src/pages/sales-orders.tsx, /src/pages/supplier-lpo.tsx, /src/components/forms/quotation-form.tsx
-8:09:12 PM [express] GET /api/recent-activities 304 in 1ms :: {"activities":[],"pagination":{"page":…
-8:09:12 PM [express] GET /api/recent-activities/stats 304 in 1ms :: {"total":1250,"today":45,"thisWe…
-8:10:12 PM [express] GET /api/recent-activities 304 in 0ms :: {"activities":[],"pagination":{"page":…
-8:10:12 PM [express] GET /api/recent-activities/stats 304 in 0ms :: {"total":1250,"today":45,"thisWe…
-8:11:12 PM [express] GET /api/recent-activities 304 in 1ms :: {"activities":[],"pagination":{"page":…
-8:11:12 PM [express] GET /api/recent-activities/stats 304 in 0ms :: {"total":1250,"today":45,"thisWe…
-8:12:12 PM [express] GET /api/recent-activities 304 in 0ms :: {"activities":[],"pagination":{"page":…
-8:12:12 PM [express] GET /api/recent-activities/stats 304 in 0ms :: {"total":1250,"today":45,"thisWe…
-8:13:12 PM [express] GET /api/recent-activities 304 in 1ms :: {"activities":[],"pagination":{"page":…
-8:13:12 PM [express] GET /api/recent-activities/stats 304 in 0ms :: {"total":1250,"today":45,"thisWe…
-8:14:12 PM [express] GET /api/recent-activities 304 in 0ms :: {"activities":[],"pagination":{"page":…
-8:14:12 PM [express] GET /api/recent-activities/stats 304 in 0ms :: {"total":1250,"today":45,"thisWe…
-8:15:12 PM [express] GET /api/recent-activities 304 in 0ms :: {"activities":[],"pagination":{"page":…
-8:15:12 PM [express] GET /api/recent-activities/stats 304 in 1ms :: {"total":1250,"today":45,"thisWe…
-8:16:12 PM [express] GET /api/recent-activities 304 in 1ms :: {"activities":[],"pagination":{"page":…
-8:16:12 PM [express] GET /api/recent-activities/stats 304 in 0ms :: {"total":1250,"today":45,"thisWe…
-8:17:12 PM [express] GET /api/recent-activities/stats 304 in 0ms :: {"total":1250,"today":45,"thisWe…
-8:17:12 PM [express] GET /api/recent-activities 304 in 0ms :: {"activities":[],"pagination":{"page":…
-8:17:23 PM [express] GET /api/recent-activities 304 in 1ms :: {"activities":[],"pagination":{"page":…
-8:17:23 PM [express] GET /api/recent-activities/stats 304 in 1ms :: {"total":1250,"today":45,"thisWe…
+11:24:36 PM [express] GET /api/supplier-returns 500 in 1ms :: {"message":"Failed to fetch supplier re…
+getStockMovements: Using stub implementation - should be moved to InventoryStorage
+11:24:37 PM [express] GET /api/stock-movements 304 in 1ms :: []

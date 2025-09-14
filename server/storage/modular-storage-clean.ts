@@ -400,7 +400,7 @@ export class ModularStorage extends BaseStorage {
   async createSupplierLpo(lpo: any) { return this.supplierLpoStorage.createSupplierLpo(lpo); }
   async updateSupplierLpo(id: string, lpo: any) { return this.supplierLpoStorage.updateSupplierLpo(id, lpo); }
   async deleteSupplierLpo(id: string) { return this.supplierLpoStorage.deleteSupplierLpo(id); }
-  async createSupplierLposFromSalesOrders(salesOrderIds: string[], groupBy: string, userId?: string) { return this.supplierLpoStorage.createSupplierLposFromSalesOrders(salesOrderIds, groupBy, userId); }
+  async createSupplierLposFromSalesOrders(salesOrderIds: string[], groupBy: string, userId?: string, supplierIdOverride?: string) { return this.supplierLpoStorage.createSupplierLposFromSalesOrders(salesOrderIds, groupBy, userId, supplierIdOverride); }
   async createAmendedSupplierLpo(parentLpoId: string, reason: string, amendmentType: string, userId?: string) { return this.supplierLpoStorage.createAmendedSupplierLpo(parentLpoId, reason, amendmentType, userId); }
   async submitForApproval(id: string, userId: string) { return this.supplierLpoStorage.submitForApproval(id, userId); }
   async approveSupplierLpo(id: string, userId: string, notes?: string) { return this.supplierLpoStorage.approveSupplierLpo(id, userId, notes); }

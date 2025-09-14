@@ -1,3 +1,4 @@
+/** DUPLICATE / EXPERIMENTAL: superseded by pdf/pdf-utils.ts. Scheduled for removal after verification. */
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import fs from 'fs';

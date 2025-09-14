@@ -4,7 +4,9 @@ import { insertQuotationSchema, insertQuotationItemSchema } from "@shared/schema
 import { validateUserIdOrDefault } from "@shared/utils/uuid";
 import { getAttributingUserId } from '../utils/user';
 import { z } from "zod";
-import { pdfService } from "../pdf-service";
+// Unified PDF utilities
+import { generateQuotationPdf } from "../pdf/pdf-utils";
+import { sendPdf } from "../utils/pdf-response";
 
 export function registerQuotationRoutes(app: Express) {
   // Quotation routes
@@ -252,25 +254,8 @@ export function registerQuotationRoutes(app: Express) {
         return res.status(404).json({ message: "Customer not found" });
       }
 
-      // Generate PDF
-      const pdfBuffer = pdfService.generateQuotationPDF({
-        quotation,
-        items,
-        customer,
-        companyInfo: {
-          name: "Golden Tag WLL",
-          address: "Your Company Address\nCity, State, ZIP\nCountry",
-          phone: "+1 (555) 123-4567",
-          email: "info@goldentag.com"
-        }
-      });
-
-      // Set response headers
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="quotation-${quotation.quoteNumber}.pdf"`);
-      res.setHeader('Content-Length', pdfBuffer.length);
-
-      res.send(pdfBuffer);
+      const result = generateQuotationPdf({ quotation: quotation as any, items: items as any, customer: customer as any });
+  sendPdf(res, result);
     } catch (error) {
       console.error("Error generating quotation PDF:", error);
       res.status(500).json({ message: "Failed to generate quotation PDF" });

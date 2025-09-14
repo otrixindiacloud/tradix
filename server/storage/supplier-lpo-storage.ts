@@ -59,7 +59,7 @@ export class SupplierLpoStorage extends BaseStorage {
   }
   async updateSupplierLpo(id: string, data: Partial<InsertSupplierLpo>) { const updated: any = { ...data, updatedAt: new Date() }; const res = await db.update(supplierLpos).set(updated).where(eq(supplierLpos.id, id)).returning(); return res[0]; }
   async deleteSupplierLpo(id: string) { await db.delete(supplierLpos).where(eq(supplierLpos.id, id)); }
-  async createSupplierLposFromSalesOrders(salesOrderIds: string[], groupBy: string, userId?: string) {
+  async createSupplierLposFromSalesOrders(salesOrderIds: string[], groupBy: string, userId?: string, supplierIdOverride?: string) {
     if (!salesOrderIds.length) return [];
     const out: any[] = [];
     for (const soId of salesOrderIds) {
@@ -67,7 +67,7 @@ export class SupplierLpoStorage extends BaseStorage {
       if (!so) continue;
       const soItems = await db.select().from(salesOrderItems).where(eq(salesOrderItems.salesOrderId, soId));
       let subtotal = 0; soItems.forEach(i=> subtotal += Number(i.totalPrice||0));
-      const lpo = await this.createSupplierLpo({ supplierId: undefined, sourceType: 'Auto', groupingCriteria: groupBy, subtotal: subtotal.toFixed(2), totalAmount: subtotal.toFixed(2), sourceSalesOrderIds: [soId], createdBy: userId } as any);
+  const lpo = await this.createSupplierLpo({ supplierId: supplierIdOverride, sourceType: 'Auto', groupingCriteria: groupBy, subtotal: subtotal.toFixed(2), totalAmount: subtotal.toFixed(2), sourceSalesOrderIds: [soId], createdBy: userId } as any);
       const existingItem = (await db.select().from(items).limit(1))[0];
       const fallbackBarcode = existingItem?.barcode || `AUTO-${Date.now()}`;
       const lpoItems = soItems.map((soi, idx) => ({

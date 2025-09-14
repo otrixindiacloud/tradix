@@ -1,3 +1,7 @@
+/**
+ * DEPRECATED: This file is superseded by server/pdf/pdf-utils.ts
+ * Keep temporarily for reference; new code must use generateInvoicePdf / generateQuotationPdf.
+ */
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import fs from 'fs';

@@ -1,6 +1,7 @@
 import { Express } from 'express';
 import { z } from 'zod';
 import { insertInventoryItemSchema, insertInventoryVariantSchema, insertInventoryLevelSchema } from '../../shared/schema.js';
+import { recordMovement } from '../services/stock-service.js';
 import { storage } from '../storage.js';
 
 export function registerInventoryRoutes(app: Express) {
@@ -120,7 +121,7 @@ export function registerInventoryRoutes(app: Express) {
   // Item Variants routes
   app.get("/api/inventory-items/:itemId/variants", async (req, res) => {
     try {
-      const variants = await storage.getInventoryVariants(req.params.itemId);
+      const variants = await (storage as any).getItemVariants(req.params.itemId);
       res.json(variants);
     } catch (error) {
       console.error("Error fetching item variants:", error);
@@ -131,7 +132,7 @@ export function registerInventoryRoutes(app: Express) {
   app.post("/api/item-variants", async (req, res) => {
     try {
       const variantData = insertInventoryVariantSchema.parse(req.body);
-      const variant = await storage.createInventoryVariant(variantData);
+      const variant = await (storage as any).createItemVariant(variantData);
       res.status(201).json(variant);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -145,7 +146,7 @@ export function registerInventoryRoutes(app: Express) {
   app.put("/api/item-variants/:id", async (req, res) => {
     try {
       const variantData = insertInventoryVariantSchema.partial().parse(req.body);
-      const variant = await storage.updateInventoryVariant(req.params.id, variantData);
+      const variant = await (storage as any).updateItemVariant(req.params.id, variantData);
       res.json(variant);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -158,7 +159,7 @@ export function registerInventoryRoutes(app: Express) {
 
   app.delete("/api/item-variants/:id", async (req, res) => {
     try {
-      await storage.deleteInventoryVariant(req.params.id);
+      await (storage as any).deleteItemVariant(req.params.id);
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting item variant:", error);
@@ -213,12 +214,22 @@ export function registerInventoryRoutes(app: Express) {
 
   app.post("/api/inventory-levels/adjust", async (req, res) => {
     try {
-      const { itemId, quantityChange, location, reason } = req.body;
-      const level = await storage.adjustInventoryQuantity(itemId, quantityChange, location, reason);
-      res.json(level);
-    } catch (error) {
+      const { itemId, quantityChange, location, reason, createdBy } = req.body;
+      if (!itemId || !quantityChange) {
+        return res.status(400).json({ message: 'itemId and quantityChange are required' });
+      }
+      const movement = await recordMovement({
+        itemId,
+        quantity: quantityChange,
+        location,
+        reason: reason || 'Manual adjustment',
+        referenceType: 'Adjustment',
+        createdBy: createdBy || 'system'
+      });
+      res.json({ level: movement.level, movement: movement.movement });
+    } catch (error: any) {
       console.error("Error adjusting inventory quantity:", error);
-      res.status(500).json({ message: "Failed to adjust inventory quantity" });
+      res.status(500).json({ message: error?.message || "Failed to adjust inventory quantity" });
     }
   });
 

@@ -1,5 +1,4 @@
-// Test script for PDF generation
-const fetch = require('node-fetch');
+// ESM Test script for PDF generation (uses global fetch in modern Node)
 
 async function testPDFGeneration() {
   console.log('Testing PDF Generation for Tradix for Golden Tag...\n');

@@ -107,10 +107,10 @@ export default function Sidebar() {
           </a>
         </Link>
         
-        {/* Order Management Section */}
+        {/* Sales Management Section */}
         <div className="pt-6">
           <h3 className="px-3 text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
-            Order Management
+            Sales Management
           </h3>
           <div className="space-y-1">
             <Link href="/enquiries">
@@ -183,16 +183,16 @@ export default function Sidebar() {
                 data-testid="link-invoice"
               >
                 <FaReceipt className="h-5 w-5 text-green-600" />
-                <span className="font-medium">Invoice</span>
+                <span className="font-medium">Invoicing</span>
               </a>
             </Link>
           </div>
         </div>
 
-        {/* Procurement Section */}
+        {/* Purchase Management Section */}
         <div className="pt-6">
           <h3 className="px-3 text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
-            Procurement
+            Purchase Management
           </h3>
           <div className="space-y-1">
             <Link href="/supplier-lpo">
