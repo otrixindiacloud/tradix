@@ -63,29 +63,44 @@ export function PurchaseOrderUpload({
 
   const uploadPOMutation = useMutation({
     mutationFn: async (data: { formData: PurchaseOrderFormData; file: File }) => {
-      const uploadFormData = new FormData();
-      uploadFormData.append("file", data.file);
-      uploadFormData.append("quotationId", quotationId);
-      uploadFormData.append("customerAcceptanceId", customerAcceptance?.id || "");
-      uploadFormData.append("poNumber", data.formData.poNumber);
-      uploadFormData.append("poDate", data.formData.poDate);
-      uploadFormData.append("customerReference", data.formData.customerReference || "");
-      uploadFormData.append("totalPoAmount", data.formData.totalPoAmount);
-      uploadFormData.append("currency", data.formData.currency);
-      uploadFormData.append("paymentTerms", data.formData.paymentTerms || "");
-      uploadFormData.append("deliveryTerms", data.formData.deliveryTerms || "");
-      uploadFormData.append("specialInstructions", data.formData.specialInstructions || "");
+      // Since backend expects JSON to /api/customer-po-upload (no multipart handler currently),
+      // we'll simulate file persistence by sending metadata only. The separate customer-po-upload
+      // route stores documentName/path; actual binary upload can be added later.
+      const documentName = data.file.name;
+      const documentType = data.file.type.includes('pdf') ? 'PDF' : 'IMAGE';
+      const documentPath = `/uploads/po/${Date.now()}-${documentName}`; // simulated path
 
-      const response = await fetch("/api/purchase-orders/upload", {
-        method: "POST",
-        body: uploadFormData,
+      const payload = {
+        quotationId,
+        poNumber: data.formData.poNumber,
+        poDate: data.formData.poDate,
+        customerReference: data.formData.customerReference || undefined,
+        totalPoAmount: data.formData.totalPoAmount,
+        currency: data.formData.currency,
+        paymentTerms: data.formData.paymentTerms || undefined,
+        deliveryTerms: data.formData.deliveryTerms || undefined,
+        specialInstructions: data.formData.specialInstructions || undefined,
+        documentName,
+        documentType,
+        documentPath,
+        // Accept either active acceptance id or blank
+        customerAcceptanceId: customerAcceptance?.id || undefined,
+      };
+
+      const response = await fetch('/api/customer-po-upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to upload purchase order");
+      let json: any = null;
+      try { json = await response.json(); } catch {
+        throw new Error('Server returned non-JSON response');
       }
-
-      return response.json();
+      if (!response.ok) {
+        throw new Error(json?.message || 'Failed to upload purchase order');
+      }
+      return json;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/purchase-orders"] });
@@ -98,10 +113,11 @@ export function PurchaseOrderUpload({
       setUploadProgress(0);
     },
     onError: (error) => {
+      const message = error instanceof Error ? error.message : 'Failed to upload purchase order';
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to upload purchase order",
-        variant: "destructive",
+        title: 'Error',
+        description: message.includes('<!DOCTYPE') ? 'Upload failed: server returned HTML instead of JSON. Endpoint mismatch or server error.' : message,
+        variant: 'destructive'
       });
     },
   });

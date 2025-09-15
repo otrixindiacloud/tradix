@@ -6,10 +6,48 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatCurrency(amount: number, currency = "BHD"): string {
+  // Handle BHD specifically as it uses 3 decimal places
+  if (currency === "BHD") {
+    return new Intl.NumberFormat("en-BH", {
+      style: "currency",
+      currency: "BHD",
+      minimumFractionDigits: 3,
+      maximumFractionDigits: 3,
+    }).format(amount);
+  }
+  
+  // For other currencies, use standard formatting
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,
   }).format(amount);
+}
+
+// Adaptive / compact currency formatting for tight UI areas (e.g., KPI cards)
+// Rules:
+// < 1,000 -> normal (e.g., BHD 532.000)
+// >= 1,000 and < 1,000,000 -> abbreviated to K (one decimal if needed) e.g., BHD 138.0K
+// >= 1,000,000 and < 1,000,000,000 -> abbreviated to M e.g., BHD 2.3M
+// >= 1,000,000,000 -> abbreviated to B e.g., BHD 1.1B
+// Always keep currency code prefix (not symbol) to save width and avoid locale symbol variance.
+export function formatCurrencyCompact(amount: number, currency = "BHD"): { short: string; full: string } {
+  const full = formatCurrency(amount, currency);
+  const abs = Math.abs(amount);
+  const sign = amount < 0 ? "-" : "";
+  let shortValue: string;
+  const toFixed = (n: number) => (n % 1 === 0 ? n.toFixed(0) : n.toFixed(1));
+
+  if (abs < 1000) {
+    shortValue = full; // already small enough
+  } else if (abs < 1_000_000) {
+    shortValue = `${currency} ${sign}${toFixed(abs / 1000)}K`;
+  } else if (abs < 1_000_000_000) {
+    shortValue = `${currency} ${sign}${toFixed(abs / 1_000_000)}M`;
+  } else {
+    shortValue = `${currency} ${sign}${toFixed(abs / 1_000_000_000)}B`;
+  }
+
+  return { short: shortValue, full };
 }
 
 export function formatDate(date: Date | string): string {

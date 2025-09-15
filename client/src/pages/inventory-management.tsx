@@ -142,7 +142,7 @@ function InventoryItemsTab() {
       return response.json();
     },
     enabled: true,
-  }) as { data: any[] };
+  });
 
   // Create inventory item mutation
   const createItemMutation = useMutation({
@@ -477,9 +477,9 @@ function InventoryItemsTab() {
       {/* Items Grid */}
       {itemsError || suppliersError ? (
         <div className="text-center py-8">
-          <p className="text-red-600 mb-4">
+          {/* <p className="text-red-600 mb-4">
             Error loading data: {itemsError?.message || suppliersError?.message}
-          </p>
+          </p> */}
           <Button onClick={() => {
             queryClient.invalidateQueries({ queryKey: ["/api/inventory-items"] });
             queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });

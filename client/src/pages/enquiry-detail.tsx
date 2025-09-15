@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -274,8 +274,12 @@ export default function EnquiryDetail() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              {getStatusIcon(enquiry.status)}
+            <div className="flex items-center gap-4">
+              <span className="flex items-center justify-center w-10 h-10">
+                {getStatusIcon(enquiry.status)
+                  ? React.cloneElement(getStatusIcon(enquiry.status) as React.ReactElement, { className: "h-7 w-7 text-gray-700" })
+                  : null}
+              </span>
               <div>
                 <p className="text-sm text-muted-foreground">Status</p>
                 <Badge variant="outline" className={getStatusColor(enquiry.status)} data-testid="badge-status">
@@ -288,36 +292,51 @@ export default function EnquiryDetail() {
 
         <Card>
           <CardContent className="p-6">
-            <div>
-              <p className="text-sm text-muted-foreground">Source</p>
-              <p className="font-medium" data-testid="text-source">{enquiry.source}</p>
+            <div className="flex items-center gap-4">
+              <span className="flex items-center justify-center w-10 h-10">
+                <Paperclip className="h-7 w-7 text-blue-500" />
+              </span>
+              <div>
+                <p className="text-sm text-muted-foreground">Source</p>
+                <p className="font-medium" data-testid="text-source">{enquiry.source}</p>
+              </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-6">
-            <div>
-              <p className="text-sm text-muted-foreground">Customer</p>
-              <p className="font-medium" data-testid="text-customer-name">
-                {customer?.name || "Loading..."}
-              </p>
-              {customer && (
-                <p className="text-sm text-muted-foreground">
-                  {customer.customerType}
+            <div className="flex items-center gap-4">
+              <span className="flex items-center justify-center w-10 h-10">
+                <Package className="h-7 w-7 text-green-500" />
+              </span>
+              <div>
+                <p className="text-sm text-muted-foreground">Customer</p>
+                <p className="font-medium" data-testid="text-customer-name">
+                  {customer?.name || "Loading..."}
                 </p>
-              )}
+                {customer && (
+                  <p className="text-sm text-muted-foreground">
+                    {customer.customerType}
+                  </p>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-6">
-            <div>
-              <p className="text-sm text-muted-foreground">Target Delivery</p>
-              <p className="font-medium" data-testid="text-target-delivery">
-                {enquiry.targetDeliveryDate ? formatDate(enquiry.targetDeliveryDate) : "Not specified"}
-              </p>
+            <div className="flex items-center gap-4">
+              <span className="flex items-center justify-center w-10 h-10">
+                <Clock className="h-7 w-7 text-purple-500" />
+              </span>
+              <div>
+                <p className="text-sm text-muted-foreground">Target Delivery</p>
+                <p className="font-medium" data-testid="text-target-delivery">
+                  {enquiry.targetDeliveryDate ? formatDate(enquiry.targetDeliveryDate) : "Not specified"}
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>

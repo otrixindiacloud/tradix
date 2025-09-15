@@ -70,10 +70,13 @@ const DeliveryManagement = () => {
   });
 
   // Fetch sales orders for delivery creation
-  const { data: salesOrders = [] } = useQuery({
+  const { data: rawSalesOrders } = useQuery({
     queryKey: ["/api/sales-orders"],
     queryFn: () => apiRequest("GET", "/api/sales-orders?status=Confirmed"),
   });
+
+  // Ensure salesOrders is always an array
+  const salesOrders: SalesOrder[] = Array.isArray(rawSalesOrders) ? rawSalesOrders : [];
 
   // Fetch customers for display
   const { data: customers = [] } = useQuery({
@@ -686,7 +689,7 @@ const DeliveryManagement = () => {
                   <SelectContent>
                     {salesOrders.map((order: SalesOrder) => (
                       <SelectItem key={order.id} value={order.id}>
-                        {order.orderNumber} - {order.customer?.name}
+                        {order.orderNumber} - {order.customer?.name || order.customerId}
                       </SelectItem>
                     ))}
                   </SelectContent>

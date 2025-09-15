@@ -247,9 +247,14 @@ export default function QuotationDetailPage() {
 
   const downloadPDF = async () => {
     try {
+      // First try the API endpoint
       const response = await fetch(`/api/quotations/${id}/pdf`);
+      
       if (!response.ok) {
-        throw new Error('Failed to generate PDF');
+        // If API fails, generate PDF using client-side jsPDF
+        console.warn('API PDF generation failed, falling back to client-side generation');
+        generateClientSidePDF();
+        return;
       }
       
       const blob = await response.blob();
@@ -267,10 +272,70 @@ export default function QuotationDetailPage() {
         description: "Quotation PDF downloaded successfully",
       });
     } catch (error) {
-      console.error("Error generating PDF:", error);
+      console.error("Error with API PDF generation:", error);
+      // Fallback to client-side PDF generation
+      generateClientSidePDF();
+    }
+  };
+
+  const generateClientSidePDF = () => {
+    try {
+      const doc = new jsPDF();
+      
+      // Header
+      doc.setFontSize(20);
+      doc.text('QUOTATION', 20, 20);
+      
+      // Quotation details
+      doc.setFontSize(12);
+      doc.text(`Quote Number: ${quotation.quoteNumber}`, 20, 40);
+      doc.text(`Date: ${formatDate(new Date(quotation.quoteDate || quotation.createdAt), "MMM dd, yyyy")}`, 20, 50);
+      doc.text(`Valid Until: ${formatDate(new Date(quotation.validUntil), "MMM dd, yyyy")}`, 20, 60);
+      doc.text(`Customer Type: ${quotation.customerType}`, 20, 70);
+      doc.text(`Status: ${quotation.status}`, 20, 80);
+      
+      // Items table
+      if (quotationItems && quotationItems.length > 0) {
+        const tableData = quotationItems.map((item: QuotationItem) => [
+          item.supplierCode || '',
+          item.description || '',
+          item.quantity.toString(),
+          `$${parseFloat(item.unitPrice || '0').toFixed(2)}`,
+          `$${parseFloat(item.lineTotal || '0').toFixed(2)}`
+        ]);
+        
+        autoTable(doc, {
+          head: [['Supplier Code', 'Description', 'Quantity', 'Unit Price', 'Total']],
+          body: tableData,
+          startY: 100,
+          theme: 'grid',
+          headStyles: { fillColor: [41, 128, 185] },
+          styles: { fontSize: 10 }
+        });
+      }
+      
+      // Pricing summary
+      const finalY = (doc as any).lastAutoTable?.finalY || 150;
+      doc.text(`Subtotal: $${parseFloat(quotation.subtotal || '0').toFixed(2)}`, 140, finalY + 20);
+      if (parseFloat(quotation.discountAmount || '0') > 0) {
+        doc.text(`Discount: -$${parseFloat(quotation.discountAmount || '0').toFixed(2)}`, 140, finalY + 30);
+      }
+      doc.text(`Tax: $${parseFloat(quotation.taxAmount || '0').toFixed(2)}`, 140, finalY + 40);
+      doc.setFontSize(14);
+      doc.text(`Total: $${parseFloat(quotation.totalAmount || '0').toFixed(2)}`, 140, finalY + 55);
+      
+      // Save the PDF
+      doc.save(`quotation-${quotation.quoteNumber}.pdf`);
+      
+      toast({
+        title: "Success",
+        description: "Quotation PDF generated and downloaded successfully",
+      });
+    } catch (error) {
+      console.error("Error generating client-side PDF:", error);
       toast({
         title: "Error",
-        description: "Failed to generate PDF",
+        description: "Failed to generate PDF. Please try again later.",
         variant: "destructive",
       });
     }

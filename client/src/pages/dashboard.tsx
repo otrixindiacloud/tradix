@@ -9,7 +9,7 @@ import { NotificationDemo } from "@/components/notifications/notification-demo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils";
+import { formatCurrency, formatCurrencyCompact, formatDate, getStatusColor } from "@/lib/utils";
 import { Download, Plus, TrendingUp, TrendingDown, Eye, CheckCircle, HelpCircle, FileText, ShoppingCart, DollarSign, CheckCircle2, Upload, Package, BarChart3, Clock } from "lucide-react";
 import { 
   FaDownload, 
@@ -30,7 +30,6 @@ import {
   FaMoneyBillWave,
   FaChartBar,
   FaRobot,
-  FaActivity,
   FaCog,
   FaUsers,
   FaBell,
@@ -469,8 +468,12 @@ export default function Dashboard() {
               </div>
               <div className="flex-1">
                 <p className="kpi-label">Revenue (Month)</p>
-                <p className="kpi-value" data-testid="stat-monthly-revenue">
-                  {statsLoading ? "..." : formatCurrency(stats?.monthlyRevenue || 0)}
+                <p
+                  className="kpi-value" 
+                  data-testid="stat-monthly-revenue"
+                  title={statsLoading ? undefined : formatCurrencyCompact(stats?.monthlyRevenue || 0).full}
+                >
+                  {statsLoading ? "..." : formatCurrencyCompact(stats?.monthlyRevenue || 0).short}
                 </p>
               </div>
             </div>

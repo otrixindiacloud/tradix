@@ -456,44 +456,75 @@ export default function ExportDataPage() {
       </div>
 
       {/* Export Statistics */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Export Statistics</CardTitle>
-          <CardDescription>
-            Overview of your data export activities
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-            <div className="text-center">
-              <CheckCircle className="h-5 w-5 mx-auto text-green-600 mb-1" />
-              <div className="text-2xl font-bold">
-                {exportJobs.filter(j => j.status === "completed").length}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <CheckCircle className="h-6 w-6 text-green-600" />
               </div>
-              <div className="text-sm text-muted-foreground">Completed</div>
-            </div>
-            <div className="text-center">
-              <Clock className="h-5 w-5 mx-auto text-blue-600 mb-1" />
-              <div className="text-2xl font-bold">
-                {exportJobs.filter(j => j.status === "processing").length}
+              <div>
+                <p className="text-sm font-medium text-gray-600">Completed Exports</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {exportJobs.filter(j => j.status === "completed").length}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Successfully exported</p>
               </div>
-              <div className="text-sm text-muted-foreground">Processing</div>
             </div>
-            <div className="text-center">
-              <XCircle className="h-5 w-5 mx-auto text-red-600 mb-1" />
-              <div className="text-2xl font-bold">
-                {exportJobs.filter(j => j.status === "failed").length}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Clock className="h-6 w-6 text-blue-600" />
               </div>
-              <div className="text-sm text-muted-foreground">Failed</div>
+              <div>
+                <p className="text-sm font-medium text-gray-600">Processing</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  {exportJobs.filter(j => j.status === "processing").length}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Currently in progress</p>
+              </div>
             </div>
-            <div className="text-center">
-              <BarChart className="h-5 w-5 mx-auto text-gray-600 mb-1" />
-              <div className="text-2xl font-bold">{exportJobs.length}</div>
-              <div className="text-sm text-muted-foreground">Total Jobs</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                <XCircle className="h-6 w-6 text-red-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-600">Failed Exports</p>
+                <p className="text-2xl font-bold text-red-600">
+                  {exportJobs.filter(j => j.status === "failed").length}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Export failures</p>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                <Database className="h-6 w-6 text-gray-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Jobs</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {exportJobs.length}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">All export jobs</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

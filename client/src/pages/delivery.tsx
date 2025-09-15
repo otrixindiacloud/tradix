@@ -122,12 +122,44 @@ export default function Delivery() {
     multiple: false,
   });
 
-  // Filter for sales orders ready for delivery (shipped status)
-  const shippedOrders = salesOrders?.filter((order: any) => order.status === "Shipped");
+  // Show all deliveries with their associated order information
+  const allDeliveriesWithOrders = deliveries?.map((delivery: any) => {
+    const order = salesOrders?.find((o: any) => o.id === delivery.salesOrderId);
+    return {
+      ...delivery,
+      order: order,
+      orderNumber: order?.orderNumber || 'N/A',
+      customer: order?.customer || { name: 'Unknown', address: 'Unknown' },
+      totalAmount: order?.totalAmount || 0,
+      orderDate: order?.orderDate || delivery.createdAt,
+    };
+  }) || [];
+
+  // Also include orders ready for delivery (shipped but no delivery created yet)
+  const ordersReadyForDelivery = salesOrders?.filter((order: any) => 
+    order.status === "Shipped" && !deliveries?.some((d: any) => d.salesOrderId === order.id)
+  ).map((order: any) => ({
+    id: `pending-${order.id}`,
+    salesOrderId: order.id,
+    status: 'Ready for Delivery',
+    deliveryAddress: order.customer?.address || '',
+    deliveryNotes: '',
+    createdAt: order.orderDate,
+    order: order,
+    orderNumber: order.orderNumber,
+    customer: order.customer,
+    totalAmount: order.totalAmount,
+    orderDate: order.orderDate,
+    isPendingDelivery: true,
+  })) || [];
+
+  // Combine all deliveries and pending orders
+  const allDeliveryData = [...allDeliveriesWithOrders, ...ordersReadyForDelivery];
   
-  const filteredOrders = shippedOrders?.filter((order: any) =>
-    order.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredDeliveryData = allDeliveryData?.filter((item: any) =>
+    item.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.status?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const columns: Column<any>[] = [
@@ -159,65 +191,106 @@ export default function Delivery() {
       className: "text-right",
     },
     {
-      key: "deliveryStatus",
+      key: "status",
       header: "Delivery Status",
-      render: (_, order: any) => {
-        const delivery = deliveries?.find((d: any) => d.salesOrderId === order.id);
-        if (!delivery) {
+      render: (status: string, item: any) => {
+        if (item.isPendingDelivery) {
           return (
-            <Badge variant="outline" className="text-orange-600">
+            <Badge variant="outline" className="text-orange-600 border-orange-300 bg-orange-50">
               <Package className="h-3 w-3 mr-1" />
               Ready for Delivery
             </Badge>
           );
         }
+        
+        // Apply color coding based on delivery status
+        let colorClass = "";
+        switch (status?.toLowerCase()) {
+          case "pending":
+            colorClass = "text-yellow-600 border-yellow-300 bg-yellow-50";
+            break;
+          case "in transit":
+          case "intransit":
+            colorClass = "text-blue-600 border-blue-300 bg-blue-50";
+            break;
+          case "delivered":
+          case "complete":
+          case "completed":
+            colorClass = "text-green-600 border-green-300 bg-green-50";
+            break;
+          case "partial":
+          case "partially delivered":
+            colorClass = "text-amber-600 border-amber-300 bg-amber-50";
+            break;
+          case "failed":
+          case "cancelled":
+          case "canceled":
+            colorClass = "text-red-600 border-red-300 bg-red-50";
+            break;
+          case "returned":
+            colorClass = "text-purple-600 border-purple-300 bg-purple-50";
+            break;
+          default:
+            colorClass = "text-gray-600 border-gray-300 bg-gray-50";
+        }
+        
         return (
-          <Badge variant="outline" className={getStatusColor(delivery.status)}>
-            {delivery.status}
+          <Badge variant="outline" className={colorClass}>
+            {status}
           </Badge>
         );
       },
     },
     {
-      key: "orderDate",
-      header: "Order Date",
+      key: "deliveryAddress",
+      header: "Delivery Address",
+      render: (address: string) => (
+        <div className="max-w-xs">
+          <p className="text-sm text-gray-900 truncate">
+            {address || "No address specified"}
+          </p>
+        </div>
+      ),
+    },
+    {
+      key: "createdAt",
+      header: "Created Date",
       render: (value: string) => formatDate(value),
     },
     {
       key: "actions",
       header: "Actions",
-      render: (_, order: any) => {
-        const delivery = deliveries?.find((d: any) => d.salesOrderId === order.id);
+      render: (_, item: any) => {
         return (
           <div className="flex items-center space-x-2">
-            {!delivery && (
+            {item.isPendingDelivery && (
               <Button
                 size="sm"
                 variant="outline"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setSelectedOrder(order);
+                  setSelectedOrder(item.order);
                   setDeliveryData({
-                    deliveryAddress: order.customer?.address || "",
+                    deliveryAddress: item.order.customer?.address || "",
                     deliveryNotes: "",
                     deliveryDocument: null,
                   });
                 }}
-                data-testid={`button-create-delivery-${order.id}`}
+                data-testid={`button-create-delivery-${item.salesOrderId}`}
               >
                 <Truck className="h-4 w-4 mr-1" />
                 Create Delivery
               </Button>
             )}
-            {delivery && delivery.status === "Pending" && (
+            {!item.isPendingDelivery && item.status === "Pending" && (
               <Button
                 size="sm"
                 variant="outline"
                 onClick={(e) => {
                   e.stopPropagation();
-                  updateDeliveryStatus.mutate({ id: delivery.id, status: "Complete" });
+                  updateDeliveryStatus.mutate({ id: item.id, status: "Complete" });
                 }}
-                data-testid={`button-complete-delivery-${delivery.id}`}
+                data-testid={`button-complete-delivery-${item.id}`}
               >
                 Complete
               </Button>
@@ -227,9 +300,9 @@ export default function Delivery() {
               variant="ghost"
               onClick={(e) => {
                 e.stopPropagation();
-                console.log("View order details:", order);
+                console.log("View delivery details:", item);
               }}
-              data-testid={`button-view-${order.id}`}
+              data-testid={`button-view-${item.id || item.salesOrderId}`}
             >
               <FileText className="h-4 w-4" />
             </Button>
@@ -240,9 +313,7 @@ export default function Delivery() {
   ];
 
   const deliveryStats = {
-    readyForDelivery: shippedOrders?.filter((order: any) => 
-      !deliveries?.some((d: any) => d.salesOrderId === order.id)
-    ).length || 0,
+    readyForDelivery: ordersReadyForDelivery?.length || 0,
     pendingDelivery: deliveries?.filter((d: any) => d.status === "Pending").length || 0,
     partialDelivery: deliveries?.filter((d: any) => d.status === "Partial").length || 0,
     completeDelivery: deliveries?.filter((d: any) => d.status === "Complete").length || 0,
@@ -353,7 +424,7 @@ export default function Delivery() {
               <div className="relative">
                 <Input
                   type="text"
-                  placeholder="Search orders..."
+                  placeholder="Search deliveries and orders..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-64 pl-10"
@@ -369,16 +440,15 @@ export default function Delivery() {
         </CardHeader>
         <CardContent>
           <DataTable
-            data={filteredOrders || []}
+            data={filteredDeliveryData || []}
             columns={columns}
             isLoading={isLoading}
-            emptyMessage="No orders ready for delivery. Orders must be shipped first."
-            onRowClick={(order) => {
-              const delivery = deliveries?.find((d: any) => d.salesOrderId === order.id);
-              if (!delivery) {
-                setSelectedOrder(order);
+            emptyMessage="No deliveries found. Create deliveries from shipped orders."
+            onRowClick={(item) => {
+              if (item.isPendingDelivery) {
+                setSelectedOrder(item.order);
                 setDeliveryData({
-                  deliveryAddress: order.customer?.address || "",
+                  deliveryAddress: item.order.customer?.address || "",
                   deliveryNotes: "",
                   deliveryDocument: null,
                 });

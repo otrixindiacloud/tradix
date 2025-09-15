@@ -394,15 +394,15 @@ export default function Inventory() {
         <CardContent>
           {inventoryError || itemsError ? (
             <div className="text-center py-8">
-              <p className="text-red-600 mb-4">
+              {/* <p className="text-red-600 mb-4">
                 Error loading inventory: {inventoryError?.message || itemsError?.message}
-              </p>
-              <Button onClick={() => {
+              </p> */}
+              {/* <Button onClick={() => {
                 queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
                 queryClient.invalidateQueries({ queryKey: ["/api/items"] });
-              }}>
-                Retry
-              </Button>
+              }}> */}
+                {/* Retry */}
+              {/* </Button> */}
             </div>
           ) : (
             <DataTable

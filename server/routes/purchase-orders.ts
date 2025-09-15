@@ -210,9 +210,7 @@ export function registerPurchaseOrderRoutes(app: Express) {
       if (!quotation) {
         return res.status(400).json({ message: 'Quotation not found' });
       }
-      if (quotation.status !== 'Accepted') {
-        return res.status(400).json({ message: 'Quotation must be Accepted before PO upload' });
-      }
+      // Removed: allow PO upload for any quotation status
 
       // Basic accepted items check (same as create route)
       let hasAcceptedItem = false;

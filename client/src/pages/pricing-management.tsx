@@ -119,13 +119,23 @@ export default function PricingManagement() {
   // Mutations
   const createCategoryMutation = useMutation({
     mutationFn: async (data: z.infer<typeof createProductCategorySchema>) => {
-      const response = await fetch("/api/product-categories", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
-      if (!response.ok) throw new Error("Failed to create category");
-      return response.json();
+      try {
+        const response = await fetch("/api/product-categories", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Failed to create category: ${response.status} ${response.statusText} - ${errorText}`);
+        }
+        
+        return response.json();
+      } catch (error) {
+        console.error("Create category error:", error);
+        throw new Error("Failed to create category");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/product-categories"] });
@@ -133,7 +143,12 @@ export default function PricingManagement() {
       categoryForm.reset();
     },
     onError: (error: any) => {
-      toast({ title: "Error", description: error.message || "Failed to create category", variant: "destructive" });
+      console.error("Category creation failed:", error);
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to create category", 
+        variant: "destructive" 
+      });
     },
   });
 
@@ -200,7 +215,16 @@ export default function PricingManagement() {
 
   // Handlers
   const onCreateCategory = (data: z.infer<typeof createProductCategorySchema>) => {
-    createCategoryMutation.mutate(data);
+    try {
+      createCategoryMutation.mutate(data);
+    } catch (error) {
+      console.error("Form submission error:", error);
+      toast({ 
+        title: "Error", 
+        description: "Failed to create category", 
+        variant: "destructive" 
+      });
+    }
   };
 
   const onCreateMarkup = (data: z.infer<typeof createMarkupConfigSchema>) => {

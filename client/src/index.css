@@ -371,7 +371,18 @@ table:focus, table:active, table:focus-visible {
   }
 
   .kpi-value {
-    @apply text-3xl font-bold text-gray-900;
+    /* Allow large numbers to shrink slightly and wrap/clip gracefully */
+    @apply text-3xl font-bold text-gray-900 leading-tight break-words;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  /* When really constrained (small screens), reduce font-size a bit */
+  @media (max-width: 360px) {
+    .kpi-value {
+      @apply text-2xl;
+    }
   }
 
   .kpi-label {

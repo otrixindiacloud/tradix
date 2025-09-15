@@ -375,7 +375,7 @@ export default function AnalyticsPage() {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-KW', {
       style: 'currency',
-      currency: 'KWD'
+      currency: 'BHD'
     }).format(value);
   };
 
