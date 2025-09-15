@@ -113,6 +113,20 @@ export default function Sidebar() {
             Sales Management
           </h3>
           <div className="space-y-1">
+            <Link href="/customer-management">
+              <a
+                className={cn(
+                  "sidebar-item",
+                  isActive("/customer-management")
+                    ? "sidebar-item-active"
+                    : "text-gray-700"
+                )}
+                data-testid="link-customers"
+              >
+                <FaUsers className="h-5 w-5 text-blue-500" />
+                <span className="font-medium">Customers</span>
+              </a>
+            </Link>
             <Link href="/enquiries">
               <a
                 className={cn(

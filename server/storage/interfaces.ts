@@ -204,6 +204,7 @@ export interface ISalesOrderStorage {
     dateFrom?: string;
     dateTo?: string;
     search?: string;
+    pendingSupplierLpo?: boolean;
   }): Promise<SalesOrder[]>;
   getSalesOrder(id: string): Promise<SalesOrder | undefined>;
   createSalesOrder(salesOrder: InsertSalesOrder): Promise<SalesOrder>;
@@ -212,6 +213,7 @@ export interface ISalesOrderStorage {
   createSalesOrderFromQuotation(quotationId: string, customerAcceptanceId?: string, userId?: string): Promise<SalesOrder>;
   createAmendedSalesOrder(parentOrderId: string, reason: string, userId?: string): Promise<SalesOrder>;
   validateCustomerLpo(id: string, validationData: { status: string; notes?: string; validatedBy: string }): Promise<SalesOrder>;
+  getSalesOrderLineage(orderId: string): Promise<SalesOrder[]>;
   
   // Sales Order Item operations
   getSalesOrderItems(salesOrderId: string): Promise<SalesOrderItem[]>;

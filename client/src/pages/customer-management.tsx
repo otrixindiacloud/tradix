@@ -100,12 +100,13 @@ export default function CustomerManagementPage() {
 
   const { toast } = useToast();
 
-  const fetchCustomers = async () => {
+  const fetchCustomers = async (page = pagination.page, limit = pagination.limit) => {
     setLoading(true);
     try {
+      const offset = (page - 1) * limit;
       const params = new URLSearchParams({
-        page: pagination.page.toString(),
-        limit: pagination.limit.toString(),
+        offset: offset.toString(),
+        limit: limit.toString(),
         ...filters
       });
 
@@ -139,7 +140,15 @@ export default function CustomerManagementPage() {
   useEffect(() => {
     fetchCustomers();
     fetchStats();
-  }, [pagination.page, filters]);
+  }, []);
+
+  useEffect(() => {
+    fetchCustomers(pagination.page);
+  }, [pagination.page]);
+
+  useEffect(() => {
+    fetchCustomers(1); // Reset to page 1 when filters change
+  }, [filters]);
 
   const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -175,7 +184,7 @@ export default function CustomerManagementPage() {
     } catch (error) {
       toast({
         title: "Error",
-        description: error.message || "Failed to create customer",
+        description: error instanceof Error ? error.message : "Failed to create customer",
         variant: "destructive"
       });
     }
@@ -213,7 +222,7 @@ export default function CustomerManagementPage() {
     } catch (error) {
       toast({
         title: "Error",
-        description: error.message || "Failed to update customer",
+        description: error instanceof Error ? error.message : "Failed to update customer",
         variant: "destructive"
       });
     }
@@ -239,7 +248,7 @@ export default function CustomerManagementPage() {
     } catch (error) {
       toast({
         title: "Error",
-        description: error.message || "Failed to delete customer",
+        description: error instanceof Error ? error.message : "Failed to delete customer",
         variant: "destructive"
       });
     }
@@ -314,7 +323,7 @@ export default function CustomerManagementPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={fetchCustomers} variant="outline" size="sm">
+          <Button onClick={() => fetchCustomers()} variant="outline" size="sm">
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>

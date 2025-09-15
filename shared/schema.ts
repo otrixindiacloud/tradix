@@ -229,6 +229,7 @@ export const salesOrders = pgTable("sales_orders", {
   // Version control for amendments
   version: integer("version").default(1),
   parentOrderId: uuid("parent_order_id"),
+  amendmentSequence: integer("amendment_sequence"), // Incremental sequence per parent (A1, A2, ...)
   amendmentReason: text("amendment_reason"),
   // Customer LPO validation
   customerLpoRequired: boolean("customer_lpo_required").default(true),

@@ -158,24 +158,61 @@ export class SalesOrderStorage extends BaseStorage implements ISalesOrderStorage
     if (!parentOrder) {
       throw new Error('Parent sales order not found');
     }
-
-    // Create amended sales order
-    const amendedOrderNumber = `${parentOrder.orderNumber}-A${String(await this.getNextSequenceNumber()).padStart(3, '0')}`;
     
-    const amendedSalesOrder = {
-      orderNumber: amendedOrderNumber,
-      parentOrderId,
-      customerId: parentOrder.customerId,
-      orderDate: new Date(),
-      status: 'Draft' as const,
-      totalAmount: parentOrder.totalAmount,
-      createdBy: userId,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    } as any;
+    // Use transaction to ensure atomic operation
+    return await db.transaction(async (tx) => {
+      const baseOrderNumber = parentOrder.orderNumber.replace(/-A\d+$/, '');
+      
+      // Lock and get all existing amendments for this parent to prevent race conditions
+      const existingRows: any = await tx.execute(sql`
+        SELECT order_number, amendment_sequence FROM sales_orders
+        WHERE (parent_order_id = ${parentOrderId} OR order_number = ${baseOrderNumber})
+        FOR UPDATE
+      `);
+      
+      // Find next available sequence number
+      const used = new Set<number>();
+      for (const r of existingRows.rows || []) {
+        if (r.amendment_sequence && Number(r.amendment_sequence) > 0) {
+          used.add(Number(r.amendment_sequence));
+        }
+        // Also extract from order_number pattern for safety
+        const m = /-A(\d+)$/.exec(r.order_number);
+        if (m) used.add(Number(m[1]));
+      }
+      
+      let nextSeq = 1;
+      while (used.has(nextSeq)) {
+        nextSeq++;
+      }
+      
+      const amendedOrderNumber = `${baseOrderNumber}-A${nextSeq}`;
+      const newVersion = (parentOrder.version || 1) + 1;
 
-    const result = await db.insert(salesOrders).values(amendedSalesOrder).returning();
-    return result[0];
+      const amendedSalesOrder = {
+        orderNumber: amendedOrderNumber,
+        amendmentSequence: nextSeq,
+        parentOrderId,
+        customerId: parentOrder.customerId,
+        orderDate: new Date(),
+        status: 'Draft' as const,
+        totalAmount: parentOrder.totalAmount,
+        createdBy: userId,
+        version: newVersion,
+        amendmentReason: reason,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any;
+
+      // Insert within the same transaction
+      const result = await tx.insert(salesOrders).values(amendedSalesOrder).returning();
+      const created = result[0];
+      
+      // Update parent timestamp
+      await tx.update(salesOrders).set({ updatedAt: new Date() }).where(eq(salesOrders.id, parentOrderId));
+      
+      return created;
+    });
   }
 
   async validateCustomerLpo(id: string, validationData: { status: string; notes?: string; validatedBy: string }) {
@@ -262,5 +299,24 @@ export class SalesOrderStorage extends BaseStorage implements ISalesOrderStorage
     `);
     const row: any = result.rows?.[0];
     return row?.next_number || 1;
+  }
+
+  /**
+   * Get lineage (root + amendments) for a given order id. Root first then amendments by amendment_sequence.
+   */
+  async getSalesOrderLineage(orderId: string) {
+    const current = await db.select().from(salesOrders).where(eq(salesOrders.id, orderId)).limit(1);
+    if (!current.length) return [];
+    let root = current[0];
+    if (root.parentOrderId) {
+      const maybeRoot = await db.select().from(salesOrders).where(eq(salesOrders.id, root.parentOrderId)).limit(1);
+      if (maybeRoot.length) root = maybeRoot[0];
+    }
+    const lineage: any = await db.execute(sql`
+      SELECT * FROM sales_orders
+      WHERE id = ${root.id} OR parent_order_id = ${root.id}
+      ORDER BY CASE WHEN amendment_sequence IS NULL THEN 0 ELSE amendment_sequence END
+    `);
+    return lineage.rows;
   }
 }

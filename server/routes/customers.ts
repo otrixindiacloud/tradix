@@ -9,8 +9,22 @@ export function registerCustomerRoutes(app: Express) {
     try {
       const limit = parseInt(req.query.limit as string) || 50;
       const offset = parseInt(req.query.offset as string) || 0;
+      const page = Math.floor(offset / limit) + 1;
+      
       const customers = await storage.getCustomers(limit, offset);
-      res.json(customers);
+      const stats = await (storage as any).getCustomerStats();
+      
+      const pagination = {
+        page,
+        limit,
+        total: stats.totalCustomers,
+        pages: Math.ceil(stats.totalCustomers / limit)
+      };
+      
+      res.json({
+        customers,
+        pagination
+      });
     } catch (error) {
       console.error("Error fetching customers:", error);
       res.status(500).json({ message: "Failed to fetch customers" });
@@ -19,7 +33,7 @@ export function registerCustomerRoutes(app: Express) {
 
   app.get("/api/customers/stats", async (req, res) => {
     try {
-      const stats = await storage.getCustomerStats();
+      const stats = await (storage as any).getCustomerStats();
       res.json(stats);
     } catch (error) {
       console.error("Error fetching customer stats:", error);

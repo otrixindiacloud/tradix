@@ -105,14 +105,18 @@ export function registerSalesOrderRoutes(app: Express) {
 
   app.post("/api/sales-orders/:id/amend", async (req, res) => {
     try {
-      const { amendments, userId } = req.body;
-      if (!amendments || !userId) {
-        return res.status(400).json({ message: "Amendments and User ID are required" });
-      }
-
-      // For now, return an error since the storage method doesn't exist yet
-      res.status(501).json({ message: "Amendment functionality not yet implemented" });
+      const schema = z.object({
+        reason: z.string().min(5, "Amendment reason required"),
+        userId: z.string().optional(),
+      });
+      const body = schema.parse(req.body);
+      const userIdResolved = body.userId || getOptionalUserId(req);
+      const amended = await storage.createAmendedSalesOrder(req.params.id, body.reason, userIdResolved);
+      res.status(201).json(amended);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid amendment data", errors: error.errors });
+      }
       console.error("Error creating amended sales order:", error);
       res.status(500).json({ message: error instanceof Error ? error.message : "Failed to create amended sales order" });
     }
@@ -124,15 +128,22 @@ export function registerSalesOrderRoutes(app: Express) {
       const validationSchema = z.object({
         status: z.enum(["Approved", "Rejected"]),
         notes: z.string().optional(),
-        validatedBy: z.string().min(1, "Validator ID is required"),
+        validatedBy: z.string().optional(),
+        override: z.boolean().optional(),
       });
 
       const validationData = validationSchema.parse(req.body);
       // inject resolved validator if not provided
-      if (!validationData.validatedBy) {
-        (validationData as any).validatedBy = getAttributingUserId(req);
+      (validationData as any).validatedBy = validationData.validatedBy || getAttributingUserId(req);
+
+      // fetch order to enforce rule: once Approved cannot be revalidated unless override flag true
+      const existing = await storage.getSalesOrder(req.params.id);
+      if (!existing) return res.status(404).json({ message: "Sales order not found" });
+      if (existing.customerLpoValidationStatus === 'Approved' && validationData.status !== 'Approved' && !validationData.override) {
+        return res.status(400).json({ message: "LPO already approved; override required to change status" });
       }
-      const salesOrder = await storage.validateCustomerLpo(req.params.id, validationData);
+
+      const salesOrder = await storage.validateCustomerLpo(req.params.id, validationData as { status: string; notes?: string; validatedBy: string });
       res.json(salesOrder);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -140,6 +151,17 @@ export function registerSalesOrderRoutes(app: Express) {
       }
       console.error("Error validating customer LPO:", error);
       res.status(500).json({ message: "Failed to validate customer LPO" });
+    }
+  });
+
+  // Lineage endpoint
+  app.get("/api/sales-orders/:id/lineage", async (req, res) => {
+    try {
+      const lineage = await storage.getSalesOrderLineage(req.params.id);
+      res.json({ count: lineage.length, lineage });
+    } catch (error) {
+      console.error('Error fetching sales order lineage:', error);
+      res.status(500).json({ message: 'Failed to fetch sales order lineage' });
     }
   });
 

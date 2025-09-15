@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"; // still used for small markers
 import StatusPill from "@/components/status/status-pill";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -42,6 +42,7 @@ export default function SalesOrders() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showAmendDialog, setShowAmendDialog] = useState(false);
   const [showLpoValidationDialog, setShowLpoValidationDialog] = useState(false);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [amendmentReason, setAmendmentReason] = useState("");
   const [lpoValidationStatus, setLpoValidationStatus] = useState("");
   const [lpoValidationNotes, setLpoValidationNotes] = useState("");
@@ -177,7 +178,7 @@ export default function SalesOrders() {
       id: string; 
       status: string; 
       notes?: string; 
-      validatedBy: string; 
+      validatedBy?: string; 
     }) => {
       const response = await apiRequest("PUT", `/api/sales-orders/${id}/validate-lpo`, {
         status,
@@ -186,14 +187,20 @@ export default function SalesOrders() {
       });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: any, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/sales-orders"] });
       setShowLpoValidationDialog(false);
       setLpoValidationStatus("");
       setLpoValidationNotes("");
+      const status = variables?.status;
+      const orderNum = data?.orderNumber || selectedOrder?.orderNumber;
+      let desc = "Customer LPO validation completed";
+      if (status) {
+        desc = `Customer LPO ${status === 'Approved' ? 'approved' : 'rejected'} successfully` + (orderNum ? ` for order ${orderNum}` : "");
+      }
       toast({
         title: "Success",
-        description: "Customer LPO validation completed",
+        description: desc,
       });
     },
     onError: (error: any) => {
@@ -462,6 +469,7 @@ export default function SalesOrders() {
             onClick={(e) => {
               e.stopPropagation();
               setSelectedOrder(order);
+              setShowDetailsDialog(true);
             }}
             data-testid={`button-view-${order.id}`}
           >
@@ -705,6 +713,7 @@ export default function SalesOrders() {
               emptyMessage="No sales orders found. Sales orders are created from accepted quotations with uploaded POs."
               onRowClick={(order) => {
                 setSelectedOrder(order);
+                setShowDetailsDialog(true);
               }}
             />
           )}
@@ -712,10 +721,28 @@ export default function SalesOrders() {
       </Card>
 
       {/* Create Sales Order Dialog */}
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="max-w-2xl">
+      <Dialog open={showCreateDialog} onOpenChange={(open) => {
+        setShowCreateDialog(open);
+        if (open) {
+          // close others
+          setShowAmendDialog(false);
+          setShowLpoValidationDialog(false);
+          setSelectedOrder(null);
+        }
+      }}>
+        <DialogContent className="max-w-2xl" onOpenAutoFocus={(e) => {
+          // Let Radix handle initial focus normally
+        }} onCloseAutoFocus={(e) => {
+          // Prevent focusing an element that will become aria-hidden
+          e.preventDefault();
+          // Move focus to body (safe passive target)
+          (document.activeElement as HTMLElement | null)?.blur();
+        }}>
           <DialogHeader>
             <DialogTitle>Create Sales Order from Quotation</DialogTitle>
+            <DialogDescription>
+              Create a sales order by selecting an eligible quotation. Only quotations with accepted status and an uploaded PO are shown.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-gray-600">
@@ -751,10 +778,23 @@ export default function SalesOrders() {
       </Dialog>
 
       {/* Amendment Dialog */}
-      <Dialog open={showAmendDialog} onOpenChange={setShowAmendDialog}>
-        <DialogContent>
+      <Dialog open={showAmendDialog} onOpenChange={(open) => {
+        setShowAmendDialog(open);
+        if (open) {
+          setShowCreateDialog(false);
+          setShowLpoValidationDialog(false);
+          setSelectedOrder(null);
+        }
+      }}>
+        <DialogContent onCloseAutoFocus={(e) => {
+          e.preventDefault();
+          (document.activeElement as HTMLElement | null)?.blur();
+        }}>
           <DialogHeader>
             <DialogTitle>Create Amended Sales Order</DialogTitle>
+            <DialogDescription>
+              Provide a mandatory reason. A new version of the current sales order will be created and linked to the original.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -796,10 +836,24 @@ export default function SalesOrders() {
       </Dialog>
 
       {/* LPO Validation Dialog */}
-      <Dialog open={showLpoValidationDialog} onOpenChange={setShowLpoValidationDialog}>
-        <DialogContent>
+      <Dialog open={showLpoValidationDialog} onOpenChange={(open) => {
+        setShowLpoValidationDialog(open);
+        if (open) {
+          setShowCreateDialog(false);
+          setShowAmendDialog(false);
+          // keep selectedOrder (needed for context) but ensure details dialog closed
+          // details dialog uses selectedOrder presence to open
+        }
+      }}>
+        <DialogContent onCloseAutoFocus={(e) => {
+          e.preventDefault();
+          (document.activeElement as HTMLElement | null)?.blur();
+        }}>
           <DialogHeader>
             <DialogTitle>Validate Customer LPO</DialogTitle>
+            <DialogDescription>
+              Review the customer purchase order details and mark the LPO as Approved or Rejected. Notes are optional.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -850,15 +904,31 @@ export default function SalesOrders() {
               disabled={!lpoValidationStatus || validateCustomerLpo.isPending}
               data-testid="button-validate-lpo"
             >
-              Validate LPO
+              {validateCustomerLpo.isPending ? (
+                <span className="flex items-center gap-2"><LoadingSpinner size="sm" /> Validating...</span>
+              ) : (
+                'Validate LPO'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Order Details Dialog */}
-      <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <Dialog open={showDetailsDialog} onOpenChange={(open) => {
+        setShowDetailsDialog(open);
+        if (!open) {
+          setSelectedOrder(null);
+        } else {
+          setShowCreateDialog(false);
+          setShowAmendDialog(false);
+          setShowLpoValidationDialog(false);
+        }
+      }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" onCloseAutoFocus={(e) => {
+          e.preventDefault();
+          (document.activeElement as HTMLElement | null)?.blur();
+        }}>
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
               <span>Sales Order Details</span>
@@ -869,6 +939,9 @@ export default function SalesOrders() {
                 <Badge variant="outline" className="text-orange-600">Partial Order</Badge>
               )}
             </DialogTitle>
+            <DialogDescription>
+              View sales order summary, items, and version history. Close this dialog to return to the list.
+            </DialogDescription>
           </DialogHeader>
           {selectedOrder && (
             <Tabs defaultValue="details" className="w-full">
@@ -977,7 +1050,11 @@ export default function SalesOrders() {
                         </div>
                         <div>
                           <p className="text-xs text-gray-600">Barcode *</p>
-                          <p className="font-mono text-sm text-blue-600">{item.barcode}</p>
+                          <p className="font-mono text-sm text-blue-600">
+                            { 'barcode' in item && (item as any).barcode
+                              ? (item as any).barcode
+                              : <span className="text-gray-400 italic">(not captured)</span> }
+                          </p>
                         </div>
                         <div>
                           <p className="text-xs text-gray-600">Quantity</p>
@@ -1041,7 +1118,7 @@ export default function SalesOrders() {
           )}
           <DialogFooter>
             <Button
-              onClick={() => setSelectedOrder(null)}
+              onClick={() => { setSelectedOrder(null); setShowDetailsDialog(false); }}
               className="bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-blue-500"
               data-testid="button-close-details"
             >
