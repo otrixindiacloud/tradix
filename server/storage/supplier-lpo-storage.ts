@@ -5,14 +5,55 @@ import { BaseStorage } from "./base";
 
 export class SupplierLpoStorage extends BaseStorage {
   async getSupplierLpos(limit = 50, offset = 0, filters?: { status?: string; supplierId?: string; dateFrom?: string; dateTo?: string; search?: string; }) {
-    let base = db.select().from(supplierLpos);
+    let base = db.select({
+      id: supplierLpos.id,
+      lpoNumber: supplierLpos.lpoNumber,
+      supplierId: supplierLpos.supplierId,
+      supplierName: suppliers.name,
+      status: supplierLpos.status,
+      lpoDate: supplierLpos.lpoDate,
+      expectedDeliveryDate: supplierLpos.expectedDeliveryDate,
+      requestedDeliveryDate: supplierLpos.requestedDeliveryDate,
+      subtotal: supplierLpos.subtotal,
+      taxAmount: supplierLpos.taxAmount,
+      totalAmount: supplierLpos.totalAmount,
+      currency: supplierLpos.currency,
+      approvalStatus: supplierLpos.approvalStatus,
+      requiresApproval: supplierLpos.requiresApproval,
+      paymentTerms: supplierLpos.paymentTerms,
+      deliveryTerms: supplierLpos.deliveryTerms,
+      version: supplierLpos.version,
+      createdAt: supplierLpos.createdAt,
+      updatedAt: supplierLpos.updatedAt,
+      createdBy: supplierLpos.createdBy,
+      sourceType: supplierLpos.sourceType,
+      sourceSalesOrderIds: supplierLpos.sourceSalesOrderIds,
+      sourceQuotationIds: supplierLpos.sourceQuotationIds,
+      groupingCriteria: supplierLpos.groupingCriteria,
+      termsAndConditions: supplierLpos.termsAndConditions,
+      specialInstructions: supplierLpos.specialInstructions,
+      parentLpoId: supplierLpos.parentLpoId,
+      amendmentReason: supplierLpos.amendmentReason,
+      amendmentType: supplierLpos.amendmentType,
+      approvedBy: supplierLpos.approvedBy,
+      approvedAt: supplierLpos.approvedAt,
+      approvalNotes: supplierLpos.approvalNotes,
+      sentToSupplierAt: supplierLpos.sentToSupplierAt,
+      confirmedBySupplierAt: supplierLpos.confirmedBySupplierAt,
+      supplierConfirmationReference: supplierLpos.supplierConfirmationReference,
+      supplierContactPerson: supplierLpos.supplierContactPerson,
+      supplierEmail: supplierLpos.supplierEmail,
+      supplierPhone: supplierLpos.supplierPhone
+    }).from(supplierLpos)
+    .leftJoin(suppliers, eq(supplierLpos.supplierId, suppliers.id));
+    
     const conditions: any[] = [];
     if (filters) {
       if (filters.status) conditions.push(eq(supplierLpos.status, filters.status as any));
       if (filters.supplierId) conditions.push(eq(supplierLpos.supplierId, filters.supplierId));
       if (filters.dateFrom) conditions.push(sql`${supplierLpos.lpoDate} >= ${filters.dateFrom}`);
       if (filters.dateTo) conditions.push(sql`${supplierLpos.lpoDate} <= ${filters.dateTo}`);
-      if (filters.search) conditions.push(sql`${supplierLpos.lpoNumber} ILIKE ${`%${filters.search}%`}`);
+      if (filters.search) conditions.push(sql`(${supplierLpos.lpoNumber} ILIKE ${`%${filters.search}%`} OR ${suppliers.name} ILIKE ${`%${filters.search}%`})`);
       if (conditions.length) base = (base as any).where(and(...conditions));
     }
     return (base as any).orderBy(desc(supplierLpos.createdAt)).limit(limit).offset(offset);

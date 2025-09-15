@@ -395,7 +395,7 @@ export default function QuotationsPage() {
             }}
             data-testid={`button-edit-${quotation.id}`}
           >
-            <Edit className="h-4 w-4" />
+            <Edit className="h-4 w-4 text-blue-600" />
           </Button>
           <Button
             variant="ghost"
@@ -406,7 +406,7 @@ export default function QuotationsPage() {
             }}
             data-testid={`button-download-${quotation.id}`}
           >
-            <Download className="h-4 w-4" />
+            <Download className="h-4 w-4 text-black" />
           </Button>
           <Button
             variant="ghost"
@@ -417,7 +417,7 @@ export default function QuotationsPage() {
             }}
             data-testid={`button-delete-${quotation.id}`}
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-4 w-4 text-red-600" />
           </Button>
         </div>
       ),

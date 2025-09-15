@@ -187,16 +187,30 @@ export default function Enquiries() {
       key: "source",
       header: "Source",
       render: (value: string) => (
-        <Badge variant="outline">{value}</Badge>
+        value === "Email"
+          ? <Badge variant="outline" className="bg-blue-600 text-white border-blue-600">{value}</Badge>
+          : value === "Walk-in"
+            ? <Badge variant="outline" className="bg-orange-500 text-white border-orange-500">{value}</Badge>
+            : value === "Web Form"
+              ? <Badge variant="outline" className="bg-purple-600 text-white border-purple-600">{value}</Badge>
+              : value === "Phone"
+                ? <Badge variant="outline" className="bg-green-600 text-white border-green-600">{value}</Badge>
+                : <Badge variant="outline">{value}</Badge>
       ),
     },
     {
       key: "status",
       header: "Status",
       render: (value: string) => (
-        <Badge variant="outline" className={getStatusColor(value)}>
-          {value}
-        </Badge>
+        value === "Quoted"
+          ? <Badge variant="outline" className="bg-green-600 text-white border-green-600">{value}</Badge>
+          : value === "New"
+            ? <Badge variant="outline" className="bg-blue-600 text-white border-blue-600">{value}</Badge>
+            : value === "In Progress"
+              ? <Badge variant="outline" className="bg-yellow-400 text-white border-yellow-400">{value}</Badge>
+              : value === "Closed"
+                ? <Badge variant="outline" className="bg-gray-500 text-white border-gray-500">{value}</Badge>
+                : <Badge variant="outline" className={getStatusColor(value)}>{value}</Badge>
       ),
     },
     {
@@ -235,7 +249,7 @@ export default function Enquiries() {
             }}
             data-testid={`button-edit-${enquiry.id}`}
           >
-            <Edit className="h-4 w-4" />
+            <Edit className="h-4 w-4 text-blue-600" />
           </Button>
           <Button
             variant="ghost"
@@ -246,7 +260,7 @@ export default function Enquiries() {
             }}
             data-testid={`button-delete-${enquiry.id}`}
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-4 w-4 text-red-600" />
           </Button>
         </div>
       ),

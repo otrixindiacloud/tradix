@@ -174,20 +174,21 @@ export default function PoUpload() {
       header: "Actions",
       render: (_, quotation: any) => (
         <div className="flex items-center space-x-2">
-          {!quotation.customerPoDocument && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedQuotation(quotation);
-              }}
-              data-testid={`button-upload-${quotation.id}`}
-            >
-              <Upload className="h-4 w-4 mr-1" />
-              Upload PO
-            </Button>
-          )}
+            {!quotation.customerPoDocument && (
+              <Button
+                size="sm"
+                variant="secondary"
+                className="bg-gray-400 text-white hover:bg-gray-500 border-gray-400"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedQuotation(quotation);
+                }}
+                data-testid={`button-upload-${quotation.id}`}
+              >
+                <Upload className="h-4 w-4 mr-1" />
+                Upload PO
+              </Button>
+            )}
           <Button
             size="sm"
             variant="ghost"

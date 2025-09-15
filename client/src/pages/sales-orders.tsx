@@ -332,6 +332,7 @@ export default function SalesOrders() {
     {
       key: "actions",
       header: "Actions",
+      className: "text-center",
       render: (_, order) => (
         <div className="flex items-center space-x-1">
           {order.status === "Draft" && (

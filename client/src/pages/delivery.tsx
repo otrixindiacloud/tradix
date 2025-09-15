@@ -207,7 +207,7 @@ export default function Delivery() {
         let colorClass = "";
         switch (status?.toLowerCase()) {
           case "pending":
-            colorClass = "text-yellow-600 border-yellow-300 bg-yellow-50";
+            colorClass = "text-white border-blue-600 bg-blue-600";
             break;
           case "in transit":
           case "intransit":
@@ -216,7 +216,7 @@ export default function Delivery() {
           case "delivered":
           case "complete":
           case "completed":
-            colorClass = "text-green-600 border-green-300 bg-green-50";
+            colorClass = "text-white border-green-500 bg-green-500";
             break;
           case "partial":
           case "partially delivered":

@@ -1,5 +1,6 @@
-import jsPDF from 'jspdf';
+import jsPDFPackage from 'jspdf';
 import autoTable from 'jspdf-autotable';
+const { jsPDF } = jsPDFPackage;
 import { Invoice, InvoiceItem, Item, Customer, Quotation, QuotationItem } from '@shared/schema';
 
 // Core reusable interfaces

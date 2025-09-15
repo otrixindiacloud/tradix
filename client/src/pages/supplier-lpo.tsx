@@ -48,6 +48,25 @@ export default function SupplierLpoPage() {
   const [showAutoGenerate, setShowAutoGenerate] = useState(false);
   const [showBacklog, setShowBacklog] = useState(false);
   const [showCreateLpo, setShowCreateLpo] = useState(false);
+  const [settingDeliveryLpoId, setSettingDeliveryLpoId] = useState<string | null>(null);
+  const [calendarDate, setCalendarDate] = useState<string>("");
+  const [editLpo, setEditLpo] = useState<SupplierLpo | null>(null);
+  // Mutation for updating expected delivery date
+  const updateExpectedDeliveryMutation = useMutation({
+    mutationFn: async ({ lpoId, expectedDeliveryDate }: { lpoId: string; expectedDeliveryDate: string }) => {
+      const response = await apiRequest("PATCH", `/api/supplier-lpos/${lpoId}/expected-delivery`, { expectedDeliveryDate, userId });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Success", description: "Expected delivery date updated" });
+      queryClient.invalidateQueries({ queryKey: ["/api/supplier-lpos"] });
+      setSettingDeliveryLpoId(null);
+      setCalendarDate("");
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to update expected delivery date", variant: "destructive" });
+    },
+  });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -153,6 +172,16 @@ export default function SupplierLpoPage() {
     </Badge>
   );
 
+  // Handler for saving expected delivery date in EditExpectedDeliveryDialog
+  const handleEditSave = (date: string) => {
+    if (!editLpo) return;
+    updateExpectedDeliveryMutation.mutate({ lpoId: editLpo.id, expectedDeliveryDate: date }, {
+      onSuccess: () => {
+        setEditLpo(null);
+      }
+    });
+  };
+
   return (
     <div className="space-y-6 p-6">
       {/* Card-style header */}
@@ -161,14 +190,55 @@ export default function SupplierLpoPage() {
           <h2 className="text-2xl font-bold text-gray-900">Supplier LPO Management</h2>
           <p className="text-gray-600 text-base mt-1">Step 6: Manage Local Purchase Orders with suppliers including auto-generation, amendments, and approval workflows</p>
         </div>
-        <button
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
-          onClick={() => setShowCreateLpo(true)}
-          data-testid="button-new-supplier-lpo"
-        >
-          <span className="text-xl font-bold">+</span> New Supplier LPO
-        </button>
+        <div className="flex gap-3">
+          <button
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-200 transition"
+            onClick={() => setShowAutoGenerate(true)}
+            data-testid="button-auto-generate-lpo"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Auto Generate LPOs
+          </button>
+          <button
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
+            onClick={() => setShowCreateLpo(true)}
+            data-testid="button-new-supplier-lpo"
+          >
+            <span className="text-xl font-bold">+</span> New Supplier LPO
+          </button>
+        </div>
       </div>
+      {/* Create Supplier LPO Dialog */}
+      {showCreateLpo && (
+        <Dialog open={showCreateLpo} onOpenChange={open => setShowCreateLpo(open)}>
+          <DialogContent className="max-w-md w-full p-0" style={{ maxHeight: '80vh',maxWidth:'80vh' ,overflowY: 'auto' }}>
+            <DialogHeader className="px-4 pt-4">
+              <DialogTitle className="text-xl">New Supplier LPO</DialogTitle>
+            </DialogHeader>
+            <div className="px-4 pb-4">
+              <CreateLpoForm 
+                onClose={() => setShowCreateLpo(false)} 
+                onCreated={() => {
+                  setShowCreateLpo(false);
+                  queryClient.invalidateQueries({ queryKey: ["/api/supplier-lpos"] });
+                }}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Auto Generate LPOs Dialog */}
+      {showAutoGenerate && (
+        <Dialog open={showAutoGenerate} onOpenChange={open => setShowAutoGenerate(open)}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Auto Generate Supplier LPOs</DialogTitle>
+            </DialogHeader>
+            <AutoGenerateLposForm onClose={() => setShowAutoGenerate(false)} />
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -250,7 +320,7 @@ export default function SupplierLpoPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <BacklogTable data={backlogData} type="supplier" />
+                <BacklogTable data={backlogData as any[]} type="supplier" />
               </CardContent>
             </Card>
           </TabsContent>
@@ -263,7 +333,7 @@ export default function SupplierLpoPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <BacklogTable data={customerBacklog} type="customer" />
+                <BacklogTable data={customerBacklog as any[]} type="customer" />
               </CardContent>
             </Card>
           </TabsContent>
@@ -328,7 +398,7 @@ export default function SupplierLpoPage() {
                   <SelectValue placeholder="All suppliers" />
                 </SelectTrigger>
                 <SelectContent>
-                  {suppliers?.map((supplier: Supplier) => (
+                  {(Array.isArray(suppliers) ? suppliers : []).map((supplier: Supplier) => (
                     <SelectItem key={supplier.id} value={supplier.id}>
                       {supplier.name}
                     </SelectItem>
@@ -412,39 +482,37 @@ export default function SupplierLpoPage() {
                         {lpo.supplierName || "-"}
                       </span>
                     </TableCell>
-                    <TableCell>{getStatusBadge(lpo.status)}</TableCell>
+                    <TableCell>{getStatusBadge(lpo.status ?? "Missing")}</TableCell>
                     <TableCell>{getApprovalStatusBadge(lpo.approvalStatus || "Not Required")}</TableCell>
                     <TableCell>
                       {lpo.lpoDate ? format(new Date(lpo.lpoDate), "MMM dd, yyyy") : "-"}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        {lpo.expectedDeliveryDate ? (
-                          <span className="px-2 py-1 rounded bg-green-50 text-green-700 font-semibold border border-green-200">
-                            {format(new Date(lpo.expectedDeliveryDate), "MMM dd, yyyy")}
-                          </span>
-                        ) : (
-                          <span className="px-2 py-1 rounded bg-gray-100 text-gray-500 border border-gray-200">-</span>
-                        )}
+                      {lpo.expectedDeliveryDate ? (
+                        <span className="px-2 py-1 rounded bg-green-50 text-green-700 font-semibold border border-green-200">
+                          {format(new Date(lpo.expectedDeliveryDate), "MMM dd, yyyy")}
+                        </span>
+                      ) : (
+                        <span className="px-2 py-1 rounded bg-gray-100 text-gray-500 border border-gray-200">Date is not set</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {lpo.currency} {Number(lpo.totalAmount || 0).toLocaleString()}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2 relative">
                         <Button
                           size="sm"
                           variant="outline"
                           className="border-green-600 text-green-600 hover:bg-green-50"
                           onClick={e => {
                             e.stopPropagation();
-                            toast({ title: "Set Expected Delivery", description: `LPO: ${lpo.lpoNumber}` });
+                            setEditLpo(lpo);
                           }}
                           data-testid={`button-set-expected-delivery-${lpo.id}`}
                         >
-                          Set
+                          Set Date
                         </Button>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {lpo.currency} {Number(lpo.totalAmount || 0).toLocaleString()}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
                         {lpo.status === "Draft" && lpo.approvalStatus === "Approved" && (
                           <Button
                             size="sm"
@@ -488,6 +556,14 @@ export default function SupplierLpoPage() {
           onClose={() => setSelectedLpo(null)}
         />
       )}
+      {editLpo && (
+        <EditExpectedDeliveryDialog
+          lpo={editLpo}
+          open={!!editLpo}
+          onClose={() => setEditLpo(null)}
+          onSave={handleEditSave}
+        />
+      )}
     </div>
   );
 }
@@ -501,19 +577,25 @@ function AutoGenerateLposForm({ onClose }: { onClose: () => void }) {
 
   const { data: salesOrders } = useQuery({
     queryKey: ["/api/sales-orders", { status: "Confirmed" }],
-    queryFn: () => apiRequest("/api/sales-orders?status=Confirmed"),
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/sales-orders?status=Confirmed");
+      return response.json();
+    },
   });
 
   const generateMutation = useMutation({
-    mutationFn: () => 
-      apiRequest("/api/supplier-lpos/from-sales-orders", {
-        method: "POST",
-        body: JSON.stringify({
+    mutationFn: async () => {
+      const response = await apiRequest(
+        "POST",
+        "/api/supplier-lpos/from-sales-orders",
+        {
           salesOrderIds: selectedOrders,
           groupBy,
           userId: "current-user-id",
-        }),
-      }),
+        }
+      );
+      return response.json();
+    },
     onSuccess: (data) => {
       toast({ 
         title: "Success", 
@@ -745,7 +827,7 @@ function LpoDetailDialog({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {lpoItems?.map((item: SupplierLpoItem) => (
+                  {(Array.isArray(lpoItems) ? lpoItems : []).map((item: SupplierLpoItem) => (
                     <TableRow key={item.id}>
                       <TableCell>{item.itemDescription}</TableCell>
                       <TableCell>{item.supplierCode}</TableCell>
@@ -782,7 +864,7 @@ function getStatusBadge(status: string) {
 }
 
 // Create LPO Form Component
-function CreateLpoForm({ onClose }: { onClose: () => void }) {
+function CreateLpoForm({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [formData, setFormData] = useState({
     supplierId: "",
     lpoDate: new Date().toISOString().split('T')[0],
@@ -793,7 +875,7 @@ function CreateLpoForm({ onClose }: { onClose: () => void }) {
     termsAndConditions: "",
     specialInstructions: "",
     requiresApproval: false,
-    currency: "USD",
+    currency: "BHD",
     items: [] as Array<{
       itemId: string;
       supplierCode: string;
@@ -843,6 +925,7 @@ function CreateLpoForm({ onClose }: { onClose: () => void }) {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/supplier-lpos"] });
       onClose();
+      if (onCreated) onCreated();
     },
     onError: (error: any) => {
       toast({ 
@@ -914,11 +997,14 @@ function CreateLpoForm({ onClose }: { onClose: () => void }) {
               <SelectValue placeholder="Select supplier" />
             </SelectTrigger>
             <SelectContent>
-              {suppliers?.map((supplier: any) => (
-                <SelectItem key={supplier.id} value={supplier.id}>
-                  {supplier.name}
-                </SelectItem>
-              ))}
+              {Array.isArray(suppliers)
+                ? suppliers.map((supplier: any) => (
+                    <SelectItem key={supplier.id} value={supplier.id}>
+                      {supplier.name}
+                    </SelectItem>
+                  ))
+                : []
+              }
             </SelectContent>
           </Select>
         </div>
@@ -964,9 +1050,10 @@ function CreateLpoForm({ onClose }: { onClose: () => void }) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="BHD">BHD</SelectItem>
               <SelectItem value="USD">USD</SelectItem>
               <SelectItem value="EUR">EUR</SelectItem>
-              <SelectItem value="GBP">GBP</SelectItem>
+              <SelectItem value="QAR">QAR</SelectItem>
               <SelectItem value="AED">AED</SelectItem>
             </SelectContent>
           </Select>
@@ -1067,7 +1154,7 @@ function CreateLpoForm({ onClose }: { onClose: () => void }) {
                         value={item.itemId}
                         onValueChange={(value) => {
                           updateItem(index, "itemId", value);
-                          const selectedItem = items?.find((i: any) => i.id === value);
+                          const selectedItem = (Array.isArray(items) ? items : []).find((i: any) => i.id === value);
                           if (selectedItem) {
                             updateItem(index, "itemDescription", selectedItem.description);
                             updateItem(index, "barcode", selectedItem.barcode || "");
@@ -1078,7 +1165,7 @@ function CreateLpoForm({ onClose }: { onClose: () => void }) {
                           <SelectValue placeholder="Select item" />
                         </SelectTrigger>
                         <SelectContent>
-                          {items?.map((item: any) => (
+                          {(Array.isArray(items) ? items : []).map((item: any) => (
                             <SelectItem key={item.id} value={item.id}>
                               {item.name} - {item.sku}
                             </SelectItem>
@@ -1218,5 +1305,53 @@ function CreateLpoForm({ onClose }: { onClose: () => void }) {
         </Button>
       </div>
     </form>
+  );
+}
+
+function EditExpectedDeliveryDialog({ lpo, open, onClose, onSave }: {
+  lpo: SupplierLpo;
+  open: boolean;
+  onClose: () => void;
+  onSave: (date: string) => void;
+}) {
+  const [date, setDate] = useState(
+    lpo.expectedDeliveryDate
+      ? (lpo.expectedDeliveryDate instanceof Date
+          ? lpo.expectedDeliveryDate.toISOString().split('T')[0]
+          : String(lpo.expectedDeliveryDate).split('T')[0])
+      : ""
+  );
+  const [saving, setSaving] = useState(false);
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit Expected Delivery Date</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label>Expected Delivery Date</Label>
+            <input
+              type="date"
+              value={date}
+              onChange={e => setDate(e.target.value)}
+              className="border rounded px-2 py-1 w-full"
+              min={new Date().toISOString().split('T')[0]}
+              data-testid={`edit-calendar-expected-delivery-${lpo.id}`}
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={onClose}>Cancel</Button>
+            <Button
+              onClick={() => { setSaving(true); onSave(date); }}
+              disabled={!date || saving}
+              className="bg-green-600 text-white"
+            >
+              {saving ? "Saving..." : "Save"}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

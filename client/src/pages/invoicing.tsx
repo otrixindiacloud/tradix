@@ -327,11 +327,11 @@ export default function Invoicing() {
     {
       key: "status",
       header: "Status",
-      render: (value: string) => (
-        <Badge variant="outline" className={getStatusColor(value)}>
-          {value}
-        </Badge>
-      ),
+        render: (value: string) => (
+          value === "Draft"
+            ? <Badge variant="outline" className="bg-gray-400 text-white border-gray-400">{value}</Badge>
+            : <Badge variant="outline" className={getStatusColor(value)}>{value}</Badge>
+        ),
     },
     {
       key: "totalAmount",
@@ -373,6 +373,7 @@ export default function Invoicing() {
             <Button
               size="sm"
               variant="outline"
+              className="bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:text-white"
               onClick={(e) => {
                 e.stopPropagation();
                 updateInvoiceStatus.mutate({ id: invoice.id, status: "Sent" });
@@ -407,9 +408,9 @@ export default function Invoicing() {
             }}
             data-testid={`button-download-${invoice.id}`}
             title="Download Comprehensive PDF with Material Specs"
-            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            className="text-black hover:text-black hover:bg-gray-50"
           >
-            <Download className="h-4 w-4" />
+            <Download className="h-4 w-4 text-black" />
           </Button>
           <Button
             size="sm"

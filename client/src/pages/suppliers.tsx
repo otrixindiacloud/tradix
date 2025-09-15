@@ -214,7 +214,7 @@ export default function Suppliers() {
             }}
             data-testid={`button-edit-${supplier.id}`}
           >
-            <Edit className="h-4 w-4" />
+              <Edit className="h-4 w-4" style={{ color: '#2563eb' }} />
           </Button>
           <Button
             variant="ghost"
@@ -225,7 +225,7 @@ export default function Suppliers() {
             }}
             data-testid={`button-delete-${supplier.id}`}
           >
-            <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-4 w-4" style={{ color: '#ef4444' }} />
           </Button>
         </div>
       ),
