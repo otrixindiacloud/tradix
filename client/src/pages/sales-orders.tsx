@@ -972,7 +972,7 @@ export default function SalesOrders() {
                         </div>
                         <div>
                           <p className="text-xs text-gray-600">Supplier Code</p>
-                          <p className="font-mono text-sm">{item.supplierCode}</p>
+                          <p className="font-mono text-sm">{item.itemId}</p>
                         </div>
                         <div>
                           <p className="text-xs text-gray-600">Barcode *</p>

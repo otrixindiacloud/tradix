@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Upload, File, Image, X, Download, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 
 interface AttachmentManagerProps {
   attachments?: any[];
@@ -24,23 +25,76 @@ export default function AttachmentManager({
   readOnly = false,
 }: AttachmentManagerProps) {
   const [previewFile, setPreviewFile] = useState<any>(null);
+  const [uploading, setUploading] = useState(false);
+  const { toast } = useToast();
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    if (readOnly) return;
+  const uploadFiles = async (files: File[]) => {
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('files', file);
+    });
 
-    const newAttachments = acceptedFiles.map(file => ({
-      id: Math.random().toString(36).substr(2, 9),
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      file: file,
-      url: URL.createObjectURL(file),
-      uploadedAt: new Date().toISOString(),
-    }));
+    try {
+      const response = await fetch('/api/files/upload', {
+        method: 'POST',
+        body: formData,
+      });
 
-    const updatedAttachments = [...attachments, ...newAttachments];
-    onAttachmentsChange?.(updatedAttachments);
-  }, [attachments, onAttachmentsChange, readOnly]);
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const result = await response.json();
+      return result.files;
+    } catch (error) {
+      console.error('Upload error:', error);
+      throw error;
+    }
+  };
+
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    if (readOnly || uploading) return;
+
+    if (acceptedFiles.length + attachments.length > maxFiles) {
+      toast({
+        title: "Too many files",
+        description: `Maximum ${maxFiles} files allowed`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const uploadedFiles = await uploadFiles(acceptedFiles);
+      
+      const newAttachments = uploadedFiles.map((file: any) => ({
+        id: file.id,
+        name: file.name,
+        filename: file.filename,
+        size: file.size,
+        type: file.mimetype,
+        url: file.path, // Server-provided download path
+        uploadedAt: file.uploadedAt,
+      }));
+
+      const updatedAttachments = [...attachments, ...newAttachments];
+      onAttachmentsChange?.(updatedAttachments);
+      
+      toast({
+        title: "Files uploaded",
+        description: `${acceptedFiles.length} file(s) uploaded successfully`,
+      });
+    } catch (error) {
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload files. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
+  }, [attachments, onAttachmentsChange, readOnly, uploading, maxFiles, toast]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -50,14 +104,35 @@ export default function AttachmentManager({
     }, {} as Record<string, string[]>),
     maxFiles: maxFiles - attachments.length,
     maxSize: maxSizeBytes,
-    disabled: readOnly,
+    disabled: readOnly || uploading,
   });
 
-  const removeAttachment = (id: string) => {
+  const removeAttachment = async (id: string) => {
     if (readOnly) return;
+    
+    const attachment = attachments.find(att => att.id === id);
+    if (attachment && attachment.filename) {
+      try {
+        // Delete file from server
+        await fetch(`/api/files/${attachment.filename}`, {
+          method: 'DELETE',
+        });
+      } catch (error) {
+        console.error('Failed to delete file from server:', error);
+      }
+    }
     
     const updatedAttachments = attachments.filter(attachment => attachment.id !== id);
     onAttachmentsChange?.(updatedAttachments);
+  };
+
+  const downloadAttachment = (attachment: any) => {
+    // Use the server URL for download
+    const downloadUrl = attachment.url || `/api/files/download/${attachment.filename}`;
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = attachment.name;
+    link.click();
   };
 
   const formatFileSize = (bytes: number) => {
@@ -95,13 +170,17 @@ export default function AttachmentManager({
             className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
               isDragActive
                 ? "border-primary bg-primary/5"
+                : uploading
+                ? "border-muted-foreground/25 bg-muted/50 cursor-not-allowed"
                 : "border-muted-foreground/25 hover:border-primary/50"
             }`}
             data-testid="dropzone-upload"
           >
             <input {...getInputProps()} />
             <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-            {isDragActive ? (
+            {uploading ? (
+              <p className="text-primary">Uploading files...</p>
+            ) : isDragActive ? (
               <p className="text-primary">Drop files here...</p>
             ) : (
               <div>
@@ -173,12 +252,7 @@ export default function AttachmentManager({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => {
-                      const link = document.createElement("a");
-                      link.href = attachment.url;
-                      link.download = attachment.name;
-                      link.click();
-                    }}
+                    onClick={() => downloadAttachment(attachment)}
                     data-testid={`button-download-${attachment.id}`}
                   >
                     <Download className="h-4 w-4" />

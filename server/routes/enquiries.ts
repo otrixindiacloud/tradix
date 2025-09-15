@@ -175,4 +175,16 @@ export function registerEnquiryRoutes(app: Express) {
       res.status(500).json({ message: "Failed to delete enquiry item" });
     }
   });
+
+  // Enquiry attachments routes
+  app.put("/api/enquiries/:id/attachments", async (req, res) => {
+    try {
+      const { attachments } = req.body;
+      const enquiry = await storage.updateEnquiry(req.params.id, { attachments });
+      res.json(enquiry);
+    } catch (error) {
+      console.error("Error updating enquiry attachments:", error);
+      res.status(500).json({ message: "Failed to update enquiry attachments" });
+    }
+  });
 }

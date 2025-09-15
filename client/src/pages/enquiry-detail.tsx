@@ -92,7 +92,7 @@ export default function EnquiryDetail() {
 
   const updateAttachments = useMutation({
     mutationFn: async (attachments: any[]) => {
-      const response = await apiRequest("PUT", `/api/enquiries/${id}`, { attachments });
+      const response = await apiRequest("PUT", `/api/enquiries/${id}/attachments`, { attachments });
       return response.json();
     },
     onSuccess: () => {
