@@ -220,6 +220,14 @@ table:focus, table:active, table:focus-visible {
 }
 
 @layer components {
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+
   .gradient-primary {
     @apply bg-gradient-to-r from-blue-600 to-blue-700;
   }

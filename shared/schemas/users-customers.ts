@@ -1,4 +1,5 @@
-import { pgTable, uuid, varchar, timestamp, boolean, sql } from "./common";
+import { pgTable, uuid, varchar, timestamp, boolean, sql, text, decimal, createInsertSchema } from "./common";
+import { customerTypeEnum, customerClassificationEnum } from "./enums";
 
 // Users table
 export const users = pgTable("users", {
@@ -46,10 +47,6 @@ export const suppliers = pgTable("suppliers", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
-
-import { createInsertSchema } from "./common";
-import { customerTypeEnum, customerClassificationEnum } from "./enums";
-import { text, decimal } from "./common";
 
 // Insert schemas
 export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true, updatedAt: true });

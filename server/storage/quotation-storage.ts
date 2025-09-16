@@ -219,9 +219,8 @@ export class QuotationStorage extends BaseStorage {
 
       console.log("Retrieved enquiry items:", enquiryItemsList.length, "items");
 
-      // Calculate markup based on customer type
-      const markup = enquiry.customer.customerType === "Retail" ? 0.7 : 0.4;
-      console.log("Calculated markup:", markup);
+      // Import enhanced pricing engine
+      const { enhancedPricingStorage } = await import('./pricing-storage.js');
 
       // Create quotation data
       const quotationData = {
@@ -246,32 +245,89 @@ export class QuotationStorage extends BaseStorage {
 
       console.log("Successfully created quotation:", quotation);
 
-      // Copy enquiry items to quotation items
+      // Copy enquiry items to quotation items with enhanced pricing
       if (enquiryItemsList.length > 0) {
         let totalAmount = 0;
         const createdItems: QuotationItem[] = [];
 
         for (const enquiryItem of enquiryItemsList) {
-          const basePrice = parseFloat(enquiryItem.unitPrice || "0");
-          const quotedPrice = basePrice * (1 + markup);
-          const totalPrice = quotedPrice * enquiryItem.quantity;
-          totalAmount += totalPrice;
+          try {
+            // Use enhanced pricing engine for each item
+            // First, create a mock item if itemId is not available
+            let itemId = enquiryItem.itemId;
+            
+            if (!itemId) {
+              // For enquiry items without itemId, use fallback calculation
+              const basePrice = parseFloat(enquiryItem.unitPrice || "0");
+              const markup = enquiry.customer.customerType === "Retail" ? 0.7 : 0.4;
+              const quotedPrice = basePrice * (1 + markup);
+              const totalPrice = quotedPrice * enquiryItem.quantity;
+              totalAmount += totalPrice;
+
+              const quotationItemData: InsertQuotationItem = {
+                quotationId: quotation.id,
+                description: enquiryItem.description,
+                quantity: enquiryItem.quantity,
+                costPrice: basePrice.toFixed(4),
+                markup: (markup * 100).toFixed(2),
+                unitPrice: quotedPrice.toFixed(4),
+                lineTotal: totalPrice.toFixed(2),
+                notes: enquiryItem.notes || "",
+              };
+
+              console.log("Creating quotation item (fallback pricing):", quotationItemData);
+              const created = await this.createQuotationItem(quotationItemData);
+              createdItems.push(created);
+            } else {
+              // Use enhanced pricing engine
+              const pricingResult = await enhancedPricingStorage.calculateOptimalPrice(
+                itemId,
+                enquiry.customerId,
+                enquiryItem.quantity
+              );
+
+              const quotationItemData: InsertQuotationItem = {
+                quotationId: quotation.id,
+                description: enquiryItem.description,
+                quantity: enquiryItem.quantity,
+                costPrice: pricingResult.costPrice.toFixed(4),
+                markup: pricingResult.markupPercentage.toFixed(2),
+                unitPrice: pricingResult.finalPrice.toFixed(4),
+                lineTotal: (pricingResult.finalPrice * enquiryItem.quantity).toFixed(2),
+                notes: `${enquiryItem.notes || ""} | Pricing method: ${pricingResult.method} | Factors: ${pricingResult.factors.join(', ')}`,
+              };
+
+              totalAmount += pricingResult.finalPrice * enquiryItem.quantity;
+
+              console.log("Creating quotation item (enhanced pricing):", quotationItemData);
+              const created = await this.createQuotationItem(quotationItemData);
+              createdItems.push(created);
+            }
+          } catch (pricingError) {
+            console.error("Error calculating enhanced pricing for item:", pricingError);
+            
+            // Fallback to original pricing logic
+            const basePrice = parseFloat(enquiryItem.unitPrice || "0");
+            const markup = enquiry.customer.customerType === "Retail" ? 0.7 : 0.4;
+            const quotedPrice = basePrice * (1 + markup);
+            const totalPrice = quotedPrice * enquiryItem.quantity;
+            totalAmount += totalPrice;
 
             const quotationItemData: InsertQuotationItem = {
               quotationId: quotation.id,
               description: enquiryItem.description,
               quantity: enquiryItem.quantity,
-              // Provide costPrice & markup explicitly to satisfy downstream reporting
-              costPrice: basePrice.toFixed(4) as any,
-              markup: (markup * 100).toFixed(2) as any, // store percentage if needed
-              unitPrice: quotedPrice.toFixed(4) as any,
-              lineTotal: totalPrice.toFixed(2) as any,
+              costPrice: basePrice.toFixed(4),
+              markup: (markup * 100).toFixed(2),
+              unitPrice: quotedPrice.toFixed(4),
+              lineTotal: totalPrice.toFixed(2),
               notes: enquiryItem.notes || "",
-            } as any;
+            };
 
-          console.log("Creating quotation item:", quotationItemData);
-          const created = await this.createQuotationItem(quotationItemData);
-          createdItems.push(created);
+            console.log("Creating quotation item (fallback after error):", quotationItemData);
+            const created = await this.createQuotationItem(quotationItemData);
+            createdItems.push(created);
+          }
         }
 
         const updatedQuotation = {

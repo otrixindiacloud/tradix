@@ -14,6 +14,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useDropzone } from "react-dropzone";
 
 export default function Delivery() {
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [deliveryData, setDeliveryData] = useState({
@@ -160,7 +162,10 @@ export default function Delivery() {
     item.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.status?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ) || [];
+  // Pagination logic
+  const totalPages = Math.ceil(filteredDeliveryData.length / pageSize);
+  const paginatedDeliveryData = filteredDeliveryData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const columns: Column<any>[] = [
     {
@@ -439,22 +444,50 @@ export default function Delivery() {
           </div>
         </CardHeader>
         <CardContent>
-          <DataTable
-            data={filteredDeliveryData || []}
-            columns={columns}
-            isLoading={isLoading}
-            emptyMessage="No deliveries found. Create deliveries from shipped orders."
-            onRowClick={(item) => {
-              if (item.isPendingDelivery) {
-                setSelectedOrder(item.order);
-                setDeliveryData({
-                  deliveryAddress: item.order.customer?.address || "",
-                  deliveryNotes: "",
-                  deliveryDocument: null,
-                });
-              }
-            }}
-          />
+          <div>
+            <DataTable
+              data={paginatedDeliveryData}
+              columns={columns}
+              isLoading={isLoading}
+              emptyMessage="No deliveries found. Create deliveries from shipped orders."
+              onRowClick={(item) => {
+                if (item.isPendingDelivery) {
+                  setSelectedOrder(item.order);
+                  setDeliveryData({
+                    deliveryAddress: item.order.customer?.address || "",
+                    deliveryNotes: "",
+                    deliveryDocument: null,
+                  });
+                }
+              }}
+            />
+            {/* Pagination Controls */}
+            {filteredDeliveryData.length > pageSize && (
+              <div className="flex justify-center items-center gap-2 mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  data-testid="button-prev-page"
+                >
+                  Previous
+                </Button>
+                <span className="mx-2 text-sm">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  data-testid="button-next-page"
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, RefreshCw, Search, User, Mail, Phone, MapPin, CreditCard, TrendingUp } from "lucide-react";
+import { Plus, Edit, Trash2, RefreshCw, Search, User, Mail, Phone, MapPin, CreditCard, TrendingUp, Eye, Users, ShoppingCart, Store } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -61,12 +62,13 @@ const PAYMENT_TERMS = [
 ];
 
 export default function CustomerManagementPage() {
+  const [location, navigate] = useLocation();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [stats, setStats] = useState<CustomerStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 50,
+    limit: 15,
     total: 0,
     pages: 0
   });
@@ -288,18 +290,18 @@ export default function CustomerManagementPage() {
 
   const getTypeBadgeVariant = (type: string) => {
     switch (type) {
-      case "Retail": return "default";
-      case "Wholesale": return "secondary";
+      case "Retail": return "outline";
+      case "Wholesale": return "outline"; // Will be styled with purple
       default: return "outline";
     }
   };
 
   const getClassificationBadgeVariant = (classification: string) => {
     switch (classification) {
-      case "Corporate": return "default";
-      case "Individual": return "secondary";
+      case "Corporate": return "outline";
+      case "Individual": return "outline";
       case "Family": return "outline";
-      case "Ministry": return "destructive";
+      case "Ministry": return "outline";
       case "Internal": return "outline";
       default: return "outline";
     }
@@ -309,7 +311,7 @@ export default function CustomerManagementPage() {
     if (!value) return "No limit";
     return new Intl.NumberFormat('en-KW', {
       style: 'currency',
-      currency: 'KWD'
+      currency: 'BHD'
     }).format(value);
   };
 
@@ -467,55 +469,81 @@ export default function CustomerManagementPage() {
 
       {/* Statistics Cards */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
-              <User className="h-4 w-4 text-muted-foreground" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-semibold text-blue-700 dark:text-blue-300">Total Customers</CardTitle>
+              <div className="h-12 w-12 rounded-full bg-blue-500/20 flex items-center justify-center">
+                <Users className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalCustomers}</div>
-              <div className="text-xs text-muted-foreground">
-                {stats.activeCustomers} active
+              <div className="text-3xl font-bold text-blue-800 dark:text-blue-200 mb-1">
+                {stats.totalCustomers.toLocaleString()}
+              </div>
+              <div className="text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                {stats.activeCustomers} active customers
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Retail Customers</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          <Card className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-semibold text-green-700 dark:text-green-300">Retail Customers</CardTitle>
+              <div className="h-12 w-12 rounded-full bg-green-500/20 flex items-center justify-center">
+                <ShoppingCart className="h-8 w-8 text-green-600 dark:text-green-400" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.retailCustomers}</div>
-              <div className="text-xs text-muted-foreground">
-                {((stats.retailCustomers / stats.totalCustomers) * 100).toFixed(1)}% of total
+              <div className="text-3xl font-bold text-green-800 dark:text-green-200 mb-1">
+                {stats.retailCustomers.toLocaleString()}
+              </div>
+              <div className="text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <TrendingUp className="h-3 w-3" />
+                  {((stats.retailCustomers / stats.totalCustomers) * 100).toFixed(1)}%
+                </div>
+                <span className="text-green-500">of total</span>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Wholesale Customers</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          <Card className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-semibold text-purple-700 dark:text-purple-300">Wholesale Customers</CardTitle>
+              <div className="h-12 w-12 rounded-full bg-purple-500/20 flex items-center justify-center">
+                <Store className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.wholesaleCustomers}</div>
-              <div className="text-xs text-muted-foreground">
-                {((stats.wholesaleCustomers / stats.totalCustomers) * 100).toFixed(1)}% of total
+              <div className="text-3xl font-bold text-purple-800 dark:text-purple-200 mb-1">
+                {stats.wholesaleCustomers.toLocaleString()}
+              </div>
+              <div className="text-sm text-purple-600 dark:text-purple-400 flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <TrendingUp className="h-3 w-3" />
+                  {((stats.wholesaleCustomers / stats.totalCustomers) * 100).toFixed(1)}%
+                </div>
+                <span className="text-purple-500">of total</span>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Credit Limit</CardTitle>
-              <CreditCard className="h-4 w-4 text-muted-foreground" />
+          <Card className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-semibold text-orange-700 dark:text-orange-300">Total Credit Limit</CardTitle>
+              <div className="h-12 w-12 rounded-full bg-orange-500/20 flex items-center justify-center">
+                <CreditCard className="h-8 w-8 text-orange-600 dark:text-orange-400" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(stats.totalCreditLimit)}</div>
-              <div className="text-xs text-muted-foreground">
-                Avg: {formatCurrency(stats.averageCreditLimit)}
+              <div className="text-2xl font-bold text-orange-800 dark:text-orange-200 mb-1">
+                {formatCurrency(stats.totalCreditLimit)}
+              </div>
+              <div className="text-sm text-orange-600 dark:text-orange-400 flex items-center gap-1">
+                <span className="text-orange-500">Avg:</span>
+                {formatCurrency(stats.averageCreditLimit)}
               </div>
             </CardContent>
           </Card>
@@ -638,12 +666,29 @@ export default function CustomerManagementPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={getTypeBadgeVariant(customer.customerType)}>
+                        <Badge 
+                          variant="outline"
+                          className={
+                            customer.customerType === "Wholesale" ? "bg-purple-100 text-purple-700 border-purple-200 hover:bg-purple-150" :
+                            customer.customerType === "Retail" ? "bg-green-50 text-green-700 border-green-200" :
+                            ""
+                          }
+                        >
                           {customer.customerType}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={getClassificationBadgeVariant(customer.classification)}>
+                        <Badge 
+                          variant="outline"
+                          className={
+                            customer.classification === "Corporate" ? "bg-blue-50 text-blue-700 border-blue-200" :
+                            customer.classification === "Individual" ? "bg-green-50 text-green-700 border-green-200" :
+                            customer.classification === "Family" ? "bg-orange-50 text-orange-700 border-orange-200" :
+                            customer.classification === "Ministry" ? "bg-red-50 text-red-700 border-red-200" :
+                            customer.classification === "Internal" ? "bg-gray-50 text-gray-700 border-gray-200" :
+                            ""
+                          }
+                        >
                           {customer.classification}
                         </Badge>
                       </TableCell>
@@ -674,7 +719,14 @@ export default function CustomerManagementPage() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={customer.isActive ? "default" : "secondary"}>
+                        <Badge 
+                          variant="outline"
+                          className={
+                            customer.isActive 
+                              ? "bg-green-50 text-green-700 border-green-200" 
+                              : "bg-gray-50 text-gray-700 border-gray-200"
+                          }
+                        >
                           {customer.isActive ? "Active" : "Inactive"}
                         </Badge>
                       </TableCell>
@@ -683,13 +735,28 @@ export default function CustomerManagementPage() {
                           <Button
                             variant="outline"
                             size="sm"
+                            onClick={() => navigate(`/customers/${customer.id}`)}
+                            title="View customer details"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => openEditDialog(customer)}
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200 hover:border-blue-300"
+                            title="Edit customer"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="outline" size="sm">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300"
+                                title="Delete customer"
+                              >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </AlertDialogTrigger>

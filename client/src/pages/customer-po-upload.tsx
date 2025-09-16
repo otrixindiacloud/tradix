@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, Search, Filter, FileText, Check, AlertTriangle, X, Clock, FileUp, CheckCircle } from "lucide-react";
 import DataTable, { Column } from "@/components/tables/data-table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -15,8 +16,10 @@ import { useDropzone } from "react-dropzone";
 export default function PoUpload() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedQuotation, setSelectedQuotation] = useState<any>(null);
+  const [viewingQuotation, setViewingQuotation] = useState<any>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [poNumber, setPoNumber] = useState("");
+  const [rowsToShow, setRowsToShow] = useState(15);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -38,6 +41,18 @@ export default function PoUpload() {
     },
     staleTime: 60_000,
   });
+
+  // Fetch customers data to get customer names
+  const { data: customersData = { customers: [] } } = useQuery({
+    queryKey: ["/api/customers"],
+    queryFn: async () => {
+      const response = await fetch("/api/customers");
+      if (!response.ok) throw new Error("Failed to fetch customers");
+      return response.json();
+    },
+  });
+
+  const customers = customersData.customers || [];
 
   const uploadPO = useMutation({
     mutationFn: async ({ quotationId, poNumber, file }: { quotationId: string; poNumber: string; file: File }) => {
@@ -98,7 +113,19 @@ export default function PoUpload() {
   // Filter for accepted quotations that need PO upload
   const acceptedQuotations = (quotations as any[] | undefined)?.filter((q: any) => q.status === "Accepted");
   
-  const filteredQuotations = acceptedQuotations?.filter((quotation: any) =>
+  // Enrich quotations with customer names from customers API
+  const enrichedQuotations = acceptedQuotations?.map((quotation: any) => {
+    const customer = customers.find((c: any) => c.id === quotation.customerId);
+    return {
+      ...quotation,
+      customer: customer ? {
+        ...customer,
+        name: customer.name || 'Unknown Customer'
+      } : quotation.customer || { name: 'Unknown Customer', customerType: '-' }
+    };
+  });
+  
+  const filteredQuotations = enrichedQuotations?.filter((quotation: any) =>
     quotation.quoteNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     quotation.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -194,7 +221,7 @@ export default function PoUpload() {
             variant="ghost"
             onClick={(e) => {
               e.stopPropagation();
-              console.log("View details:", quotation);
+              setViewingQuotation(quotation);
             }}
             data-testid={`button-view-${quotation.id}`}
           >
@@ -206,9 +233,9 @@ export default function PoUpload() {
   ];
 
   const uploadStats = {
-    pending: acceptedQuotations?.filter((q: any) => !q.customerPoDocument).length || 0,
-    uploaded: acceptedQuotations?.filter((q: any) => q.customerPoDocument).length || 0,
-    validated: acceptedQuotations?.filter((q: any) => q.customerPoDocument && q.customerPoNumber).length || 0,
+    pending: enrichedQuotations?.filter((q: any) => !q.customerPoDocument).length || 0,
+    uploaded: enrichedQuotations?.filter((q: any) => q.customerPoDocument).length || 0,
+    validated: enrichedQuotations?.filter((q: any) => q.customerPoDocument && q.customerPoNumber).length || 0,
   };
 
   return (
@@ -221,7 +248,7 @@ export default function PoUpload() {
         </div>
         <button
           className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
-          onClick={() => {/* Open upload dialog for new PO, fallback to search/filter if not possible */}}
+          onClick={() => setSelectedQuotation({})}
           data-testid="button-new-customer-po-upload"
         >
           <span className="text-xl font-bold">+</span> Upload PO
@@ -313,7 +340,7 @@ export default function PoUpload() {
         </CardHeader>
         <CardContent>
           <DataTable
-            data={filteredQuotations || []}
+            data={(filteredQuotations || []).slice(0, rowsToShow)}
             columns={columns}
             isLoading={isLoading}
             emptyMessage="No accepted quotations requiring PO upload."
@@ -323,6 +350,13 @@ export default function PoUpload() {
               }
             }}
           />
+          {(filteredQuotations?.length || 0) > rowsToShow && (
+            <div className="flex justify-center mt-4">
+              <Button onClick={() => setRowsToShow(rowsToShow + 15)} variant="outline">
+                See More
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -333,20 +367,54 @@ export default function PoUpload() {
             <DialogTitle>Upload Purchase Order</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <h4 className="font-medium text-gray-900 mb-2">
-                Quotation Details
-              </h4>
-              <p className="text-sm text-gray-600">
-                <span className="font-medium">Quote ID:</span> {selectedQuotation?.quoteNumber}
-              </p>
-              <p className="text-sm text-gray-600">
-                <span className="font-medium">Customer:</span> {selectedQuotation?.customer?.name}
-              </p>
-              <p className="text-sm text-gray-600">
-                <span className="font-medium">Value:</span> {selectedQuotation?.totalAmount ? formatCurrency(selectedQuotation.totalAmount) : "-"}
-              </p>
-            </div>
+            {/* Quotation Selection - show when opened from header button */}
+            {!selectedQuotation?.id && (
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">
+                  Select Quotation <span className="text-red-500">*</span>
+                </label>
+                <Select onValueChange={(quotationId) => {
+                  const quotation = enrichedQuotations?.find(q => q.id === quotationId);
+                  if (quotation) {
+                    setSelectedQuotation(quotation);
+                  }
+                }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a quotation to upload PO..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {enrichedQuotations?.filter(q => !q.customerPoDocument).map((quotation) => (
+                      <SelectItem key={quotation.id} value={quotation.id}>
+                        <div className="flex items-center justify-between w-full">
+                          <span>{quotation.quoteNumber}</span>
+                          <span className="text-sm text-gray-500 ml-2">
+                            {quotation.customer?.name}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Quotation Details - show when quotation is selected */}
+            {selectedQuotation?.id && (
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-medium text-gray-900 mb-2">
+                  Quotation Details
+                </h4>
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">Quote ID:</span> {selectedQuotation?.quoteNumber}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">Customer:</span> {selectedQuotation?.customer?.name}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">Value:</span> {selectedQuotation?.totalAmount ? formatCurrency(selectedQuotation.totalAmount) : "-"}
+                </p>
+              </div>
+            )}
 
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block">
@@ -420,7 +488,7 @@ export default function PoUpload() {
               </Button>
               <Button
                 onClick={() => {
-                  if (selectedQuotation && poNumber.trim() && uploadedFile) {
+                  if (selectedQuotation?.id && poNumber.trim() && uploadedFile) {
                     uploadPO.mutate({
                       quotationId: selectedQuotation.id,
                       poNumber: poNumber.trim(),
@@ -428,13 +496,167 @@ export default function PoUpload() {
                     });
                   }
                 }}
-                disabled={!poNumber.trim() || !uploadedFile || uploadPO.isPending}
+                disabled={!selectedQuotation?.id || !poNumber.trim() || !uploadedFile || uploadPO.isPending}
                 data-testid="button-upload-po"
               >
                 {uploadPO.isPending ? "Uploading..." : "Upload PO"}
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Details Dialog */}
+      <Dialog open={!!viewingQuotation} onOpenChange={() => setViewingQuotation(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Quotation Details</DialogTitle>
+          </DialogHeader>
+          {viewingQuotation && (
+            <div className="space-y-6">
+              {/* Basic Information */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Quote Number</label>
+                    <p className="font-mono text-sm text-blue-600 font-medium">
+                      {viewingQuotation.quoteNumber}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Customer</label>
+                    <p className="font-medium">{viewingQuotation.customer?.name || "Unknown Customer"}</p>
+                    <p className="text-xs text-gray-600">{viewingQuotation.customer?.customerType || "-"}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Status</label>
+                    <div className="mt-1">
+                      <Badge variant="outline" className="bg-green-600 text-white border-green-600">
+                        {viewingQuotation.status}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Quote Date</label>
+                    <p className="font-medium">
+                      {viewingQuotation.quoteDate ? formatDate(viewingQuotation.quoteDate) : formatDate(viewingQuotation.createdAt)}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Valid Until</label>
+                    <p className="font-medium">
+                      {viewingQuotation.validUntil ? formatDate(viewingQuotation.validUntil) : "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Total Amount</label>
+                    <p className="font-medium text-lg">
+                      {viewingQuotation.totalAmount ? formatCurrency(viewingQuotation.totalAmount) : "-"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* PO Information */}
+              <div className="border-t pt-4">
+                <h4 className="font-medium text-gray-900 mb-3">Purchase Order Information</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">PO Number</label>
+                    <p className="font-medium">
+                      {viewingQuotation.customerPoNumber || (
+                        <Badge variant="outline" className="bg-blue-600 text-white border-blue-600">
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          Pending
+                        </Badge>
+                      )}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">PO Document</label>
+                    <p className="font-medium">
+                      {viewingQuotation.customerPoDocument ? (
+                        <Badge variant="outline" className="text-green-600">
+                          <Check className="h-3 w-3 mr-1" />
+                          Uploaded
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-red-600 text-white border-red-600">
+                          <X className="h-3 w-3 mr-1" />
+                          Missing
+                        </Badge>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pricing Breakdown */}
+              {(viewingQuotation.subtotal || viewingQuotation.discountAmount || viewingQuotation.taxAmount) && (
+                <div className="border-t pt-4">
+                  <h4 className="font-medium text-gray-900 mb-3">Pricing Breakdown</h4>
+                  <div className="space-y-2 bg-gray-50 p-4 rounded-lg">
+                    {viewingQuotation.subtotal && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Subtotal:</span>
+                        <span className="font-medium">{formatCurrency(parseFloat(viewingQuotation.subtotal))}</span>
+                      </div>
+                    )}
+                    {viewingQuotation.discountAmount && parseFloat(viewingQuotation.discountAmount) > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Discount:</span>
+                        <span className="font-medium text-red-600">-{formatCurrency(parseFloat(viewingQuotation.discountAmount))}</span>
+                      </div>
+                    )}
+                    {viewingQuotation.taxAmount && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Tax:</span>
+                        <span className="font-medium">{formatCurrency(parseFloat(viewingQuotation.taxAmount))}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between border-t pt-2 font-bold">
+                      <span>Total:</span>
+                      <span>{viewingQuotation.totalAmount ? formatCurrency(viewingQuotation.totalAmount) : "-"}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Notes */}
+              {viewingQuotation.notes && (
+                <div className="border-t pt-4">
+                  <h4 className="font-medium text-gray-900 mb-2">Notes</h4>
+                  <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                    {viewingQuotation.notes}
+                  </p>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-2 border-t pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setViewingQuotation(null)}
+                >
+                  Close
+                </Button>
+                {!viewingQuotation.customerPoDocument && (
+                  <Button
+                    onClick={() => {
+                      setViewingQuotation(null);
+                      setSelectedQuotation(viewingQuotation);
+                    }}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload PO
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

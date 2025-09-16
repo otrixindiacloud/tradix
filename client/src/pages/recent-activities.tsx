@@ -31,8 +31,7 @@ import {
   AlertCircle,
   Clock,
   User,
-  ArrowRight,
-  BarChart3
+  ArrowRight
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -546,7 +545,7 @@ export default function RecentActivitiesPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-              <BarChart3 className="h-6 w-6 text-blue-600 mr-2" />
+              <Activity className="h-6 w-6 text-blue-600 mr-2" />
               <CardTitle className="text-base font-bold">Total Activities</CardTitle>
             </CardHeader>
             <CardContent>
@@ -566,7 +565,7 @@ export default function RecentActivitiesPage() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-              <FileText className="h-6 w-6 text-purple-600 mr-2" />
+              <CalendarDays className="h-6 w-6 text-purple-600 mr-2" />
               <CardTitle className="text-base font-bold">This Week</CardTitle>
             </CardHeader>
             <CardContent>

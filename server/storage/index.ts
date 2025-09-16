@@ -4,6 +4,7 @@ export * from './user-storage.js';
 export * from './customer-storage.js';
 export * from './supplier-storage.js';
 export * from './item-storage.js';
+export * from './inventory-storage.js';
 export * from './enquiry-storage.js';
 export * from './audit-storage.js';
 export * from './quotation-storage.js';

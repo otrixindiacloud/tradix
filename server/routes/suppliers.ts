@@ -69,4 +69,82 @@ export function registerSupplierRoutes(app: Express) {
       res.status(500).json({ message: "Failed to delete supplier" });
     }
   });
+
+  // Get supplier details (enhanced with stats and activities)
+  app.get("/api/suppliers/:id/details", async (req, res) => {
+    try {
+      console.log('DEBUG: Route called - supplier details for ID:', req.params.id);
+      console.log('DEBUG: Storage object type:', typeof storage);
+      console.log('DEBUG: getSupplierDetails method type:', typeof storage.getSupplierDetails);
+      
+      if (typeof storage.getSupplierDetails !== 'function') {
+        console.log('DEBUG: getSupplierDetails is not a function!');
+        return res.status(500).json({ message: "Storage method not available" });
+      }
+      
+      const details = await storage.getSupplierDetails(req.params.id);
+      console.log('DEBUG: Storage method result:', details ? 'success' : 'null');
+      
+      if (!details) {
+        console.log('DEBUG: Returning 404 - supplier not found');
+        return res.status(404).json({ message: "Supplier not found" });
+      }
+      
+      console.log('DEBUG: Returning details');
+      res.json(details);
+    } catch (error) {
+      console.error("Error fetching supplier details:", error);
+      res.status(500).json({ message: "Failed to fetch supplier details" });
+    }
+  });
+
+  // Get supplier LPOs with pagination
+  app.get("/api/suppliers/:id/lpos", async (req, res) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const lpos = await storage.getSupplierLposForDetail(req.params.id, page, limit);
+      res.json(lpos);
+    } catch (error) {
+      console.error("Error fetching supplier LPOs:", error);
+      res.status(500).json({ message: "Failed to fetch supplier LPOs" });
+    }
+  });
+
+  // Get supplier items with pagination
+  app.get("/api/suppliers/:id/items", async (req, res) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const items = await storage.getSupplierItems(req.params.id, page, limit);
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching supplier items:", error);
+      res.status(500).json({ message: "Failed to fetch supplier items" });
+    }
+  });
+
+  // Get supplier goods receipts with pagination
+  app.get("/api/suppliers/:id/goods-receipts", async (req, res) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const receipts = await storage.getSupplierGoodsReceipts(req.params.id, page, limit);
+      res.json(receipts);
+    } catch (error) {
+      console.error("Error fetching supplier goods receipts:", error);
+      res.status(500).json({ message: "Failed to fetch supplier goods receipts" });
+    }
+  });
+
+  // Get supplier performance metrics
+  app.get("/api/suppliers/:id/performance", async (req, res) => {
+    try {
+      const metrics = await storage.getSupplierPerformanceMetrics(req.params.id);
+      res.json(metrics);
+    } catch (error) {
+      console.error("Error fetching supplier performance metrics:", error);
+      res.status(500).json({ message: "Failed to fetch supplier performance metrics" });
+    }
+  });
 }

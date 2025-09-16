@@ -83,6 +83,10 @@ export interface IUserStorage {
 export interface ICustomerStorage {
   getCustomers(limit?: number, offset?: number): Promise<Customer[]>;
   getCustomer(id: string): Promise<Customer | undefined>;
+  getCustomerDetails(id: string): Promise<any>;
+  getCustomerTransactionSummary(customerId: string): Promise<any>;
+  getCustomerRecentActivities(customerId: string, limit?: number): Promise<any[]>;
+  getCustomerPerformanceMetrics(customerId: string): Promise<any>;
   createCustomer(customer: InsertCustomer): Promise<Customer>;
   updateCustomer(id: string, customer: Partial<InsertCustomer>): Promise<Customer>;
 }
@@ -93,6 +97,92 @@ export interface ISupplierStorage {
   createSupplier(supplier: InsertSupplier): Promise<Supplier>;
   updateSupplier(id: string, supplier: Partial<InsertSupplier>): Promise<Supplier>;
   deleteSupplier(id: string): Promise<void>;
+  
+  // Enhanced methods for supplier detail page
+  getSupplierDetails(id: string): Promise<{
+    supplier: Supplier;
+    stats: {
+      totalLpos: number;
+      totalLpoValue: string;
+      pendingLpos: number;
+      totalItems: number;
+      totalGoodsReceipts: number;
+      averageDeliveryDays: number;
+      onTimeDeliveryRate: number;
+    };
+    recentActivities: Array<{
+      id: string;
+      type: string;
+      description: string;
+      date: string;
+      status?: string;
+      amount?: string;
+    }>;
+  } | null>;
+  
+  getSupplierLposForDetail(supplierId: string, page?: number, limit?: number): Promise<{
+    lpos: Array<{
+      id: string;
+      lpoNumber: string;
+      status: string;
+      lpoDate: string;
+      expectedDeliveryDate: string | null;
+      totalAmount: string | null;
+      itemsCount: number;
+    }>;
+    total: number;
+  }>;
+  
+  getSupplierItems(supplierId: string, page?: number, limit?: number): Promise<{
+    items: Array<{
+      id: string;
+      supplierCode: string;
+      barcode: string | null;
+      description: string;
+      category: string | null;
+      unitOfMeasure: string | null;
+      costPrice: string | null;
+      isActive: boolean;
+      lastOrderDate: string | null;
+      totalOrdered: number;
+    }>;
+    total: number;
+  }>;
+  
+  getSupplierGoodsReceipts(supplierId: string, page?: number, limit?: number): Promise<{
+    receipts: Array<{
+      id: string;
+      receiptNumber: string;
+      receiptDate: string;
+      status: string;
+      lpoNumber: string;
+      totalItems: number;
+      receivedItems: number;
+      expectedDeliveryDate: string | null;
+      actualDeliveryDate: string | null;
+    }>;
+    total: number;
+  }>;
+  
+  getSupplierPerformanceMetrics(supplierId: string): Promise<{
+    deliveryPerformance: {
+      onTimeDeliveries: number;
+      totalDeliveries: number;
+      onTimeRate: number;
+      averageDelayDays: number;
+    };
+    qualityMetrics: {
+      totalReceipts: number;
+      acceptedReceipts: number;
+      rejectedReceipts: number;
+      acceptanceRate: number;
+    };
+    financialMetrics: {
+      totalOrderValue: string;
+      averageOrderValue: string;
+      paymentTermsCompliance: number;
+    };
+  }>;
 }
 
 export interface IItemStorage {
@@ -206,7 +296,7 @@ export interface ISalesOrderStorage {
     search?: string;
     pendingSupplierLpo?: boolean;
   }): Promise<SalesOrder[]>;
-  getSalesOrder(id: string): Promise<SalesOrder | undefined>;
+  getSalesOrder(id: string): Promise<(SalesOrder & { customer: Customer | null }) | null>;
   createSalesOrder(salesOrder: InsertSalesOrder): Promise<SalesOrder>;
   updateSalesOrder(id: string, salesOrder: Partial<InsertSalesOrder>): Promise<SalesOrder>;
   deleteSalesOrder(id: string): Promise<void>;

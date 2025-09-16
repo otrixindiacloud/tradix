@@ -147,7 +147,9 @@ export default function UserManagementPage() {
     } catch (error) {
       toast({
         title: "Error",
-        description: error.message || "Failed to create user",
+        description: typeof error === "object" && error !== null && "message" in error && typeof (error as any).message === "string"
+          ? (error as any).message
+          : "Failed to create user",
         variant: "destructive"
       });
     }
@@ -182,7 +184,10 @@ export default function UserManagementPage() {
     } catch (error) {
       toast({
         title: "Error",
-        description: error.message || "Failed to update user",
+        description:
+          typeof error === "object" && error !== null && "message" in error && typeof (error as any).message === "string"
+            ? (error as any).message
+            : "Failed to update user",
         variant: "destructive"
       });
     }
@@ -208,7 +213,10 @@ export default function UserManagementPage() {
     } catch (error) {
       toast({
         title: "Error",
-        description: error.message || "Failed to delete user",
+        description:
+          typeof error === "object" && error !== null && "message" in error && typeof (error as any).message === "string"
+            ? (error as any).message
+            : "Failed to delete user",
         variant: "destructive"
       });
     }

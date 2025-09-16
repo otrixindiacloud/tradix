@@ -1,455 +1,599 @@
-import { Express } from 'express';
-import { z } from 'zod';
-import { 
-  insertProductCategorySchema,
-  insertMarkupConfigurationSchema,
-  insertCustomerPricingSchema,
-  insertPriceListSchema,
-  insertBulkPricingOperationSchema
-} from '../../shared/schema.js';
-import { storage } from '../storage.js';
+import { Router, type Express } from "express";
+import { z } from "zod";
+import { enhancedPricingStorage } from "../storage/pricing-storage.js";
+import { pricingEngine, PricingMethod } from "../services/pricing-engine.js";
+
+const router = Router();
+
+// Input validation schemas
+const calculatePriceSchema = z.object({
+  itemId: z.string().uuid("Invalid item ID"),
+  customerId: z.string().uuid("Invalid customer ID"),
+  quantity: z.number().min(1, "Quantity must be at least 1").default(1),
+  method: z.enum([
+    "cost_plus",
+    "margin_based", 
+    "competitive",
+    "value_based",
+    "dynamic",
+    "contract",
+    "volume_tiered"
+  ]).optional(),
+  targetCurrency: z.string().length(3, "Currency must be 3 characters").default("USD")
+});
+
+const batchCalculatePricesSchema = z.object({
+  items: z.array(z.object({
+    itemId: z.string().uuid(),
+    quantity: z.number().min(1).default(1)
+  })),
+  customerId: z.string().uuid("Invalid customer ID"),
+  targetCurrency: z.string().length(3).default("USD")
+});
+
+const volumeTierSchema = z.object({
+  itemId: z.string().uuid("Invalid item ID"),
+  customerId: z.string().uuid("Invalid customer ID").optional(),
+  tierName: z.string().min(1, "Tier name is required"),
+  minQuantity: z.number().min(1, "Minimum quantity must be at least 1"),
+  maxQuantity: z.number().optional(),
+  discountPercentage: z.number().min(0).max(100).optional(),
+  specialPrice: z.number().min(0).optional(),
+  currency: z.string().length(3).default("USD"),
+  effectiveFrom: z.string().datetime().optional(),
+  effectiveTo: z.string().datetime().optional()
+});
+
+const contractPricingSchema = z.object({
+  contractNumber: z.string().min(1, "Contract number is required").optional(),
+  customerId: z.string().uuid("Invalid customer ID"),
+  supplierId: z.string().uuid("Invalid supplier ID").optional(),
+  itemId: z.string().uuid("Invalid item ID"),
+  contractPrice: z.number().min(0, "Contract price must be positive"),
+  minimumQuantity: z.number().min(0).optional(),
+  maximumQuantity: z.number().min(0).optional(),
+  currency: z.string().length(3).default("USD"),
+  contractStartDate: z.string().datetime(),
+  contractEndDate: z.string().datetime(),
+  priceProtectionClause: z.string().optional(),
+  autoRenewal: z.boolean().default(false),
+  renewalNoticeDays: z.number().min(1).default(30),
+  terms: z.string().optional(),
+  createdBy: z.string().uuid().optional()
+});
+
+const competitorPricingSchema = z.object({
+  competitorName: z.string().min(1, "Competitor name is required"),
+  itemId: z.string().uuid("Invalid item ID"),
+  competitorSku: z.string().optional(),
+  price: z.number().min(0, "Price must be positive"),
+  currency: z.string().length(3).default("USD"),
+  source: z.string().optional(),
+  sourceUrl: z.string().url().optional(),
+  notes: z.string().optional(),
+  collectedBy: z.string().uuid().optional()
+});
+
+const dynamicPricingConfigSchema = z.object({
+  itemId: z.string().uuid("Invalid item ID"),
+  categoryId: z.string().uuid().optional(),
+  customerId: z.string().uuid().optional(),
+  enabled: z.boolean().default(false),
+  marketDemandFactor: z.number().min(0.1).max(5).default(1.0),
+  seasonalFactor: z.number().min(0.1).max(5).default(1.0),
+  competitorFactor: z.number().min(0.1).max(5).default(1.0),
+  inventoryFactor: z.number().min(0.1).max(5).default(1.0),
+  minPrice: z.number().min(0).optional(),
+  maxPrice: z.number().min(0).optional(),
+  minMarginPercentage: z.number().min(0).max(100).default(10),
+  maxMarkupPercentage: z.number().min(0).optional(),
+  updateFrequencyHours: z.number().min(1).default(24)
+});
+
+const currencyRateSchema = z.object({
+  fromCurrency: z.string().length(3, "Currency must be 3 characters"),
+  toCurrency: z.string().length(3, "Currency must be 3 characters"),
+  rate: z.number().min(0, "Rate must be positive"),
+  source: z.string().optional(),
+  effectiveDate: z.string().datetime().optional(),
+  expiresAt: z.string().datetime().optional()
+});
+
+const marginAnalysisSchema = z.object({
+  itemId: z.string().uuid().optional(),
+  customerId: z.string().uuid().optional(),
+  categoryId: z.string().uuid().optional(),
+  periodStart: z.string().datetime(),
+  periodEnd: z.string().datetime()
+});
+
+// Enhanced Pricing Calculation Routes
+router.post("/calculate-price", async (req, res) => {
+  try {
+    const data = calculatePriceSchema.parse(req.body);
+    
+    const result = await enhancedPricingStorage.calculateItemPrice(
+      data.itemId,
+      data.customerId,
+      data.quantity,
+      data.method as PricingMethod
+    );
+    
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    console.error("Error calculating price:", error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "Invalid input data", 
+        details: error.errors 
+      });
+    }
+    res.status(500).json({ 
+      success: false, 
+      error: error instanceof Error ? error.message : "Failed to calculate price" 
+    });
+  }
+});
+
+router.post("/calculate-batch-prices", async (req, res) => {
+  try {
+    const data = batchCalculatePricesSchema.parse(req.body);
+    
+    const itemIds = data.items.map(item => item.itemId);
+    const quantities = data.items.map(item => item.quantity);
+    
+    const results = await enhancedPricingStorage.calculateBatchPrices(
+      itemIds,
+      data.customerId,
+      quantities
+    );
+    
+    res.json({
+      success: true,
+      data: results
+    });
+  } catch (error) {
+    console.error("Error calculating batch prices:", error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "Invalid input data", 
+        details: error.errors 
+      });
+    }
+    res.status(500).json({ 
+      success: false, 
+      error: error instanceof Error ? error.message : "Failed to calculate batch prices" 
+    });
+  }
+});
+
+// Volume Pricing Tiers Routes
+router.get("/volume-tiers", async (req, res) => {
+  try {
+    const { itemId, customerId } = req.query;
+    
+    const tiers = await enhancedPricingStorage.getVolumePricingTiers(
+      itemId as string,
+      customerId as string
+    );
+    
+    res.json({
+      success: true,
+      data: tiers
+    });
+  } catch (error) {
+    console.error("Error fetching volume tiers:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: "Failed to fetch volume pricing tiers" 
+    });
+  }
+});
+
+router.post("/volume-tiers", async (req, res) => {
+  try {
+    const data = volumeTierSchema.parse(req.body);
+    
+    const tier = await enhancedPricingStorage.createVolumePricingTier({
+      ...data,
+      effectiveFrom: data.effectiveFrom ? new Date(data.effectiveFrom) : undefined,
+      effectiveTo: data.effectiveTo ? new Date(data.effectiveTo) : undefined
+    });
+    
+    res.status(201).json({
+      success: true,
+      data: tier
+    });
+  } catch (error) {
+    console.error("Error creating volume tier:", error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "Invalid input data", 
+        details: error.errors 
+      });
+    }
+    res.status(500).json({ 
+      success: false, 
+      error: "Failed to create volume pricing tier" 
+    });
+  }
+});
+
+router.put("/volume-tiers/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = volumeTierSchema.partial().parse(req.body);
+    
+    const tier = await enhancedPricingStorage.updateVolumePricingTier(id, {
+      ...data,
+      effectiveFrom: data.effectiveFrom ? new Date(data.effectiveFrom) : undefined,
+      effectiveTo: data.effectiveTo ? new Date(data.effectiveTo) : undefined
+    });
+    
+    res.json({
+      success: true,
+      data: tier
+    });
+  } catch (error) {
+    console.error("Error updating volume tier:", error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "Invalid input data", 
+        details: error.errors 
+      });
+    }
+    res.status(500).json({ 
+      success: false, 
+      error: "Failed to update volume pricing tier" 
+    });
+  }
+});
+
+// Contract Pricing Routes
+router.get("/contract-pricing", async (req, res) => {
+  try {
+    const { customerId, itemId, status, activeOnly } = req.query;
+    
+    const contracts = await enhancedPricingStorage.getContractPricing({
+      customerId: customerId as string,
+      itemId: itemId as string,
+      status: status as string,
+      activeOnly: activeOnly === "true"
+    });
+    
+    res.json({
+      success: true,
+      data: contracts
+    });
+  } catch (error) {
+    console.error("Error fetching contract pricing:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: "Failed to fetch contract pricing" 
+    });
+  }
+});
+
+router.post("/contract-pricing", async (req, res) => {
+  try {
+    const data = contractPricingSchema.parse(req.body);
+    
+    const contract = await enhancedPricingStorage.createContractPricing({
+      ...data,
+      contractStartDate: new Date(data.contractStartDate),
+      contractEndDate: new Date(data.contractEndDate)
+    });
+    
+    res.status(201).json({
+      success: true,
+      data: contract
+    });
+  } catch (error) {
+    console.error("Error creating contract pricing:", error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "Invalid input data", 
+        details: error.errors 
+      });
+    }
+    res.status(500).json({ 
+      success: false, 
+      error: "Failed to create contract pricing" 
+    });
+  }
+});
+
+// Competitor Pricing Routes
+router.get("/competitor-pricing", async (req, res) => {
+  try {
+    const { itemId, competitorName } = req.query;
+    
+    const pricing = await enhancedPricingStorage.getCompetitorPricing(
+      itemId as string,
+      competitorName as string
+    );
+    
+    res.json({
+      success: true,
+      data: pricing
+    });
+  } catch (error) {
+    console.error("Error fetching competitor pricing:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: "Failed to fetch competitor pricing" 
+    });
+  }
+});
+
+router.post("/competitor-pricing", async (req, res) => {
+  try {
+    const data = competitorPricingSchema.parse(req.body);
+    
+    const pricing = await enhancedPricingStorage.createCompetitorPricing(data);
+    
+    res.status(201).json({
+      success: true,
+      data: pricing
+    });
+  } catch (error) {
+    console.error("Error creating competitor pricing:", error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "Invalid input data", 
+        details: error.errors 
+      });
+    }
+    res.status(500).json({ 
+      success: false, 
+      error: "Failed to create competitor pricing" 
+    });
+  }
+});
+
+// Dynamic Pricing Configuration Routes
+router.get("/dynamic-pricing-config", async (req, res) => {
+  try {
+    const { itemId, customerId } = req.query;
+    
+    const configs = await enhancedPricingStorage.getDynamicPricingConfig(
+      itemId as string,
+      customerId as string
+    );
+    
+    res.json({
+      success: true,
+      data: configs
+    });
+  } catch (error) {
+    console.error("Error fetching dynamic pricing config:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: "Failed to fetch dynamic pricing configuration" 
+    });
+  }
+});
+
+router.post("/dynamic-pricing-config", async (req, res) => {
+  try {
+    const data = dynamicPricingConfigSchema.parse(req.body);
+    
+    const config = await enhancedPricingStorage.createDynamicPricingConfig(data);
+    
+    res.status(201).json({
+      success: true,
+      data: config
+    });
+  } catch (error) {
+    console.error("Error creating dynamic pricing config:", error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "Invalid input data", 
+        details: error.errors 
+      });
+    }
+    res.status(500).json({ 
+      success: false, 
+      error: "Failed to create dynamic pricing configuration" 
+    });
+  }
+});
+
+// Currency Exchange Rates Routes
+router.get("/currency-rates", async (req, res) => {
+  try {
+    const { fromCurrency, toCurrency } = req.query;
+    
+    const rates = await enhancedPricingStorage.getCurrencyExchangeRates(
+      fromCurrency as string,
+      toCurrency as string
+    );
+    
+    res.json({
+      success: true,
+      data: rates
+    });
+  } catch (error) {
+    console.error("Error fetching currency rates:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: "Failed to fetch currency exchange rates" 
+    });
+  }
+});
+
+router.post("/currency-rates", async (req, res) => {
+  try {
+    const data = currencyRateSchema.parse(req.body);
+    
+    const rate = await enhancedPricingStorage.createCurrencyExchangeRate({
+      ...data,
+      effectiveDate: data.effectiveDate ? new Date(data.effectiveDate) : undefined,
+      expiresAt: data.expiresAt ? new Date(data.expiresAt) : undefined
+    });
+    
+    res.status(201).json({
+      success: true,
+      data: rate
+    });
+  } catch (error) {
+    console.error("Error creating currency rate:", error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "Invalid input data", 
+        details: error.errors 
+      });
+    }
+    res.status(500).json({ 
+      success: false, 
+      error: "Failed to create currency exchange rate" 
+    });
+  }
+});
+
+// Margin Analysis Routes
+router.post("/margin-analysis", async (req, res) => {
+  try {
+    const data = marginAnalysisSchema.parse(req.body);
+    
+    const analysis = await enhancedPricingStorage.generateMarginAnalysis(
+      data.itemId,
+      data.customerId,
+      data.categoryId,
+      new Date(data.periodStart),
+      new Date(data.periodEnd)
+    );
+    
+    res.json({
+      success: true,
+      data: analysis
+    });
+  } catch (error) {
+    console.error("Error generating margin analysis:", error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "Invalid input data", 
+        details: error.errors 
+      });
+    }
+    res.status(500).json({ 
+      success: false, 
+      error: "Failed to generate margin analysis" 
+    });
+  }
+});
+
+router.get("/margin-analysis", async (req, res) => {
+  try {
+    const { itemId, customerId, categoryId, dateFrom, dateTo } = req.query;
+    
+    const analyses = await enhancedPricingStorage.getMarginAnalysis({
+      itemId: itemId as string,
+      customerId: customerId as string,
+      categoryId: categoryId as string,
+      dateFrom: dateFrom ? new Date(dateFrom as string) : undefined,
+      dateTo: dateTo ? new Date(dateTo as string) : undefined
+    });
+    
+    res.json({
+      success: true,
+      data: analyses
+    });
+  } catch (error) {
+    console.error("Error fetching margin analysis:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: "Failed to fetch margin analysis" 
+    });
+  }
+});
+
+// Advanced Reports Routes
+router.get("/reports/pricing-performance", async (req, res) => {
+  try {
+    const { dateFrom, dateTo } = req.query;
+    
+    if (!dateFrom || !dateTo) {
+      return res.status(400).json({
+        success: false,
+        error: "dateFrom and dateTo are required"
+      });
+    }
+    
+    const report = await enhancedPricingStorage.getPricingPerformanceReport(
+      new Date(dateFrom as string),
+      new Date(dateTo as string)
+    );
+    
+    res.json({
+      success: true,
+      data: report
+    });
+  } catch (error) {
+    console.error("Error generating pricing performance report:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: "Failed to generate pricing performance report" 
+    });
+  }
+});
+
+router.get("/reports/competitive-position", async (req, res) => {
+  try {
+    const { itemId } = req.query;
+    
+    const report = await enhancedPricingStorage.getCompetitivePositionReport(
+      itemId as string
+    );
+    
+    res.json({
+      success: true,
+      data: report
+    });
+  } catch (error) {
+    console.error("Error generating competitive position report:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: "Failed to generate competitive position report" 
+    });
+  }
+});
+
+// Price Analysis Route
+router.get("/price-analysis/:itemId", async (req, res) => {
+  try {
+    const { itemId } = req.params;
+    
+    const analysis = await pricingEngine.generatePriceAnalysis(itemId);
+    
+    res.json({
+      success: true,
+      data: analysis
+    });
+  } catch (error) {
+    console.error("Error generating price analysis:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: "Failed to generate price analysis" 
+    });
+  }
+});
 
 export function registerPricingRoutes(app: Express) {
-  // PRICING & COSTING ENGINE ROUTES
-
-  // Product Categories Routes
-  app.get("/api/product-categories", async (req, res) => {
-    try {
-      const { parentCategoryId, isActive, limit, offset } = req.query;
-      const filters = {
-        parentCategoryId: parentCategoryId as string || undefined,
-        isActive: isActive ? isActive === 'true' : undefined,
-        limit: limit ? parseInt(limit as string) : undefined,
-        offset: offset ? parseInt(offset as string) : undefined,
-      };
-      const categories = await storage.getProductCategories(filters);
-      res.json(categories);
-    } catch (error) {
-      console.error("Error fetching product categories:", error);
-      res.status(500).json({ error: "Failed to fetch product categories" });
-    }
-  });
-
-  app.get("/api/product-categories/:id", async (req, res) => {
-    try {
-      const category = await storage.getProductCategory(req.params.id);
-      if (!category) {
-        return res.status(404).json({ error: "Product category not found" });
-      }
-      res.json(category);
-    } catch (error) {
-      console.error("Error fetching product category:", error);
-      res.status(500).json({ error: "Failed to fetch product category" });
-    }
-  });
-
-  app.post("/api/product-categories", async (req, res) => {
-    try {
-      const categoryData = insertProductCategorySchema.parse(req.body);
-      const category = await storage.createProductCategory(categoryData);
-      res.status(201).json(category);
-    } catch (error) {
-      console.error("Error creating product category:", error);
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid category data", details: error.errors });
-      }
-      res.status(500).json({ error: "Failed to create product category" });
-    }
-  });
-
-  app.put("/api/product-categories/:id", async (req, res) => {
-    try {
-      const categoryData = insertProductCategorySchema.partial().parse(req.body);
-      const category = await storage.updateProductCategory(req.params.id, categoryData);
-      res.json(category);
-    } catch (error) {
-      console.error("Error updating product category:", error);
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid category data", details: error.errors });
-      }
-      res.status(500).json({ error: "Failed to update product category" });
-    }
-  });
-
-  app.delete("/api/product-categories/:id", async (req, res) => {
-    try {
-      await storage.deleteProductCategory(req.params.id);
-      res.status(204).send();
-    } catch (error) {
-      console.error("Error deleting product category:", error);
-      res.status(500).json({ error: "Failed to delete product category" });
-    }
-  });
-
-  // Markup Configuration Routes
-  app.get("/api/markup-configurations", async (req, res) => {
-    try {
-      const { level, entityId, isActive } = req.query;
-      const filters = {
-        level: level as string || undefined,
-        entityId: entityId as string || undefined,
-        isActive: isActive ? isActive === 'true' : undefined,
-      };
-      const configurations = await storage.getMarkupConfigurations(filters);
-      res.json(configurations);
-    } catch (error) {
-      console.error("Error fetching markup configurations:", error);
-      res.status(500).json({ error: "Failed to fetch markup configurations" });
-    }
-  });
-
-  app.get("/api/markup-configurations/:id", async (req, res) => {
-    try {
-      const configuration = await storage.getMarkupConfiguration(req.params.id);
-      if (!configuration) {
-        return res.status(404).json({ error: "Markup configuration not found" });
-      }
-      res.json(configuration);
-    } catch (error) {
-      console.error("Error fetching markup configuration:", error);
-      res.status(500).json({ error: "Failed to fetch markup configuration" });
-    }
-  });
-
-  app.get("/api/markup-configurations/active/:level", async (req, res) => {
-    try {
-      const { level } = req.params;
-      const { entityId } = req.query;
-      const configuration = await storage.getActiveMarkupForEntity(level, entityId as string);
-      if (!configuration) {
-        return res.status(404).json({ error: "No active markup configuration found" });
-      }
-      res.json(configuration);
-    } catch (error) {
-      console.error("Error fetching active markup configuration:", error);
-      res.status(500).json({ error: "Failed to fetch active markup configuration" });
-    }
-  });
-
-  app.post("/api/markup-configurations", async (req, res) => {
-    try {
-      const configData = insertMarkupConfigurationSchema.parse(req.body);
-      const configuration = await storage.createMarkupConfiguration(configData);
-      res.status(201).json(configuration);
-    } catch (error) {
-      console.error("Error creating markup configuration:", error);
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid markup configuration data", details: error.errors });
-      }
-      res.status(500).json({ error: "Failed to create markup configuration" });
-    }
-  });
-
-  app.put("/api/markup-configurations/:id", async (req, res) => {
-    try {
-      const configData = insertMarkupConfigurationSchema.partial().parse(req.body);
-      const configuration = await storage.updateMarkupConfiguration(req.params.id, configData);
-      res.json(configuration);
-    } catch (error) {
-      console.error("Error updating markup configuration:", error);
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid markup configuration data", details: error.errors });
-      }
-      res.status(500).json({ error: "Failed to update markup configuration" });
-    }
-  });
-
-  // Item Pricing Routes
-  app.get("/api/item-pricing", async (req, res) => {
-    try {
-      const { isActive, isManualOverride, limit, offset } = req.query;
-      const filters = {
-        isActive: isActive ? isActive === 'true' : undefined,
-        isManualOverride: isManualOverride ? isManualOverride === 'true' : undefined,
-        limit: limit ? parseInt(limit as string) : undefined,
-        offset: offset ? parseInt(offset as string) : undefined,
-      };
-      const pricing = await storage.getAllItemPricing(filters);
-      res.json(pricing);
-    } catch (error) {
-      console.error("Error fetching item pricing:", error);
-      res.status(500).json({ error: "Failed to fetch item pricing" });
-    }
-  });
-
-  app.get("/api/item-pricing/:itemId", async (req, res) => {
-    try {
-      const pricing = await storage.getItemPricing(req.params.itemId);
-      if (!pricing) {
-        return res.status(404).json({ error: "Item pricing not found" });
-      }
-      res.json(pricing);
-    } catch (error) {
-      console.error("Error fetching item pricing:", error);
-      res.status(500).json({ error: "Failed to fetch item pricing" });
-    }
-  });
-
-  app.post("/api/item-pricing/calculate", async (req, res) => {
-    try {
-      const { itemId, supplierCost } = req.body;
-      if (!itemId || !supplierCost) {
-        return res.status(400).json({ error: "itemId and supplierCost are required" });
-      }
-      const calculatedPrices = await storage.calculatePricesForItem(itemId, parseFloat(supplierCost));
-      res.json(calculatedPrices);
-    } catch (error) {
-      console.error("Error calculating item prices:", error);
-      res.status(500).json({ error: "Failed to calculate item prices" });
-    }
-  });
-
-  app.post("/api/item-pricing/:itemId", async (req, res) => {
-    try {
-      const { supplierCost, userId, isManualOverride, overrideReason } = req.body;
-      if (!supplierCost) {
-        return res.status(400).json({ error: "supplierCost is required" });
-      }
-      const pricing = await storage.createOrUpdateItemPricing(
-        req.params.itemId,
-        parseFloat(supplierCost),
-        userId,
-        isManualOverride || false,
-        overrideReason
-      );
-      res.status(201).json(pricing);
-    } catch (error) {
-      console.error("Error creating/updating item pricing:", error);
-      res.status(500).json({ error: "Failed to create/update item pricing" });
-    }
-  });
-
-  app.post("/api/item-pricing/:itemId/override", async (req, res) => {
-    try {
-      const { retailPrice, wholesalePrice, reason, userId } = req.body;
-      const pricing = await storage.overrideItemPricing(
-        req.params.itemId,
-        retailPrice ? parseFloat(retailPrice) : undefined,
-        wholesalePrice ? parseFloat(wholesalePrice) : undefined,
-        reason,
-        userId
-      );
-      res.json(pricing);
-    } catch (error) {
-      console.error("Error overriding item pricing:", error);
-      res.status(500).json({ error: "Failed to override item pricing" });
-    }
-  });
-
-  app.post("/api/item-pricing/effective-price", async (req, res) => {
-    try {
-      const { itemId, customerId, customerType, quantity } = req.body;
-      if (!itemId) {
-        return res.status(400).json({ error: "itemId is required" });
-      }
-      const effectivePrice = await storage.calculateEffectivePrice(
-        itemId,
-        customerId,
-        customerType,
-        quantity ? parseInt(quantity) : undefined
-      );
-      res.json(effectivePrice);
-    } catch (error) {
-      console.error("Error calculating effective price:", error);
-      res.status(500).json({ error: "Failed to calculate effective price" });
-    }
-  });
-
-  // Customer Pricing Routes
-  app.get("/api/customer-pricing", async (req, res) => {
-    try {
-      const { customerId, itemId } = req.query;
-      if (!customerId) {
-        return res.status(400).json({ error: "customerId query parameter is required" });
-      }
-      const pricing = await storage.getCustomerPricing(customerId as string, itemId as string);
-      res.json(pricing);
-    } catch (error) {
-      console.error("Error fetching customer pricing:", error);
-      res.status(500).json({ error: "Failed to fetch customer pricing" });
-    }
-  });
-
-  app.get("/api/customer-pricing/:id", async (req, res) => {
-    try {
-      const pricing = await storage.getCustomerPricingById(req.params.id);
-      if (!pricing) {
-        return res.status(404).json({ error: "Customer pricing not found" });
-      }
-      res.json(pricing);
-    } catch (error) {
-      console.error("Error fetching customer pricing:", error);
-      res.status(500).json({ error: "Failed to fetch customer pricing" });
-    }
-  });
-
-  app.post("/api/customer-pricing", async (req, res) => {
-    try {
-      const pricingData = insertCustomerPricingSchema.parse(req.body);
-      const pricing = await storage.createCustomerPricing(pricingData);
-      res.status(201).json(pricing);
-    } catch (error) {
-      console.error("Error creating customer pricing:", error);
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid customer pricing data", details: error.errors });
-      }
-      res.status(500).json({ error: "Failed to create customer pricing" });
-    }
-  });
-
-  app.put("/api/customer-pricing/:id", async (req, res) => {
-    try {
-      const pricingData = insertCustomerPricingSchema.partial().parse(req.body);
-      const pricing = await storage.updateCustomerPricing(req.params.id, pricingData);
-      res.json(pricing);
-    } catch (error) {
-      console.error("Error updating customer pricing:", error);
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid customer pricing data", details: error.errors });
-      }
-      res.status(500).json({ error: "Failed to update customer pricing" });
-    }
-  });
-
-  // Price Lists Routes
-  app.get("/api/price-lists", async (req, res) => {
-    try {
-      const { type, customerId, categoryId, isActive, limit, offset } = req.query;
-      const filters = {
-        type: type as string || undefined,
-        customerId: customerId as string || undefined,
-        categoryId: categoryId as string || undefined,
-        isActive: isActive ? isActive === 'true' : undefined,
-        limit: limit ? parseInt(limit as string) : undefined,
-        offset: offset ? parseInt(offset as string) : undefined,
-      };
-      const priceLists = await storage.getPriceLists(filters);
-      res.json(priceLists);
-    } catch (error) {
-      console.error("Error fetching price lists:", error);
-      res.status(500).json({ error: "Failed to fetch price lists" });
-    }
-  });
-
-  app.get("/api/price-lists/:id", async (req, res) => {
-    try {
-      const priceList = await storage.getPriceList(req.params.id);
-      if (!priceList) {
-        return res.status(404).json({ error: "Price list not found" });
-      }
-      res.json(priceList);
-    } catch (error) {
-      console.error("Error fetching price list:", error);
-      res.status(500).json({ error: "Failed to fetch price list" });
-    }
-  });
-
-  app.get("/api/price-lists/:id/items", async (req, res) => {
-    try {
-      const items = await storage.getPriceListItems(req.params.id);
-      res.json(items);
-    } catch (error) {
-      console.error("Error fetching price list items:", error);
-      res.status(500).json({ error: "Failed to fetch price list items" });
-    }
-  });
-
-  app.post("/api/price-lists", async (req, res) => {
-    try {
-      const listData = insertPriceListSchema.parse(req.body);
-      const priceList = await storage.generatePriceList(listData);
-      res.status(201).json(priceList);
-    } catch (error) {
-      console.error("Error generating price list:", error);
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid price list data", details: error.errors });
-      }
-      res.status(500).json({ error: "Failed to generate price list" });
-    }
-  });
-
-  app.post("/api/price-lists/:id/download", async (req, res) => {
-    try {
-      const priceList = await storage.getPriceList(req.params.id);
-      if (!priceList) {
-        return res.status(404).json({ error: "Price list not found" });
-      }
-
-      const items = await storage.getPriceListItems(req.params.id);
-      
-      // Generate CSV content
-      const csvHeader = "Item SKU,Item Name,Base Price,Effective Price,Discount %,Min Quantity\n";
-      const csvContent = items.map(item => {
-        return `"${item.itemId}","Item Name","${item.price}","${item.effectivePrice}","${item.discountPercentage || '0'}","${item.minimumQuantity}"`;
-      }).join('\n');
-      
-      const csv = csvHeader + csvContent;
-      
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', `attachment; filename="${priceList.name}.csv"`);
-      res.send(csv);
-    } catch (error) {
-      console.error("Error downloading price list:", error);
-      res.status(500).json({ error: "Failed to download price list" });
-    }
-  });
-
-  // Price Change History Routes
-  app.get("/api/price-change-history", async (req, res) => {
-    try {
-      const { itemId, limit, offset } = req.query;
-      const history = await storage.getPriceChangeHistory(
-        itemId as string || undefined,
-        limit ? parseInt(limit as string) : undefined,
-        offset ? parseInt(offset as string) : undefined
-      );
-      res.json(history);
-    } catch (error) {
-      console.error("Error fetching price change history:", error);
-      res.status(500).json({ error: "Failed to fetch price change history" });
-    }
-  });
-
-  // Bulk Pricing Operations Routes
-  app.get("/api/bulk-pricing-operations", async (req, res) => {
-    try {
-      const { limit, offset } = req.query;
-      const operations = await storage.getBulkPricingOperations(
-        limit ? parseInt(limit as string) : undefined,
-        offset ? parseInt(offset as string) : undefined
-      );
-      res.json(operations);
-    } catch (error) {
-      console.error("Error fetching bulk pricing operations:", error);
-      res.status(500).json({ error: "Failed to fetch bulk pricing operations" });
-    }
-  });
-
-  app.post("/api/bulk-pricing-operations", async (req, res) => {
-    try {
-      const operationData = insertBulkPricingOperationSchema.parse(req.body);
-      const operation = await storage.createBulkPricingOperation(operationData);
-      
-      // Process the operation based on type
-      if (operation.operationType === "markup_update") {
-        const { newRetailMarkup, newWholesaleMarkup, categoryId } = req.body;
-        if (newRetailMarkup && newWholesaleMarkup) {
-          await storage.processBulkMarkupUpdate(
-            operation.id,
-            parseFloat(newRetailMarkup),
-            parseFloat(newWholesaleMarkup),
-            { categoryId }
-          );
-        }
-      }
-      
-      res.status(201).json(operation);
-    } catch (error) {
-      console.error("Error creating bulk pricing operation:", error);
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid bulk operation data", details: error.errors });
-      }
-      res.status(500).json({ error: "Failed to create bulk pricing operation" });
-    }
-  });
+  app.use("/api/pricing", router);
+  console.log("✅ Pricing routes registered");
 }
+
+export default router;

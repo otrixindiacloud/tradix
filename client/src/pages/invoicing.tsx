@@ -14,6 +14,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Invoicing() {
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
@@ -42,6 +44,18 @@ export default function Invoicing() {
       return response.json();
     },
   });
+
+  // Fetch customers data to get customer names
+  const { data: customersData = { customers: [] } } = useQuery({
+    queryKey: ["/api/customers"],
+    queryFn: async () => {
+      const response = await fetch("/api/customers");
+      if (!response.ok) throw new Error("Failed to fetch customers");
+      return response.json();
+    },
+  });
+
+  const customers = customersData.customers || [];
 
   // Dialog state
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
@@ -198,7 +212,7 @@ export default function Invoicing() {
 
     try {
       // Prepare data for export
-      const exportData = filteredInvoices.map(invoice => ({
+      const exportData = filteredInvoices.map((invoice: any) => ({
         'Invoice Number': invoice.invoiceNumber || '',
         'Customer Name': invoice.customer?.name || '',
         'Customer Type': invoice.customer?.customerType || '',
@@ -218,14 +232,14 @@ export default function Invoicing() {
         const headers = Object.keys(exportData[0]);
         const csvContent = [
           headers.join(','),
-          ...exportData.map(row => 
+          ...exportData.map((row: Record<string, unknown>) =>
             headers.map(header => {
-              const value = row[header as keyof typeof row];
-              // Escape commas and quotes in CSV
+              const value = row[header];
+              // Escape commas, quotes, and newlines in CSV
               if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
-                return `"${value.replace(/"/g, '""')}"`;
+          return `"${value.replace(/"/g, '""')}"`;
               }
-              return value;
+              return value ?? "";
             }).join(',')
           )
         ].join('\n');
@@ -246,10 +260,14 @@ export default function Invoicing() {
         const headers = Object.keys(exportData[0]);
         const csvContent = [
           headers.join('\t'),
-          ...exportData.map(row => 
+          ...exportData.map((row: Record<string, unknown>) =>
             headers.map(header => {
-              const value = row[header as keyof typeof row];
-              return value;
+              const value = row[header];
+              // For Excel, tab-separated values are preferred
+              if (typeof value === 'string' && (value.includes('\t') || value.includes('"') || value.includes('\n'))) {
+          return `"${value.replace(/"/g, '""')}"`;
+              }
+              return value ?? "";
             }).join('\t')
           )
         ].join('\n');
@@ -280,18 +298,48 @@ export default function Invoicing() {
   };
 
   // Filter for completed deliveries ready for invoicing
-  const completedDeliveries = deliveries?.filter((delivery: any) => 
+  const enrichedDeliveries = deliveries?.map((delivery: any) => {
+    if (delivery.salesOrder?.customerId) {
+      const customer = customers.find((c: any) => c.id === delivery.salesOrder.customerId);
+      return {
+        ...delivery,
+        salesOrder: {
+          ...delivery.salesOrder,
+          customer: customer ? {
+            ...customer,
+            name: customer.name || 'Unknown Customer'
+          } : delivery.salesOrder.customer || { name: 'Unknown Customer', customerType: '-' }
+        }
+      };
+    }
+    return delivery;
+  });
+
+  const completedDeliveries = enrichedDeliveries?.filter((delivery: any) => 
     delivery.status === "Complete" && !invoices?.some((inv: any) => inv.salesOrderId === delivery.salesOrderId)
   );
 
-  const filteredInvoices = invoices?.filter((invoice: any) => {
+  // Enrich invoices with customer names from customers API
+  const enrichedInvoices = invoices?.map((invoice: any) => {
+    const customer = customers.find((c: any) => c.id === invoice.customerId);
+    return {
+      ...invoice,
+      customer: customer ? {
+        ...customer,
+        name: customer.name || 'Unknown Customer'
+      } : invoice.customer || { name: 'Unknown Customer', customerType: '-' }
+    };
+  });
+
+  const filteredInvoices = enrichedInvoices?.filter((invoice: any) => {
     const matchesSearch = invoice.invoiceNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          invoice.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase());
-    
     const matchesStatus = statusFilter === "all" || invoice.status === statusFilter;
-    
     return matchesSearch && matchesStatus;
-  });
+  }) || [];
+  // Pagination logic
+  const totalPages = Math.ceil(filteredInvoices.length / pageSize);
+  const paginatedInvoices = filteredInvoices.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const columns: Column<any>[] = [
     {
@@ -688,15 +736,43 @@ export default function Invoicing() {
           </div>
         </CardHeader>
         <CardContent>
-          <DataTable
-            data={filteredInvoices || []}
-            columns={columns}
-            isLoading={isLoading}
-            emptyMessage="No invoices found. Invoices are created from completed deliveries."
-            onRowClick={(invoice) => {
-              setSelectedInvoice(invoice);
-            }}
-          />
+          <div>
+            <DataTable
+              data={paginatedInvoices}
+              columns={columns}
+              isLoading={isLoading}
+              emptyMessage="No invoices found. Invoices are created from completed deliveries."
+              onRowClick={(invoice) => {
+                setSelectedInvoice(invoice);
+              }}
+            />
+            {/* Pagination Controls */}
+            {filteredInvoices.length > pageSize && (
+              <div className="flex justify-center items-center gap-2 mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  data-testid="button-prev-page"
+                >
+                  Previous
+                </Button>
+                <span className="mx-2 text-sm">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  data-testid="button-next-page"
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 

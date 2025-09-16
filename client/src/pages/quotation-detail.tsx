@@ -127,6 +127,23 @@ export default function QuotationDetailPage() {
     enabled: !!id,
   });
 
+  // Fetch customers data to get customer names
+  const { data: customersData = { customers: [] } } = useQuery({
+    queryKey: ["/api/customers"],
+    queryFn: async () => {
+      const response = await fetch("/api/customers");
+      if (!response.ok) throw new Error("Failed to fetch customers");
+      return response.json();
+    },
+  });
+
+  const customers = customersData.customers || [];
+  
+  // Get customer name from customer ID
+  const customerName = quotation?.customerId 
+    ? customers.find((c: any) => c.id === quotation.customerId)?.name || 'Unknown Customer'
+    : 'No Customer';
+
   const updateStatusMutation = useMutation({
     mutationFn: async (status: string) => {
       const response = await fetch(`/api/quotations/${id}`, {
@@ -291,8 +308,9 @@ export default function QuotationDetailPage() {
       doc.text(`Quote Number: ${quotation.quoteNumber}`, 20, 40);
       doc.text(`Date: ${formatDate(new Date(quotation.quoteDate || quotation.createdAt), "MMM dd, yyyy")}`, 20, 50);
       doc.text(`Valid Until: ${formatDate(new Date(quotation.validUntil), "MMM dd, yyyy")}`, 20, 60);
-      doc.text(`Customer Type: ${quotation.customerType}`, 20, 70);
-      doc.text(`Status: ${quotation.status}`, 20, 80);
+      doc.text(`Customer: ${customerName}`, 20, 70);
+      doc.text(`Customer Type: ${quotation.customerType}`, 20, 80);
+      doc.text(`Status: ${quotation.status}`, 20, 90);
       
       // Items table
       if (quotationItems && quotationItems.length > 0) {
@@ -307,7 +325,7 @@ export default function QuotationDetailPage() {
         autoTable(doc, {
           head: [['Supplier Code', 'Description', 'Quantity', 'Unit Price', 'Total']],
           body: tableData,
-          startY: 100,
+          startY: 110,
           theme: 'grid',
           headStyles: { fillColor: [41, 128, 185] },
           styles: { fontSize: 10 }
@@ -474,8 +492,8 @@ export default function QuotationDetailPage() {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-500">Customer ID</label>
-                      <div className="font-medium">{quotation.customerId}</div>
+                      <label className="text-sm font-medium text-gray-500">Customer Name</label>
+                      <div className="font-medium">{customerName}</div>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-500">Customer Type</label>

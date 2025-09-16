@@ -17,6 +17,7 @@ export default function Inventory() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [stockFilter, setStockFilter] = useState("all");
   const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -241,9 +242,36 @@ export default function Inventory() {
             </h2>
             <p className="text-gray-600">Step 8: Monitor stock levels and manage inventory with barcode tracking</p>
           </div>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg" onClick={() => {}}>
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg" onClick={() => setShowCreateDialog(true)}>
             <span className="mr-2">+</span> Add Item
           </Button>
+      {/* Create Item Dialog */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Add New Inventory Item</DialogTitle>
+          </DialogHeader>
+          {/* Add your form fields for new item creation here */}
+          <div className="space-y-4">
+            <Input placeholder="Supplier Code" />
+            <Input placeholder="Barcode" />
+            <Input placeholder="Description" />
+            <Input placeholder="Category" />
+            <Input placeholder="Unit of Measure" />
+            <Input placeholder="Cost Price" type="number" />
+            <Input placeholder="Initial Quantity" type="number" />
+            <Input placeholder="Storage Location" />
+          </div>
+          <div className="flex justify-end mt-6 space-x-2">
+            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+              Cancel
+            </Button>
+            <Button>
+              Add Item
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
         </div>
       </div>
 

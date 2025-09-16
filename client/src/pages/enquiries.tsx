@@ -23,6 +23,8 @@ export default function Enquiries() {
   const [filters, setFilters] = useState({});
   const [selectedEnquiries, setSelectedEnquiries] = useState<string[]>([]);
   const [showProgressDashboard, setShowProgressDashboard] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
   const [, setLocation] = useLocation();
   
   const { toast } = useToast();
@@ -58,7 +60,7 @@ export default function Enquiries() {
     },
   });
 
-  const { data: customers = [] } = useQuery({
+  const { data: customersData = { customers: [] } } = useQuery({
     queryKey: ["/api/customers"],
     queryFn: async () => {
       const response = await fetch("/api/customers");
@@ -68,6 +70,8 @@ export default function Enquiries() {
       return response.json();
     },
   });
+
+  const customers = customersData.customers || [];
 
   const { data: stats } = useQuery({
     queryKey: ["/api/dashboard/stats"],
@@ -144,16 +148,23 @@ export default function Enquiries() {
     }
   };
 
+  // Merge enquiries with full customer data
+  const enrichedEnquiries = enquiries.map((enquiry: any) => {
+    const fullCustomer = customers.find((customer: any) => customer.id === enquiry.customerId);
+    return {
+      ...enquiry,
+      customer: fullCustomer || enquiry.customer // Use full customer data if found, fallback to existing
+    };
+  });
+
+  // Pagination logic
+  const totalPages = Math.ceil(enrichedEnquiries.length / pageSize);
+  const paginatedEnquiries = enrichedEnquiries.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   const columns: Column<any>[] = [
     {
       key: "select",
-      header: (
-        <Checkbox
-          checked={selectedEnquiries.length === enquiries.length && enquiries.length > 0}
-          onCheckedChange={handleSelectAll}
-          aria-label="Select all enquiries"
-        />
-      ),
+      header: "Select",
       render: (value: any, enquiry: any) => (
         <Checkbox
           checked={selectedEnquiries.includes(enquiry.id)}
@@ -176,9 +187,6 @@ export default function Enquiries() {
         <div>
           <p className="text-sm font-medium text-gray-900">
             {customer?.name || "Unknown Customer"}
-          </p>
-          <p className="text-xs text-gray-600">
-            {customer?.customerType || "-"}
           </p>
         </div>
       ),
@@ -406,15 +414,52 @@ export default function Enquiries() {
               </Button>
             </div>
           ) : (
-            <DataTable
-              data={enquiries || []}
-              columns={columns}
-              isLoading={isLoading}
-              emptyMessage="No enquiries found. Create your first enquiry to get started."
-              onRowClick={(enquiry) => {
-                setLocation(`/enquiries/${enquiry.id}`);
-              }}
-            />
+            <div>
+              {/* Custom header row for select all checkbox */}
+              <div className="flex items-center mb-2">
+                <Checkbox
+                  checked={selectedEnquiries.length === paginatedEnquiries.length && paginatedEnquiries.length > 0}
+                  onCheckedChange={handleSelectAll}
+                  aria-label="Select all enquiries"
+                />
+                <span className="ml-2 text-sm">Select All</span>
+              </div>
+              <DataTable
+                data={paginatedEnquiries || []}
+                columns={columns}
+                isLoading={isLoading}
+                emptyMessage="No enquiries found. Create your first enquiry to get started."
+                onRowClick={(enquiry) => {
+                  setLocation(`/enquiries/${enquiry.id}`);
+                }}
+              />
+              {/* Pagination Controls */}
+              {enquiries.length > pageSize && (
+                <div className="flex justify-center items-center gap-2 mt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                    data-testid="button-prev-page"
+                  >
+                    Previous
+                  </Button>
+                  <span className="mx-2 text-sm">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    data-testid="button-next-page"
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>

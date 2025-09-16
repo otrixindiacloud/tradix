@@ -60,9 +60,11 @@ export default function EnquiryForm({ onSuccess, initialData, enquiryId }: Enqui
     },
   });
 
-  const { data: customers = [] } = useQuery({
+  const { data: customersData = { customers: [] } } = useQuery({
     queryKey: ["/api/customers"],
-  }) as { data: any[] };
+  }) as { data: { customers: any[] } };
+  
+  const customers = customersData.customers || [];
 
   const createEnquiry = useMutation({
     mutationFn: async (data: EnquiryFormData) => {
@@ -139,11 +141,19 @@ export default function EnquiryForm({ onSuccess, initialData, enquiryId }: Enqui
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {customers.map((customer: any) => (
-                          <SelectItem key={customer.id} value={customer.id}>
-                            {customer.name} ({customer.customerType})
-                          </SelectItem>
-                        ))}
+                        {Array.isArray(customers) && customers.length > 0 ? (
+                          customers.map((customer: any) => (
+                            <SelectItem key={customer.id} value={customer.id}>
+                              {customer.name} ({customer.customerType})
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <div className="px-4 py-2 text-gray-500 text-sm">
+                            {customers === undefined
+                              ? "Loading customers..."
+                              : "No customers found. Please add a customer first."}
+                          </div>
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />

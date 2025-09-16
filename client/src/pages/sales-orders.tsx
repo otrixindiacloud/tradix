@@ -35,6 +35,8 @@ interface QuotationWithRelations extends Quotation {
 }
 
 export default function SalesOrders() {
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [customerFilter, setCustomerFilter] = useState("");
@@ -63,6 +65,7 @@ export default function SalesOrders() {
       const response = await fetch("/api/sales-orders");
       if (!response.ok) {
         throw new Error(`Failed to fetch sales orders: ${response.statusText}`);
+  const [rowsToShow, setRowsToShow] = useState(15);
       }
       return response.json();
     },
@@ -239,12 +242,13 @@ export default function SalesOrders() {
       order.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customerPoNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase());
-    
     const matchesStatus = !statusFilter || statusFilter === "all" || order.status === statusFilter;
     const matchesCustomer = !customerFilter || customerFilter === "all" || order.customerId === customerFilter;
-    
     return matchesSearch && matchesStatus && matchesCustomer;
   });
+  // Pagination logic
+  const totalPages = Math.ceil(filteredOrders.length / pageSize);
+  const paginatedOrders = filteredOrders.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   // Get quotations ready for sales order creation
   const readyQuotations = quotations.filter((q) => 
@@ -676,11 +680,17 @@ export default function SalesOrders() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Customers</SelectItem>
-                  {customers.map((customer) => (
-                    <SelectItem key={customer.id} value={customer.id}>
-                      {customer.name}
+                  {Array.isArray(customers) && customers.length > 0 ? (
+                    customers.map((customer) => (
+                      <SelectItem key={customer.id} value={customer.id}>
+                        {customer.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem disabled value="__no_customers__">
+                      {customers && !Array.isArray(customers) ? "(Invalid customers response)" : "No customers"}
                     </SelectItem>
-                  ))}
+                  )}
                 </SelectContent>
               </Select>
               <Button
@@ -706,16 +716,44 @@ export default function SalesOrders() {
               </Button>
             </div>
           ) : (
-            <DataTable
-              data={filteredOrders}
-              columns={columns}
-              isLoading={isLoading}
-              emptyMessage="No sales orders found. Sales orders are created from accepted quotations with uploaded POs."
-              onRowClick={(order) => {
-                setSelectedOrder(order);
-                setShowDetailsDialog(true);
-              }}
-            />
+            <div>
+              <DataTable
+                data={paginatedOrders}
+                columns={columns}
+                isLoading={isLoading}
+                emptyMessage="No sales orders found. Sales orders are created from accepted quotations with uploaded POs."
+                onRowClick={(order) => {
+                  setSelectedOrder(order);
+                  setShowDetailsDialog(true);
+                }}
+              />
+              {/* Pagination Controls */}
+              {filteredOrders.length > pageSize && (
+                <div className="flex justify-center items-center gap-2 mt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                    data-testid="button-prev-page"
+                  >
+                    Previous
+                  </Button>
+                  <span className="mx-2 text-sm">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    data-testid="button-next-page"
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>

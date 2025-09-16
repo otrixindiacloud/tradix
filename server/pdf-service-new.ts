@@ -287,6 +287,7 @@ export class PDFService {
   private addEnhancedItemsTable(doc: jsPDF, items: (InvoiceItem & { item?: Item })[], startY: number, currency: string) {
     const tableData = items.map((item, index) => {
       const materialSpecs = [];
+      // TODO: Update to use supplier name once invoice items include supplier data
       if (item.supplierCode) materialSpecs.push(`Supplier: ${item.supplierCode}`);
       if (item.barcode) materialSpecs.push(`Barcode: ${item.barcode}`);
       if (item.item?.category) materialSpecs.push(`Category: ${item.item.category}`);

@@ -1,5 +1,5 @@
 import { db } from "../db";
-import { salesOrders, salesOrderItems, quotations, quotationItems, items } from "@shared/schema";
+import { salesOrders, salesOrderItems, quotations, quotationItems, items, customers } from "@shared/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { validateUUID, SYSTEM_USER_ID } from "@shared/utils/uuid";
 import { ISalesOrderStorage } from "./interfaces";
@@ -49,8 +49,24 @@ export class SalesOrderStorage extends BaseStorage implements ISalesOrderStorage
   }
 
   async getSalesOrder(id: string) {
-    const result = await db.select().from(salesOrders).where(eq(salesOrders.id, id)).limit(1);
-    return result[0];
+    const result = await db
+      .select({
+        salesOrder: salesOrders,
+        customer: customers,
+      })
+      .from(salesOrders)
+      .leftJoin(customers, eq(salesOrders.customerId, customers.id))
+      .where(eq(salesOrders.id, id))
+      .limit(1);
+    
+    if (result.length === 0) {
+      return null;
+    }
+    
+    return {
+      ...result[0].salesOrder,
+      customer: result[0].customer,
+    };
   }
 
   async createSalesOrder(salesOrder: any) {

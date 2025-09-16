@@ -14,6 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useLocation } from "wouter";
 
 const supplierSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -35,10 +36,13 @@ interface Supplier {
 }
 
 export default function Suppliers() {
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
   const [showNewSupplier, setShowNewSupplier] = useState(false);
   const [showEditSupplier, setShowEditSupplier] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [deletingSupplier, setDeletingSupplier] = useState<Supplier | null>(null);
+  const [location, navigate] = useLocation();
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -210,6 +214,17 @@ export default function Suppliers() {
             size="sm"
             onClick={(e) => {
               e.stopPropagation();
+              navigate(`/suppliers/${supplier.id}`);
+            }}
+            data-testid={`button-view-${supplier.id}`}
+          >
+              <Eye className="h-4 w-4" style={{ color: '#10b981' }} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
               handleEdit(supplier);
             }}
             data-testid={`button-edit-${supplier.id}`}
@@ -231,6 +246,10 @@ export default function Suppliers() {
       ),
     },
   ];
+
+  // Pagination logic
+  const totalPages = Math.ceil(suppliers.length / pageSize);
+  const paginatedSuppliers = suppliers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div>
@@ -373,12 +392,40 @@ export default function Suppliers() {
           <CardTitle>All Suppliers</CardTitle>
         </CardHeader>
         <CardContent>
-          <DataTable
-            data={suppliers || []}
-            columns={columns}
-            isLoading={isLoading}
-            emptyMessage="No suppliers found. Add your first supplier to get started."
-          />
+          <div>
+            <DataTable
+              data={paginatedSuppliers}
+              columns={columns}
+              isLoading={isLoading}
+              emptyMessage="No suppliers found. Add your first supplier to get started."
+            />
+            {/* Pagination Controls */}
+            {suppliers.length > pageSize && (
+              <div className="flex justify-center items-center gap-2 mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  data-testid="button-prev-page"
+                >
+                  Previous
+                </Button>
+                <span className="mx-2 text-sm">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  data-testid="button-next-page"
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 

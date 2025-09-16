@@ -58,6 +58,8 @@ interface Quotation {
 
 export default function QuotationsPage() {
   const [, navigate] = useLocation();
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
   const [filters, setFilters] = useState({
     status: "",
     customerType: "",
@@ -97,6 +99,29 @@ export default function QuotationsPage() {
       }
       return response.json();
     },
+  });
+
+  // Fetch customers data
+  const { data: customersData = { customers: [] } } = useQuery({
+    queryKey: ["/api/customers"],
+    queryFn: async () => {
+      const response = await fetch("/api/customers");
+      if (!response.ok) {
+        throw new Error('Failed to fetch customers');
+      }
+      return response.json();
+    },
+  });
+
+  const customers = customersData.customers || [];
+
+  // Merge quotations with customer names
+  const enrichedQuotations = quotations.map((quotation: Quotation) => {
+    const customer = customers.find((c: any) => c.id === quotation.customerId);
+    return {
+      ...quotation,
+      customerName: customer?.name || 'Unknown Customer'
+    };
   });
 
   // Delete quotation mutation
@@ -154,7 +179,7 @@ export default function QuotationsPage() {
 
   // Export quotations function
   const exportQuotations = (format: 'csv' | 'excel') => {
-    if (!quotations || quotations.length === 0) {
+    if (!enrichedQuotations || enrichedQuotations.length === 0) {
       toast({
         title: "No Data",
         description: "No quotations to export",
@@ -165,10 +190,10 @@ export default function QuotationsPage() {
 
     try {
       // Prepare data for export
-      const exportData = quotations.map((quotation: Quotation) => ({
+      const exportData = enrichedQuotations.map((quotation: any) => ({
         'Quote Number': quotation.quoteNumber || '',
         'Revision': quotation.revision || 1,
-        'Customer ID': quotation.customerId || '',
+        'Customer Name': quotation.customerName || '',
         'Customer Type': quotation.customerType || '',
         'Status': quotation.status || '',
         'Approval Status': quotation.approvalStatus || '',
@@ -300,9 +325,9 @@ export default function QuotationsPage() {
       ),
     },
     {
-      key: "customerId",
+      key: "customerName",
       header: "Customer",
-      render: (value: string, quotation: Quotation) => (
+      render: (value: string, quotation: any) => (
         <div>
           <div className="font-medium">{value}</div>
           <div className="text-sm text-gray-500">{quotation.customerType}</div>
@@ -423,6 +448,10 @@ export default function QuotationsPage() {
       ),
     },
   ];
+
+  // Pagination logic
+  const totalPages = Math.ceil(enrichedQuotations.length / pageSize);
+  const paginatedQuotations = enrichedQuotations.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div className="space-y-6">
@@ -692,15 +721,43 @@ export default function QuotationsPage() {
               </Button>
             </div>
           ) : (
-            <DataTable
-              data={quotations || []}
-              columns={columns}
-              isLoading={isLoading}
-              emptyMessage="No quotations found. Create your first quotation to get started."
-              onRowClick={(quotation: any) => {
-                navigate(`/quotations/${quotation.id}`);
-              }}
-            />
+            <div>
+              <DataTable
+                data={paginatedQuotations || []}
+                columns={columns}
+                isLoading={isLoading}
+                emptyMessage="No quotations found. Create your first quotation to get started."
+                onRowClick={(quotation: any) => {
+                  navigate(`/quotations/${quotation.id}`);
+                }}
+              />
+              {/* Pagination Controls */}
+              {quotations.length > pageSize && (
+                <div className="flex justify-center items-center gap-2 mt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                    data-testid="button-prev-page"
+                  >
+                    Previous
+                  </Button>
+                  <span className="mx-2 text-sm">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    data-testid="button-next-page"
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>

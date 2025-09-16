@@ -511,8 +511,15 @@ function InventoryItemsTab() {
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <CardTitle className="text-sm font-medium">{item.supplierCode}</CardTitle>
+                    <CardTitle className="text-sm font-medium">
+                      {item.supplierName || 'Unknown Supplier'}
+                    </CardTitle>
                     <CardDescription className="text-xs mt-1">{item.description}</CardDescription>
+                    {item.supplierCode && (
+                      <div className="text-xs text-gray-500 mt-1">
+                        Code: {item.supplierCode}
+                      </div>
+                    )}
                   </div>
                   <Badge variant={item.isActive ? "default" : "secondary"}>
                     {item.isActive ? "Active" : "Inactive"}

@@ -41,6 +41,8 @@ const approvalStatusColors = {
 };
 
 export default function SupplierLpoPage() {
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
   const userId = useUserId();
   const [filters, setFilters] = useState<LpoFilters>({});
   const [selectedLpo, setSelectedLpo] = useState<SupplierLpo | null>(null);
@@ -182,30 +184,73 @@ export default function SupplierLpoPage() {
     });
   };
 
+  // Pagination logic
+  const lpoList = Array.isArray(supplierLpos) ? supplierLpos : [];
+  const totalPages = Math.ceil(lpoList.length / pageSize);
+  const paginatedLpos = lpoList.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   return (
     <div className="space-y-6 p-6">
-      {/* Card-style header */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 px-8 py-6 flex items-center justify-between mb-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Supplier LPO Management</h2>
-          <p className="text-gray-600 text-base mt-1">Step 6: Manage Local Purchase Orders with suppliers including auto-generation, amendments, and approval workflows</p>
-        </div>
-        <div className="flex gap-3">
-          <button
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-200 transition"
-            onClick={() => setShowAutoGenerate(true)}
-            data-testid="button-auto-generate-lpo"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Auto Generate LPOs
-          </button>
-          <button
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
-            onClick={() => setShowCreateLpo(true)}
-            data-testid="button-new-supplier-lpo"
-          >
-            <span className="text-xl font-bold">+</span> New Supplier LPO
-          </button>
+      {/* Enhanced Card-style header */}
+      <div className="bg-gradient-to-r from-white via-blue-50 to-purple-50 rounded-2xl shadow-lg border border-gray-200/50 backdrop-blur-sm relative overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute top-0 right-0 w-64 h-32 bg-gradient-to-bl from-blue-100/30 to-transparent rounded-bl-full"></div>
+        <div className="absolute bottom-0 left-0 w-48 h-24 bg-gradient-to-tr from-purple-100/20 to-transparent rounded-tr-full"></div>
+        
+        <div className="relative px-8 py-6 flex items-center justify-between">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Package className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent">
+                  Supplier LPO Management
+                </h2>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    Step 6
+                  </span>
+                  <span className="text-gray-600 text-sm">
+                    Manage Local Purchase Orders with suppliers
+                  </span>
+                </div>
+              </div>
+            </div>
+            <p className="text-gray-600 text-base max-w-2xl leading-relaxed">
+              Streamline your supplier relationships with automated LPO generation, amendment tracking, and comprehensive approval workflows
+            </p>
+          </div>
+          
+          <div className="flex gap-4 ml-8">
+            <button
+              className="group flex items-center gap-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-green-300 focus:ring-offset-2 transition-all duration-200 transform hover:-translate-y-0.5"
+              onClick={() => setShowAutoGenerate(true)}
+              data-testid="button-auto-generate-lpo"
+            >
+              <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center group-hover:bg-white/30 transition-colors">
+                <RefreshCw className="h-4 w-4 group-hover:rotate-180 transition-transform duration-500" />
+              </div>
+              <div className="text-left">
+                <div className="text-sm font-bold">Auto Generate</div>
+                <div className="text-xs opacity-90">LPOs</div>
+              </div>
+            </button>
+            
+            <button
+              className="group flex items-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2 transition-all duration-200 transform hover:-translate-y-0.5"
+              onClick={() => setShowCreateLpo(true)}
+              data-testid="button-new-supplier-lpo"
+            >
+              <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center group-hover:bg-white/30 transition-colors">
+                <Plus className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+              </div>
+              <div className="text-left">
+                <div className="text-sm font-bold">New Supplier</div>
+                <div className="text-xs opacity-90">LPO</div>
+              </div>
+            </button>
+          </div>
         </div>
       </div>
       {/* Create Supplier LPO Dialog */}
@@ -455,95 +500,123 @@ export default function SupplierLpoPage() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>LPO Number</TableHead>
-                  <TableHead>Supplier</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Approval</TableHead>
-                  <TableHead>LPO Date</TableHead>
-                  <TableHead>Expected Delivery</TableHead>
-                  <TableHead>Total Amount</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {supplierLpos?.map((lpo: SupplierLpo & { supplierName?: string }) => (
-                  <TableRow
-                    key={lpo.id}
-                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
-                    onClick={() => setSelectedLpo(lpo)}
-                    data-testid={`row-lpo-${lpo.id}`}
-                  >
-                    <TableCell className="font-medium">{lpo.lpoNumber}</TableCell>
-                    <TableCell>
-                      <span className="px-2 py-1 rounded bg-gray-50 text-gray-700 font-semibold border border-gray-200">
-                        {lpo.supplierName || "-"}
-                      </span>
-                    </TableCell>
-                    <TableCell>{getStatusBadge(lpo.status ?? "Missing")}</TableCell>
-                    <TableCell>{getApprovalStatusBadge(lpo.approvalStatus || "Not Required")}</TableCell>
-                    <TableCell>
-                      {lpo.lpoDate ? format(new Date(lpo.lpoDate), "MMM dd, yyyy") : "-"}
-                    </TableCell>
-                    <TableCell>
-                      {lpo.expectedDeliveryDate ? (
-                        <span className="px-2 py-1 rounded bg-green-50 text-green-700 font-semibold border border-green-200">
-                          {format(new Date(lpo.expectedDeliveryDate), "MMM dd, yyyy")}
+            <div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>LPO Number</TableHead>
+                    <TableHead>Supplier</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Approval</TableHead>
+                    <TableHead>LPO Date</TableHead>
+                    <TableHead>Expected Delivery</TableHead>
+                    <TableHead>Total Amount</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedLpos.map((lpo: SupplierLpo & { supplierName?: string }) => (
+                    <TableRow
+                      key={lpo.id}
+                      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                      onClick={() => setSelectedLpo(lpo)}
+                      data-testid={`row-lpo-${lpo.id}`}
+                    >
+                      <TableCell className="font-medium">{lpo.lpoNumber}</TableCell>
+                      <TableCell>
+                        <span className="px-2 py-1 rounded bg-gray-50 text-gray-700 font-semibold border border-gray-200">
+                          {lpo.supplierName || "-"}
                         </span>
-                      ) : (
-                        <span className="px-2 py-1 rounded bg-gray-100 text-gray-500 border border-gray-200">Date is not set</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {lpo.currency} {Number(lpo.totalAmount || 0).toLocaleString()}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2 relative">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border-green-600 text-green-600 hover:bg-green-50"
-                          onClick={e => {
-                            e.stopPropagation();
-                            setEditLpo(lpo);
-                          }}
-                          data-testid={`button-set-expected-delivery-${lpo.id}`}
-                        >
-                          Set Date
-                        </Button>
-                        {lpo.status === "Draft" && lpo.approvalStatus === "Approved" && (
-                          <Button
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              sendToSupplierMutation.mutate(lpo.id);
-                            }}
-                            data-testid={`button-send-${lpo.id}`}
-                          >
-                            <Send className="w-4 h-4" />
-                          </Button>
+                      </TableCell>
+                      <TableCell>{getStatusBadge(lpo.status ?? "Missing")}</TableCell>
+                      <TableCell>{getApprovalStatusBadge(lpo.approvalStatus || "Not Required")}</TableCell>
+                      <TableCell>
+                        {lpo.lpoDate ? format(new Date(lpo.lpoDate), "MMM dd, yyyy") : "-"}
+                      </TableCell>
+                      <TableCell>
+                        {lpo.expectedDeliveryDate ? (
+                          <span className="px-2 py-1 rounded bg-green-50 text-green-700 font-semibold border border-green-200">
+                            {format(new Date(lpo.expectedDeliveryDate), "MMM dd, yyyy")}
+                          </span>
+                        ) : (
+                          <span className="px-2 py-1 rounded bg-gray-100 text-gray-500 border border-gray-200">Date is not set</span>
                         )}
-                        {lpo.approvalStatus === "Pending" && (
+                      </TableCell>
+                      <TableCell>
+                        {lpo.currency} {Number(lpo.totalAmount || 0).toLocaleString()}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2 relative">
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={(e) => {
+                            className="border-green-600 text-green-600 hover:bg-green-50"
+                            onClick={e => {
                               e.stopPropagation();
-                              approveLpoMutation.mutate({ lpoId: lpo.id });
+                              setEditLpo(lpo);
                             }}
-                            data-testid={`button-approve-${lpo.id}`}
+                            data-testid={`button-set-expected-delivery-${lpo.id}`}
                           >
-                            <CheckCircle className="w-4 h-4" />
+                            Set Date
                           </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                          {lpo.status === "Draft" && lpo.approvalStatus === "Approved" && (
+                            <Button
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                sendToSupplierMutation.mutate(lpo.id);
+                              }}
+                              data-testid={`button-send-${lpo.id}`}
+                            >
+                              <Send className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {lpo.approvalStatus === "Pending" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                approveLpoMutation.mutate({ lpoId: lpo.id });
+                              }}
+                              data-testid={`button-approve-${lpo.id}`}
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              {/* Pagination Controls */}
+              {lpoList.length > pageSize && (
+                <div className="flex justify-center items-center gap-2 mt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                    data-testid="button-prev-page"
+                  >
+                    Previous
+                  </Button>
+                  <span className="mx-2 text-sm">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    data-testid="button-next-page"
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>

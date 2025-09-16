@@ -3,6 +3,7 @@ import { UserStorage } from './user-storage.js';
 import { CustomerStorage } from './customer-storage.js';
 import { SupplierStorage } from './supplier-storage.js';
 import { ItemStorage } from './item-storage.js';
+import { InventoryStorage } from './inventory-storage.js';
 import { EnquiryStorage } from './enquiry-storage.js';
 import { AuditStorage } from './audit-storage.js';
 import { QuotationStorage } from './quotation-storage.js';
@@ -30,6 +31,7 @@ export class ModularStorage extends BaseStorage {
   private customerStorage: CustomerStorage;
   private supplierStorage: SupplierStorage;
   private itemStorage: ItemStorage;
+  private inventoryStorage: InventoryStorage;
   private enquiryStorage: EnquiryStorage;
   private auditStorage: AuditStorage;
   private quotationStorage: QuotationStorage;
@@ -47,6 +49,7 @@ export class ModularStorage extends BaseStorage {
     this.customerStorage = new CustomerStorage();
     this.supplierStorage = new SupplierStorage();
     this.itemStorage = new ItemStorage();
+    this.inventoryStorage = new InventoryStorage();
     this.enquiryStorage = new EnquiryStorage();
     this.auditStorage = new AuditStorage();
     this.quotationStorage = new QuotationStorage();
@@ -98,6 +101,22 @@ export class ModularStorage extends BaseStorage {
     return this.customerStorage.updateCustomer(id, customer);
   }
 
+  async getCustomerDetails(id: string) {
+    return this.customerStorage.getCustomerDetails(id);
+  }
+
+  async getCustomerTransactionSummary(customerId: string) {
+    return this.customerStorage.getCustomerTransactionSummary(customerId);
+  }
+
+  async getCustomerRecentActivities(customerId: string, limit?: number) {
+    return this.customerStorage.getCustomerRecentActivities(customerId, limit);
+  }
+
+  async getCustomerPerformanceMetrics(customerId: string) {
+    return this.customerStorage.getCustomerPerformanceMetrics(customerId);
+  }
+
   // Supplier operations - delegate to SupplierStorage
   async getSuppliers() {
     return this.supplierStorage.getSuppliers();
@@ -117,6 +136,27 @@ export class ModularStorage extends BaseStorage {
 
   async deleteSupplier(id: string) {
     return this.supplierStorage.deleteSupplier(id);
+  }
+
+  // Enhanced supplier detail methods
+  async getSupplierDetails(id: string) {
+    return this.supplierStorage.getSupplierDetails(id);
+  }
+
+  async getSupplierLposForDetail(supplierId: string, page?: number, limit?: number) {
+    return this.supplierStorage.getSupplierLposForDetail(supplierId, page, limit);
+  }
+
+  async getSupplierItems(supplierId: string, page?: number, limit?: number) {
+    return this.supplierStorage.getSupplierItems(supplierId, page, limit);
+  }
+
+  async getSupplierGoodsReceipts(supplierId: string, page?: number, limit?: number) {
+    return this.supplierStorage.getSupplierGoodsReceipts(supplierId, page, limit);
+  }
+
+  async getSupplierPerformanceMetrics(supplierId: string) {
+    return this.supplierStorage.getSupplierPerformanceMetrics(supplierId);
   }
 
   // Item operations - delegate to ItemStorage
@@ -456,9 +496,32 @@ export class ModularStorage extends BaseStorage {
     return this.purchaseOrderStorage.bulkCreatePoLineItems(lineItems);
   }
 
-  async getInventoryItems(...args: any[]) {
-    console.warn('getInventoryItems: Using stub implementation - should be moved to InventoryStorage');
-    return [];
+  async getInventoryItems(filters?: any) {
+    return this.inventoryStorage.getInventoryItems(filters);
+  }
+
+  async getInventoryItem(id: string) {
+    return this.inventoryStorage.getInventoryItem(id);
+  }
+
+  async getInventoryItemBySupplierCode(supplierCode: string) {
+    return this.inventoryStorage.getInventoryItemBySupplierCode(supplierCode);
+  }
+
+  async getInventoryItemByBarcode(barcode: string) {
+    return this.inventoryStorage.getInventoryItemByBarcode(barcode);
+  }
+
+  async createInventoryItem(itemData: any) {
+    return this.inventoryStorage.createInventoryItem(itemData);
+  }
+
+  async updateInventoryItem(id: string, itemData: any) {
+    return this.inventoryStorage.updateInventoryItem(id, itemData);
+  }
+
+  async deleteInventoryItem(id: string) {
+    return this.inventoryStorage.deleteInventoryItem(id);
   }
 
   async getGoodsReceiptHeaders(filters?: any) {

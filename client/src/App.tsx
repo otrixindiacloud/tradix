@@ -17,6 +17,7 @@ import QuotationNewPage from "@/pages/quotation-new";
 import CustomerAcceptance from "@/pages/customer-acceptance";
 import CustomerPoUpload from "@/pages/customer-po-upload";
 import SalesOrders from "@/pages/sales-orders";
+import SalesOrderDetail from "@/pages/sales-order-detail";
 import SupplierLpo from "@/pages/supplier-lpo";
 import GoodsReceipt from "@/pages/goods-receipt";
 import Inventory from "@/pages/inventory";
@@ -29,6 +30,7 @@ import MainLayout from "@/components/layout/main-layout";
 import { AuthProvider, useAuth } from "@/components/auth/auth-context";
 import LoginPage from "@/pages/login";
 import Suppliers from "@/pages/suppliers";
+import SupplierDetail from "@/pages/supplier-detail";
 import Notifications from "@/pages/notifications";
 import RecentActivities from "@/pages/recent-activities";
 import AuditLogs from "@/pages/audit-logs";
@@ -38,6 +40,7 @@ import Analytics from "@/pages/analytics";
 import ExportData from "@/pages/export-data";
 import TallyIntegration from "@/pages/tally-integration";
 import CustomerManagement from "@/pages/customer-management";
+import CustomerDetail from "@/pages/customer-detail";
 import NotificationSettings from "@/pages/notification-settings";
 import BlueThemeTest from "@/pages/blue-theme-test";
 import ProcessFlowDetails from "@/pages/process-flow-details";
@@ -65,6 +68,7 @@ function ProtectedRoutes() {
           <Route path="/quotations/:id/acceptance" component={CustomerAcceptance} />
           <Route path="/customer-po-upload" component={CustomerPoUpload} />
           <Route path="/sales-orders" component={SalesOrders} />
+          <Route path="/sales-orders/:id" component={SalesOrderDetail} />
           <Route path="/supplier-lpo" component={SupplierLpo} />
           <Route path="/goods-receipt" component={GoodsReceipt} />
           <Route path="/inventory" component={Inventory} />
@@ -74,6 +78,7 @@ function ProtectedRoutes() {
           <Route path="/invoicing" component={Invoicing} />
           <Route path="/pricing" component={PricingManagement} />
           <Route path="/suppliers" component={Suppliers} />
+          <Route path="/suppliers/:id" component={SupplierDetail} />
           <Route path="/notifications" component={Notifications} />
           <Route path="/recent-activities" component={RecentActivities} />
           <Route path="/audit-logs" component={AuditLogs} />
@@ -83,6 +88,7 @@ function ProtectedRoutes() {
           <Route path="/export-data" component={ExportData} />
           <Route path="/tally-integration" component={TallyIntegration} />
           <Route path="/customer-management" component={CustomerManagement} />
+          <Route path="/customers/:id" component={CustomerDetail} />
           <Route path="/notification-settings" component={NotificationSettings} />
           <Route path="/blue-theme-test" component={BlueThemeTest} />
           <Route path="/process-flow-details" component={ProcessFlowDetails} />

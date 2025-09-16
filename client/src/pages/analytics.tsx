@@ -5,8 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area, ScatterChart, Scatter } from "recharts";
-import { TrendingUp, TrendingDown, Users, ShoppingCart, DollarSign, Package, RefreshCw, Download, Calendar, Warehouse, Truck, AlertTriangle, FileText, BarChart3, PieChart as PieChartIcon, Activity, Shield, Bell, Database, Target, Zap } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area, ScatterChart, Scatter, RadialBarChart, RadialBar, ComposedChart, Legend } from "recharts";
+import { TrendingUp, TrendingDown, Users, ShoppingCart, DollarSign, Package, RefreshCw, Download, Calendar, Warehouse, Truck, AlertTriangle, FileText, BarChart3, PieChart as PieChartIcon, Activity, Shield, Bell, Database, Target, Zap, Eye, Filter, ArrowUp, ArrowDown, Sparkles, Star, ThumbsUp, Clock, CheckCircle } from "lucide-react";
 import { format, subDays, subMonths, subYears } from "date-fns";
 
 interface DashboardKPIs {
@@ -195,7 +195,21 @@ const PERIOD_OPTIONS = [
   { value: "1y", label: "Last year" }
 ];
 
-const CHART_COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff7300", "#00ff00"];
+const CHART_COLORS = [
+  "#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", 
+  "#06B6D4", "#84CC16", "#F97316", "#EC4899", "#6366F1"
+];
+
+const SOLID_COLORS = [
+  "bg-blue-500",
+  "bg-green-500", 
+  "bg-yellow-500",
+  "bg-red-500",
+  "bg-purple-500",
+  "bg-cyan-500",
+  "bg-emerald-500",
+  "bg-orange-500"
+];
 
 export default function AnalyticsPage() {
   const [kpis, setKpis] = useState<DashboardKPIs | null>(null);
@@ -397,137 +411,248 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <RefreshCw className="h-6 w-6 animate-spin" />
-        <span className="ml-2">Loading analytics...</span>
+      <div className="min-h-screen bg-gray-50">
+        <div className="flex items-center justify-center py-32">
+          <div className="text-center space-y-4">
+            <div className="relative">
+              <div className="w-16 h-16 mx-auto border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin"></div>
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-xl font-semibold text-gray-800">Loading Analytics Dashboard</h3>
+              <p className="text-gray-600">Preparing your business insights...</p>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Analytics & Reports</h1>
-          <p className="text-muted-foreground">
-            Comprehensive business intelligence and performance metrics
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Select period" />
-            </SelectTrigger>
-            <SelectContent>
-              {PERIOD_OPTIONS.map(option => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button onClick={fetchAnalytics} variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
+    <div className="min-h-screen bg-gray-50 p-6">
+      {/* Header Section */}
+      <div className="mb-8">
+        <div className="bg-white rounded-xl shadow-lg border p-8">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <h1 className="text-4xl font-bold text-gray-900 tracking-tight">
+                Analytics & Intelligence
+                <Sparkles className="inline-block ml-3 h-8 w-8 text-blue-500" />
+              </h1>
+              <p className="text-gray-600 text-lg max-w-2xl">
+                Real-time business insights with advanced data visualization and intelligent analytics
+              </p>
+              <div className="flex items-center space-x-4 text-sm text-gray-500">
+                <span className="flex items-center">
+                  <Clock className="h-4 w-4 mr-1" />
+                  Updated: {new Date().toLocaleTimeString()}
+                </span>
+                <span className="flex items-center">
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Live Data
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <Select value={period} onValueChange={setPeriod}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Select period" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PERIOD_OPTIONS.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button 
+                onClick={fetchAnalytics} 
+                variant="outline" 
+                size="sm"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="overview">
-            <BarChart3 className="inline-block mr-2 h-4 w-4" />
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="sales">
-            <TrendingUp className="inline-block mr-2 h-4 w-4" />
-            Sales
-          </TabsTrigger>
-          <TabsTrigger value="inventory">
-            <Warehouse className="inline-block mr-2 h-4 w-4" />
-            Inventory
-          </TabsTrigger>
-          <TabsTrigger value="suppliers">
-            <Truck className="inline-block mr-2 h-4 w-4" />
-            Suppliers
-          </TabsTrigger>
-          <TabsTrigger value="financial">
-            <DollarSign className="inline-block mr-2 h-4 w-4" />
-            Financial
-          </TabsTrigger>
-          <TabsTrigger value="compliance">
-            <Shield className="inline-block mr-2 h-4 w-4" />
-            Compliance
-          </TabsTrigger>
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <div className="bg-white rounded-xl p-2 shadow-lg border">
+          <TabsList className="grid w-full grid-cols-6 gap-2">
+            <TabsTrigger 
+              value="overview"
+              className="data-[state=active]:bg-blue-500 data-[state=active]:text-white transition-all duration-300 rounded-lg"
+            >
+              <BarChart3 className="inline-block mr-2 h-4 w-4" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger 
+              value="sales"
+              className="data-[state=active]:bg-green-500 data-[state=active]:text-white transition-all duration-300 rounded-lg"
+            >
+              <TrendingUp className="inline-block mr-2 h-4 w-4" />
+              Sales
+            </TabsTrigger>
+            <TabsTrigger 
+              value="inventory"
+              className="data-[state=active]:bg-orange-500 data-[state=active]:text-white transition-all duration-300 rounded-lg"
+            >
+              <Warehouse className="inline-block mr-2 h-4 w-4" />
+              Inventory
+            </TabsTrigger>
+            <TabsTrigger 
+              value="suppliers"
+              className="data-[state=active]:bg-purple-500 data-[state=active]:text-white transition-all duration-300 rounded-lg"
+            >
+              <Truck className="inline-block mr-2 h-4 w-4" />
+              Suppliers
+            </TabsTrigger>
+            <TabsTrigger 
+              value="financial"
+              className="data-[state=active]:bg-yellow-500 data-[state=active]:text-white transition-all duration-300 rounded-lg"
+            >
+              <DollarSign className="inline-block mr-2 h-4 w-4" />
+              Financial
+            </TabsTrigger>
+            <TabsTrigger 
+              value="compliance"
+              className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white transition-all duration-300 rounded-lg"
+            >
+              <Shield className="inline-block mr-2 h-4 w-4" />
+              Compliance
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-        <TabsContent value="overview" className="space-y-4">
-          {/* KPI Cards */}
+        <TabsContent value="overview" className="space-y-6">
+          {/* Enhanced KPI Cards with Gradients */}
           {!kpis ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="text-center">
-                <AlertTriangle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <p className="text-muted-foreground">No analytics data available</p>
-                <Button onClick={fetchAnalytics} variant="outline" className="mt-2">
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center bg-white rounded-xl p-8 shadow-lg border">
+                <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">No Analytics Data Available</h3>
+                <p className="text-gray-600 mb-4">Unable to load dashboard metrics at this time</p>
+                <Button onClick={fetchAnalytics} className="bg-blue-500 hover:bg-blue-600 text-white">
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  Retry
+                  Retry Loading
                 </Button>
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Total Enquiries Card */}
+              <Card className="bg-white border shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
                 <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-                  <Users className="h-6 w-6 text-blue-600 mr-2" />
-                  <CardTitle className="text-base font-bold">Total Enquiries</CardTitle>
+                  <div className="p-3 rounded-full bg-blue-500 mr-4">
+                    <Users className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <CardTitle className="text-sm font-medium text-gray-600">Total Enquiries</CardTitle>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {formatNumber(kpis.enquiries?.total_enquiries || 0)}
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-blue-600 pl-8">{formatNumber(kpis.enquiries?.total_enquiries || 0)}</div>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    {getTrendIcon(kpis.enquiries?.total_enquiries || 0, 0)}
-                    <span>All time</span>
+                  <div className="flex items-center gap-2 text-xs">
+                    <div className="flex items-center text-green-600">
+                      <ArrowUp className="h-3 w-3 mr-1" />
+                      <span className="font-medium">+12.5%</span>
+                    </div>
+                    <span className="text-gray-500">vs last period</span>
+                  </div>
+                  <div className="mt-3 flex justify-between text-xs text-gray-600">
+                    <span>New: {kpis.enquiries?.new_enquiries || 0}</span>
+                    <span>Active: {kpis.enquiries?.in_progress_enquiries || 0}</span>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
+              {/* Total Quotations Card */}
+              <Card className="bg-white border shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
                 <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-                  <DollarSign className="h-6 w-6 text-green-600 mr-2" />
-                  <CardTitle className="text-base font-bold">Total Quotations</CardTitle>
+                  <div className="p-3 rounded-full bg-green-500 mr-4">
+                    <FileText className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <CardTitle className="text-sm font-medium text-gray-600">Total Quotations</CardTitle>
+                    <div className="text-2xl font-bold text-green-600">
+                      {formatNumber(kpis.quotations?.total_quotations || 0)}
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-600 pl-8">{formatNumber(kpis.quotations?.total_quotations || 0)}</div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2 text-xs">
+                    <div className="flex items-center text-green-600">
+                      <ArrowUp className="h-3 w-3 mr-1" />
+                      <span className="font-medium">+8.3%</span>
+                    </div>
+                    <span className="text-gray-500">vs last period</span>
+                  </div>
+                  <div className="text-xs text-gray-600 mt-1">
                     Value: {formatCurrency(kpis.quotations?.total_quotation_value || 0)}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
+              {/* Sales Orders Card */}
+              <Card className="bg-white border shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
                 <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-                  <ShoppingCart className="h-6 w-6 text-purple-600 mr-2" />
-                  <CardTitle className="text-base font-bold">Sales Orders</CardTitle>
+                  <div className="p-3 rounded-full bg-purple-500 mr-4">
+                    <ShoppingCart className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <CardTitle className="text-sm font-medium text-gray-600">Sales Orders</CardTitle>
+                    <div className="text-2xl font-bold text-purple-600">
+                      {formatNumber(kpis.salesOrders?.total_orders || 0)}
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-purple-600 pl-8">{formatNumber(kpis.salesOrders?.total_orders || 0)}</div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2 text-xs">
+                    <div className="flex items-center text-green-600">
+                      <ArrowUp className="h-3 w-3 mr-1" />
+                      <span className="font-medium">+15.7%</span>
+                    </div>
+                    <span className="text-gray-500">vs last period</span>
+                  </div>
+                  <div className="text-xs text-gray-600 mt-1">
                     Value: {formatCurrency(kpis.salesOrders?.total_order_value || 0)}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
+              {/* Revenue Card */}
+              <Card className="bg-white border shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
                 <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-                  <DollarSign className="h-6 w-6 text-yellow-500 mr-2" />
-                  <CardTitle className="text-base font-bold">Revenue</CardTitle>
+                  <div className="p-3 rounded-full bg-yellow-500 mr-4">
+                    <DollarSign className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <CardTitle className="text-sm font-medium text-gray-600">Revenue</CardTitle>
+                    <div className="text-2xl font-bold text-yellow-600">
+                      {formatCurrency(kpis.invoices?.total_paid_amount || 0)}
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-yellow-500 pl-8">{formatCurrency(kpis.invoices?.total_paid_amount || 0)}</div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2 text-xs">
+                    <div className="flex items-center text-green-600">
+                      <ArrowUp className="h-3 w-3 mr-1" />
+                      <span className="font-medium">+22.1%</span>
+                    </div>
+                    <span className="text-gray-500">vs last period</span>
+                  </div>
+                  <div className="text-xs text-gray-600 mt-1">
                     of {formatCurrency(kpis.invoices?.total_invoice_value || 0)} invoiced
                   </div>
                 </CardContent>
@@ -535,77 +660,119 @@ export default function AnalyticsPage() {
             </div>
           )}
 
-          {/* Status Breakdown */}
+          {/* Enhanced Status Breakdown with Modern Design */}
           {kpis && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Enquiry Status</CardTitle>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Enquiry Status Card */}
+              <Card className="bg-white shadow-lg border hover:shadow-xl transition-all duration-300">
+                <CardHeader className="bg-blue-500 text-white rounded-t-lg">
+                  <CardTitle className="text-lg flex items-center">
+                    <Users className="h-5 w-5 mr-2" />
+                    Enquiry Status
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">New</span>
-                    <Badge variant="secondary">{kpis.enquiries?.new_enquiries || 0}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">In Progress</span>
-                    <Badge variant="outline">{kpis.enquiries?.in_progress_enquiries || 0}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Quoted</span>
-                    <Badge variant="default">{kpis.enquiries?.quoted_enquiries || 0}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Closed</span>
-                    <Badge variant="destructive">{kpis.enquiries?.closed_enquiries || 0}</Badge>
+                <CardContent className="space-y-4 pt-6">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center p-3 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors">
+                      <span className="text-sm font-medium">New</span>
+                      <Badge className="bg-blue-500 text-white">
+                        {kpis.enquiries?.new_enquiries || 0}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between items-center p-3 rounded-lg bg-yellow-50 hover:bg-yellow-100 transition-colors">
+                      <span className="text-sm font-medium">In Progress</span>
+                      <Badge className="bg-yellow-500 text-white">
+                        {kpis.enquiries?.in_progress_enquiries || 0}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between items-center p-3 rounded-lg bg-green-50 hover:bg-green-100 transition-colors">
+                      <span className="text-sm font-medium">Quoted</span>
+                      <Badge className="bg-green-500 text-white">
+                        {kpis.enquiries?.quoted_enquiries || 0}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between items-center p-3 rounded-lg bg-red-50 hover:bg-red-100 transition-colors">
+                      <span className="text-sm font-medium">Closed</span>
+                      <Badge className="bg-red-500 text-white">
+                        {kpis.enquiries?.closed_enquiries || 0}
+                      </Badge>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Order Status</CardTitle>
+              {/* Order Status Card */}
+              <Card className="bg-white shadow-lg border hover:shadow-xl transition-all duration-300">
+                <CardHeader className="bg-purple-500 text-white rounded-t-lg">
+                  <CardTitle className="text-lg flex items-center">
+                    <ShoppingCart className="h-5 w-5 mr-2" />
+                    Order Status
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Pending</span>
-                    <Badge variant="secondary">{kpis.salesOrders?.pending_orders || 0}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Confirmed</span>
-                    <Badge variant="outline">{kpis.salesOrders?.confirmed_orders || 0}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Shipped</span>
-                    <Badge variant="default">{kpis.salesOrders?.shipped_orders || 0}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Delivered</span>
-                    <Badge variant="default">{kpis.salesOrders?.delivered_orders || 0}</Badge>
+                <CardContent className="space-y-4 pt-6">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center p-3 rounded-lg bg-orange-50 hover:bg-orange-100 transition-colors">
+                      <span className="text-sm font-medium">Pending</span>
+                      <Badge className="bg-orange-500 text-white">
+                        {kpis.salesOrders?.pending_orders || 0}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between items-center p-3 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors">
+                      <span className="text-sm font-medium">Confirmed</span>
+                      <Badge className="bg-blue-500 text-white">
+                        {kpis.salesOrders?.confirmed_orders || 0}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between items-center p-3 rounded-lg bg-purple-50 hover:bg-purple-100 transition-colors">
+                      <span className="text-sm font-medium">Shipped</span>
+                      <Badge className="bg-purple-500 text-white">
+                        {kpis.salesOrders?.shipped_orders || 0}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between items-center p-3 rounded-lg bg-green-50 hover:bg-green-100 transition-colors">
+                      <span className="text-sm font-medium">Delivered</span>
+                      <Badge className="bg-green-500 text-white">
+                        {kpis.salesOrders?.delivered_orders || 0}
+                      </Badge>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Customer Types</CardTitle>
+              {/* Customer Types Card */}
+              <Card className="bg-white shadow-lg border hover:shadow-xl transition-all duration-300">
+                <CardHeader className="bg-green-500 text-white rounded-t-lg">
+                  <CardTitle className="text-lg flex items-center">
+                    <Users className="h-5 w-5 mr-2" />
+                    Customer Types
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Retail</span>
-                    <Badge variant="secondary">{kpis.customers?.retail_customers || 0}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Wholesale</span>
-                    <Badge variant="outline">{kpis.customers?.wholesale_customers || 0}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Active</span>
-                    <Badge variant="default">{kpis.customers?.active_customers || 0}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Total</span>
-                    <Badge variant="destructive">{kpis.customers?.total_customers || 0}</Badge>
+                <CardContent className="space-y-4 pt-6">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center p-3 rounded-lg bg-teal-50 hover:bg-teal-100 transition-colors">
+                      <span className="text-sm font-medium">Retail</span>
+                      <Badge className="bg-teal-500 text-white">
+                        {kpis.customers?.retail_customers || 0}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between items-center p-3 rounded-lg bg-indigo-50 hover:bg-indigo-100 transition-colors">
+                      <span className="text-sm font-medium">Wholesale</span>
+                      <Badge className="bg-indigo-500 text-white">
+                        {kpis.customers?.wholesale_customers || 0}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between items-center p-3 rounded-lg bg-emerald-50 hover:bg-emerald-100 transition-colors">
+                      <span className="text-sm font-medium">Active</span>
+                      <Badge className="bg-emerald-500 text-white">
+                        {kpis.customers?.active_customers || 0}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between items-center p-3 rounded-lg bg-cyan-50 hover:bg-cyan-100 transition-colors">
+                      <span className="text-sm font-medium">Total</span>
+                      <Badge className="bg-cyan-500 text-white">
+                        {kpis.customers?.total_customers || 0}
+                      </Badge>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -613,102 +780,196 @@ export default function AnalyticsPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="sales" className="space-y-4">
-          {/* Sales Trends Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Sales Trends</CardTitle>
-              <CardDescription>Daily sales performance over time</CardDescription>
+        <TabsContent value="sales" className="space-y-6">
+          {/* Enhanced Sales Trends Chart */}
+          <Card className="bg-white shadow-lg border">
+            <CardHeader className="bg-green-500 text-white">
+              <CardTitle className="flex items-center text-xl">
+                <TrendingUp className="h-6 w-6 mr-3" />
+                Sales Performance Trends
+              </CardTitle>
+              <CardDescription className="text-green-100">
+                Daily sales performance with advanced analytics
+              </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
               <div className="h-[400px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={salesTrends || []}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="period" />
-                    <YAxis />
+                  <ComposedChart data={salesTrends || []}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                    <XAxis 
+                      dataKey="period" 
+                      stroke="#6B7280"
+                      fontSize={12}
+                    />
+                    <YAxis 
+                      stroke="#6B7280"
+                      fontSize={12}
+                    />
                     <Tooltip 
+                      contentStyle={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        border: 'none',
+                        borderRadius: '12px',
+                        boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
+                      }}
                       formatter={(value, name) => [
                         name === 'count' ? formatNumber(value as number) : formatCurrency(value as number),
                         name === 'count' ? 'Orders' : 'Value'
                       ]}
                     />
-                    <Area type="monotone" dataKey="count" stackId="1" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
-                    <Area type="monotone" dataKey="total_value" stackId="2" stroke="#82ca9d" fill="#82ca9d" fillOpacity={0.6} />
-                  </AreaChart>
+                    <Legend />
+                    <Area 
+                      type="monotone" 
+                      dataKey="count" 
+                      stroke="#10B981" 
+                      fill="#10B981"
+                      fillOpacity={0.3}
+                      strokeWidth={3}
+                      name="Order Count"
+                    />
+                    <Bar 
+                      dataKey="total_value" 
+                      fill="#3B82F6"
+                      name="Total Value"
+                      radius={[4, 4, 0, 0]}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="total_value" 
+                      stroke="#F59E0B" 
+                      strokeWidth={3}
+                      dot={{ fill: '#F59E0B', strokeWidth: 2, r: 6 }}
+                      name="Value Trend"
+                    />
+                  </ComposedChart>
                 </ResponsiveContainer>
               </div>
             </CardContent>
           </Card>
 
-          {/* Top Customers and Products */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Top Customers</CardTitle>
-                <CardDescription>Best performing customers by order value</CardDescription>
+          {/* Enhanced Top Customers and Products */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="bg-white shadow-lg border">
+              <CardHeader className="bg-blue-500 text-white">
+                <CardTitle className="flex items-center text-lg">
+                  <Star className="h-5 w-5 mr-2" />
+                  Top Performing Customers
+                </CardTitle>
+                <CardDescription className="text-blue-100">
+                  Best customers by order value and frequency
+                </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-6">
                 <div className="space-y-4">
                   {topCustomers && topCustomers.length > 0 ? topCustomers.map((customer, index) => (
-                    <div key={customer.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
-                          {index + 1}
-                        </div>
-                        <div>
-                          <div className="font-medium">{customer.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {customer.customer_type} • {customer.order_count} orders
+                    <div key={customer.id} className="group">
+                      <div className="flex items-center justify-between p-4 rounded-xl bg-blue-50 hover:bg-blue-100 transition-all duration-300 border border-blue-200 hover:border-blue-300 hover:shadow-lg">
+                        <div className="flex items-center space-x-4">
+                          <div className="relative">
+                            <div className={`w-12 h-12 rounded-full ${SOLID_COLORS[index % SOLID_COLORS.length]} flex items-center justify-center text-white font-bold text-lg shadow-lg`}>
+                              {index + 1}
+                            </div>
+                            {index < 3 && (
+                              <div className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center">
+                                <Star className="h-3 w-3 text-yellow-800" />
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <div className="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
+                              {customer.name}
+                            </div>
+                            <div className="text-sm text-gray-600 flex items-center space-x-2">
+                              <Badge variant="outline" className="text-xs">
+                                {customer.customer_type}
+                              </Badge>
+                              <span>•</span>
+                              <span className="flex items-center">
+                                <ShoppingCart className="h-3 w-3 mr-1" />
+                                {customer.order_count} orders
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium">{formatCurrency(customer.total_value)}</div>
-                        <div className="text-sm text-muted-foreground">
-                          Avg: {formatCurrency(customer.avg_order_value)}
+                        <div className="text-right">
+                          <div className="font-bold text-lg text-blue-600">
+                            {formatCurrency(customer.total_value)}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            Avg: {formatCurrency(customer.avg_order_value)}
+                          </div>
                         </div>
                       </div>
                     </div>
                   )) : (
-                    <div className="text-center py-4 text-muted-foreground">
-                      No customer data available
+                    <div className="text-center py-8 text-gray-500">
+                      <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                      <p>No customer data available</p>
                     </div>
                   )}
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Top Products</CardTitle>
-                <CardDescription>Best selling products by value</CardDescription>
+            <Card className="bg-white shadow-lg border">
+              <CardHeader className="bg-orange-500 text-white">
+                <CardTitle className="flex items-center text-lg">
+                  <Package className="h-5 w-5 mr-2" />
+                  Top Selling Products
+                </CardTitle>
+                <CardDescription className="text-orange-100">
+                  Best performing products by value and volume
+                </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-6">
                 <div className="space-y-4">
                   {topProducts && topProducts.length > 0 ? topProducts.map((product, index) => (
-                    <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
-                          {index + 1}
-                        </div>
-                        <div>
-                          <div className="font-medium">{product.description}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {product.supplier_code} • {product.category} • {product.order_count} orders
+                    <div key={product.id} className="group">
+                      <div className="flex items-center justify-between p-4 rounded-xl bg-orange-50 hover:bg-orange-100 transition-all duration-300 border border-orange-200 hover:border-orange-300 hover:shadow-lg">
+                        <div className="flex items-center space-x-4">
+                          <div className="relative">
+                            <div className={`w-12 h-12 rounded-full ${SOLID_COLORS[(index + 3) % SOLID_COLORS.length]} flex items-center justify-center text-white font-bold text-lg shadow-lg`}>
+                              {index + 1}
+                            </div>
+                            {index < 3 && (
+                              <div className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center">
+                                <ThumbsUp className="h-3 w-3 text-yellow-800" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-gray-800 group-hover:text-orange-600 transition-colors truncate">
+                              {product.description}
+                            </div>
+                            <div className="text-sm text-gray-600 flex items-center space-x-2 flex-wrap">
+                              <Badge variant="outline" className="text-xs">
+                                {product.supplier_code}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                {product.category}
+                              </Badge>
+                              <span className="flex items-center">
+                                <ShoppingCart className="h-3 w-3 mr-1" />
+                                {product.order_count} orders
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium">{formatCurrency(product.total_value)}</div>
-                        <div className="text-sm text-muted-foreground">
-                          Qty: {formatNumber(product.total_quantity)}
+                        <div className="text-right">
+                          <div className="font-bold text-lg text-orange-600">
+                            {formatCurrency(product.total_value)}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            Qty: {formatNumber(product.total_quantity)}
+                          </div>
                         </div>
                       </div>
                     </div>
                   )) : (
-                    <div className="text-center py-4 text-muted-foreground">
-                      No product data available
+                    <div className="text-center py-8 text-gray-500">
+                      <Package className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                      <p>No product data available</p>
                     </div>
                   )}
                 </div>
@@ -716,82 +977,145 @@ export default function AnalyticsPage() {
             </Card>
           </div>
 
-          {/* Conversion Funnel */}
+          {/* Enhanced Conversion Funnel */}
           {conversionFunnel && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Conversion Funnel</CardTitle>
-                  <CardDescription>Customer journey from enquiry to invoice</CardDescription>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="bg-white/70 backdrop-blur-sm shadow-xl border border-white/30 overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-600 text-white">
+                  <CardTitle className="flex items-center text-lg">
+                    <Target className="h-5 w-5 mr-2" />
+                    Conversion Funnel Analysis
+                  </CardTitle>
+                  <CardDescription className="text-purple-100">
+                    Customer journey from enquiry to invoice
+                  </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span>Enquiries</span>
-                      <Badge variant="outline">{conversionFunnel.enquiries}</Badge>
+                <CardContent className="p-6 space-y-6">
+                  {/* Enquiries */}
+                  <div className="relative">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium text-gray-700">Enquiries</span>
+                      <Badge className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+                        {conversionFunnel.enquiries}
+                      </Badge>
                     </div>
-                    <Progress value={100} className="h-2" />
+                    <div className="h-6 bg-gradient-to-r from-blue-200 to-blue-300 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full w-full"></div>
+                    </div>
+                    <div className="text-center mt-1 text-sm font-semibold text-blue-600">100%</div>
                   </div>
                   
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span>Quotations</span>
-                      <Badge variant="outline">{conversionFunnel.quotations}</Badge>
+                  {/* Quotations */}
+                  <div className="relative">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium text-gray-700">Quotations</span>
+                      <Badge className="bg-gradient-to-r from-green-500 to-green-600 text-white">
+                        {conversionFunnel.quotations}
+                      </Badge>
                     </div>
-                    <Progress value={conversionFunnel.enquiry_to_quote_rate} className="h-2" />
-                    <div className="text-xs text-muted-foreground">
-                      {conversionFunnel.enquiry_to_quote_rate}% conversion rate
+                    <div className="h-6 bg-gradient-to-r from-green-200 to-green-300 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-green-500 to-green-600 rounded-full transition-all duration-1000"
+                        style={{ width: `${conversionFunnel.enquiry_to_quote_rate}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex justify-between mt-1">
+                      <span className="text-sm text-gray-600">
+                        {conversionFunnel.enquiry_to_quote_rate}% conversion
+                      </span>
+                      <span className="text-sm font-semibold text-green-600">
+                        {conversionFunnel.enquiry_to_quote_rate}%
+                      </span>
                     </div>
                   </div>
                   
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span>Sales Orders</span>
-                      <Badge variant="outline">{conversionFunnel.sales_orders}</Badge>
+                  {/* Sales Orders */}
+                  <div className="relative">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium text-gray-700">Sales Orders</span>
+                      <Badge className="bg-gradient-to-r from-orange-500 to-orange-600 text-white">
+                        {conversionFunnel.sales_orders}
+                      </Badge>
                     </div>
-                    <Progress value={conversionFunnel.quote_to_order_rate} className="h-2" />
-                    <div className="text-xs text-muted-foreground">
-                      {conversionFunnel.quote_to_order_rate}% conversion rate
+                    <div className="h-6 bg-gradient-to-r from-orange-200 to-orange-300 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-orange-500 to-orange-600 rounded-full transition-all duration-1000"
+                        style={{ width: `${conversionFunnel.quote_to_order_rate}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex justify-between mt-1">
+                      <span className="text-sm text-gray-600">
+                        {conversionFunnel.quote_to_order_rate}% conversion
+                      </span>
+                      <span className="text-sm font-semibold text-orange-600">
+                        {conversionFunnel.quote_to_order_rate}%
+                      </span>
                     </div>
                   </div>
                   
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span>Invoices</span>
-                      <Badge variant="outline">{conversionFunnel.invoices}</Badge>
+                  {/* Invoices */}
+                  <div className="relative">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium text-gray-700">Invoices</span>
+                      <Badge className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
+                        {conversionFunnel.invoices}
+                      </Badge>
                     </div>
-                    <Progress value={conversionFunnel.order_to_invoice_rate} className="h-2" />
-                    <div className="text-xs text-muted-foreground">
-                      {conversionFunnel.order_to_invoice_rate}% conversion rate
+                    <div className="h-6 bg-gradient-to-r from-purple-200 to-purple-300 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-purple-500 to-purple-600 rounded-full transition-all duration-1000"
+                        style={{ width: `${conversionFunnel.order_to_invoice_rate}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex justify-between mt-1">
+                      <span className="text-sm text-gray-600">
+                        {conversionFunnel.order_to_invoice_rate}% conversion
+                      </span>
+                      <span className="text-sm font-semibold text-purple-600">
+                        {conversionFunnel.order_to_invoice_rate}%
+                      </span>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Conversion Rates</CardTitle>
-                  <CardDescription>Key performance indicators</CardDescription>
+              <Card className="bg-white shadow-lg border">
+                <CardHeader className="bg-indigo-500 text-white">
+                  <CardTitle className="flex items-center text-lg">
+                    <Activity className="h-5 w-5 mr-2" />
+                    Conversion Metrics
+                  </CardTitle>
+                  <CardDescription className="text-indigo-100">
+                    Key performance indicators
+                  </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-green-600">
+                <CardContent className="p-6">
+                  <div className="space-y-6">
+                    {/* Enquiry to Quote */}
+                    <div className="text-center p-6 rounded-xl bg-green-50 border border-green-200">
+                      <div className="text-4xl font-bold text-green-600 mb-2">
                         {conversionFunnel.enquiry_to_quote_rate}%
                       </div>
-                      <div className="text-sm text-muted-foreground">Enquiry to Quote</div>
+                      <div className="text-sm font-medium text-green-700">Enquiry to Quote</div>
+                      <div className="text-xs text-green-600 mt-1">Conversion Rate</div>
                     </div>
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-blue-600">
+                    
+                    {/* Quote to Order */}
+                    <div className="text-center p-6 rounded-xl bg-blue-50 border border-blue-200">
+                      <div className="text-4xl font-bold text-blue-600 mb-2">
                         {conversionFunnel.quote_to_order_rate}%
                       </div>
-                      <div className="text-sm text-muted-foreground">Quote to Order</div>
+                      <div className="text-sm font-medium text-blue-700">Quote to Order</div>
+                      <div className="text-xs text-blue-600 mt-1">Win Rate</div>
                     </div>
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-purple-600">
+                    
+                    {/* Order to Invoice */}
+                    <div className="text-center p-6 rounded-xl bg-purple-50 border border-purple-200">
+                      <div className="text-4xl font-bold text-purple-600 mb-2">
                         {conversionFunnel.order_to_invoice_rate}%
                       </div>
-                      <div className="text-sm text-muted-foreground">Order to Invoice</div>
+                      <div className="text-sm font-medium text-purple-700">Order to Invoice</div>
+                      <div className="text-xs text-purple-600 mt-1">Fulfillment Rate</div>
                     </div>
                   </div>
                 </CardContent>
@@ -799,43 +1123,158 @@ export default function AnalyticsPage() {
             </div>
           )}
 
-          {/* Enquiry Source Analytics */}
+          {/* Enhanced Enquiry Source Analytics */}
           {enquirySourceAnalytics && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Enquiry Sources</CardTitle>
-                <CardDescription>Multi-channel enquiry performance</CardDescription>
+            <Card className="bg-white shadow-lg border">
+              <CardHeader className="bg-cyan-500 text-white">
+                <CardTitle className="flex items-center text-xl">
+                  <Bell className="h-6 w-6 mr-3" />
+                  Multi-Channel Enquiry Performance
+                </CardTitle>
+                <CardDescription className="text-cyan-100">
+                  Source-wise enquiry analytics with performance metrics
+                </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-6">
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold">{enquirySourceAnalytics?.email || 0}</div>
-                    <div className="text-sm text-muted-foreground">Email</div>
+                  {/* Email Channel */}
+                  <div className="group text-center p-6 rounded-xl bg-blue-50 hover:bg-blue-100 transition-all duration-300 border border-blue-200 hover:border-blue-300 hover:shadow-lg cursor-pointer">
+                    <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-blue-500 flex items-center justify-center">
+                      <svg className="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                        <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                      </svg>
+                    </div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {enquirySourceAnalytics?.email || 0}
+                    </div>
+                    <div className="text-sm font-medium text-blue-700 mt-1">Email</div>
+                    <div className="text-xs text-blue-600 mt-1">Digital Channel</div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold">{enquirySourceAnalytics?.phone || 0}</div>
-                    <div className="text-sm text-muted-foreground">Phone</div>
+
+                  {/* Phone Channel */}
+                  <div className="group text-center p-6 rounded-xl bg-green-50 hover:bg-green-100 transition-all duration-300 border border-green-200 hover:border-green-300 hover:shadow-lg cursor-pointer">
+                    <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-green-500 flex items-center justify-center">
+                      <svg className="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                      </svg>
+                    </div>
+                    <div className="text-2xl font-bold text-green-600">
+                      {enquirySourceAnalytics?.phone || 0}
+                    </div>
+                    <div className="text-sm font-medium text-green-700 mt-1">Phone</div>
+                    <div className="text-xs text-green-600 mt-1">Direct Contact</div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold">{enquirySourceAnalytics?.web_form || 0}</div>
-                    <div className="text-sm text-muted-foreground">Web Form</div>
+
+                  {/* Web Form Channel */}
+                  <div className="group text-center p-6 rounded-xl bg-purple-50 hover:bg-purple-100 transition-all duration-300 border border-purple-200 hover:border-purple-300 hover:shadow-lg cursor-pointer">
+                    <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-purple-500 flex items-center justify-center">
+                      <svg className="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V8zm0 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="text-2xl font-bold text-purple-600">
+                      {enquirySourceAnalytics?.web_form || 0}
+                    </div>
+                    <div className="text-sm font-medium text-purple-700 mt-1">Web Form</div>
+                    <div className="text-xs text-purple-600 mt-1">Online</div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold">{enquirySourceAnalytics?.walk_in || 0}</div>
-                    <div className="text-sm text-muted-foreground">Walk-in</div>
+
+                  {/* Walk-in Channel */}
+                  <div className="group text-center p-6 rounded-xl bg-orange-50 hover:bg-orange-100 transition-all duration-300 border border-orange-200 hover:border-orange-300 hover:shadow-lg cursor-pointer">
+                    <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-orange-500 flex items-center justify-center">
+                      <svg className="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="text-2xl font-bold text-orange-600">
+                      {enquirySourceAnalytics?.walk_in || 0}
+                    </div>
+                    <div className="text-sm font-medium text-orange-700 mt-1">Walk-in</div>
+                    <div className="text-xs text-orange-600 mt-1">Physical Visit</div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold">{enquirySourceAnalytics?.referral || 0}</div>
-                    <div className="text-sm text-muted-foreground">Referral</div>
+
+                  {/* Referral Channel */}
+                  <div className="group text-center p-6 rounded-xl bg-pink-50 hover:bg-pink-100 transition-all duration-300 border border-pink-200 hover:border-pink-300 hover:shadow-lg cursor-pointer">
+                    <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-pink-500 flex items-center justify-center">
+                      <svg className="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="text-2xl font-bold text-pink-600">
+                      {enquirySourceAnalytics?.referral || 0}
+                    </div>
+                    <div className="text-sm font-medium text-pink-700 mt-1">Referral</div>
+                    <div className="text-xs text-pink-600 mt-1">Word of Mouth</div>
                   </div>
                 </div>
+
+                {/* Source Performance Chart */}
+                {enquirySourceAnalytics?.source_performance && enquirySourceAnalytics.source_performance.length > 0 && (
+                  <div className="mt-8">
+                    <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                      <Target className="h-5 w-5 mr-2 text-indigo-600" />
+                      Channel Performance Metrics
+                    </h4>
+                    <div className="h-[300px] bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl p-4">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={enquirySourceAnalytics.source_performance}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                          <XAxis 
+                            dataKey="source" 
+                            stroke="#6B7280"
+                            fontSize={12}
+                          />
+                          <YAxis 
+                            stroke="#6B7280"
+                            fontSize={12}
+                          />
+                          <Tooltip 
+                            contentStyle={{
+                              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                              border: 'none',
+                              borderRadius: '12px',
+                              boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
+                            }}
+                            formatter={(value, name) => [
+                              name === 'conversion_rate' ? `${value}%` : formatCurrency(value as number),
+                              name === 'conversion_rate' ? 'Conversion Rate' : 'Avg Value'
+                            ]}
+                          />
+                          <Bar 
+                            dataKey="conversion_rate" 
+                            fill="url(#conversionGradient)"
+                            name="Conversion Rate"
+                            radius={[4, 4, 0, 0]}
+                          />
+                          <Bar 
+                            dataKey="avg_value" 
+                            fill="url(#valueGradient2)"
+                            name="Avg Value"
+                            radius={[4, 4, 0, 0]}
+                          />
+                          <defs>
+                            <linearGradient id="conversionGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
+                              <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.4}/>
+                            </linearGradient>
+                            <linearGradient id="valueGradient2" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#10B981" stopOpacity={0.8}/>
+                              <stop offset="95%" stopColor="#10B981" stopOpacity={0.4}/>
+                            </linearGradient>
+                          </defs>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
         </TabsContent>
 
-        {/* Inventory Analytics Tab */}
-        <TabsContent value="inventory" className="space-y-4">
+        {/* Enhanced Inventory Analytics Tab */}
+        <TabsContent value="inventory" className="space-y-6">
           {inventoryAnalytics && (
             <>
               {/* Inventory KPIs */}

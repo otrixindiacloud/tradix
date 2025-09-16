@@ -54,6 +54,19 @@ export function registerCustomerRoutes(app: Express) {
     }
   });
 
+  app.get("/api/customers/:id/details", async (req, res) => {
+    try {
+      const customerDetails = await (storage as any).getCustomerDetails(req.params.id);
+      if (!customerDetails) {
+        return res.status(404).json({ message: "Customer not found" });
+      }
+      res.json(customerDetails);
+    } catch (error) {
+      console.error("Error fetching customer details:", error);
+      res.status(500).json({ message: "Failed to fetch customer details" });
+    }
+  });
+
   app.post("/api/customers", async (req, res) => {
     try {
       const customerData = insertCustomerSchema.parse(req.body);

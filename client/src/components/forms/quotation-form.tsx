@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { CalendarIcon, Plus, Calculator, DollarSign } from "lucide-react";
+import { CalendarIcon, Plus, Calculator, DollarSign, ArrowLeft } from "lucide-react";
 import { 
   FaUser, 
   FaCalendarAlt, 
@@ -84,7 +84,7 @@ export default function QuotationForm({ enquiryId: propEnquiryId, onSuccess, onC
   });
 
   // Fetch customers for dropdown
-  const { data: customers } = useQuery({
+  const { data: customersData = { customers: [] }, isLoading: customersLoading, error: customersError } = useQuery({
     queryKey: ["/api/customers"],
     queryFn: async () => {
       const response = await fetch("/api/customers");
@@ -92,6 +92,8 @@ export default function QuotationForm({ enquiryId: propEnquiryId, onSuccess, onC
       return response.json();
     },
   });
+
+  const customers = customersData.customers || [];
 
   // Fetch enquiry details if enquiryId is provided
   const { data: enquiry } = useQuery({
@@ -205,13 +207,13 @@ export default function QuotationForm({ enquiryId: propEnquiryId, onSuccess, onC
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2">
+          {/* <h2 className="text-2xl font-bold flex items-center gap-2">
             {enquiryId ? <FaFileInvoice className="h-6 w-6 text-blue-600" /> : <FaPlus className="h-6 w-6 text-green-600" />}
             {enquiryId ? "Generate Quotation from Enquiry" : "Create New Quotation"}
-          </h2>
-          <p className="text-gray-600">
+          </h2> */}
+          {/* <p className="text-gray-600">
             Create a quotation with automated pricing based on customer type
-          </p>
+          </p> */}
         </div>
         {customerType && (
           <div className="flex items-center gap-2">
@@ -253,16 +255,30 @@ export default function QuotationForm({ enquiryId: propEnquiryId, onSuccess, onC
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {customers?.map((customer: Customer) => (
-                              <SelectItem key={customer.id} value={customer.id}>
-                                <div className="flex items-center justify-between w-full">
-                                  <span>{customer.name}</span>
-                                  <Badge variant="outline" className="ml-2">
-                                    {customer.customerType}
-                                  </Badge>
-                                </div>
-                              </SelectItem>
-                            ))}
+                            {customersLoading ? (
+                              <div className="px-4 py-2 text-blue-500 text-sm">
+                                Loading customers...
+                              </div>
+                            ) : customersError ? (
+                              <div className="px-4 py-2 text-red-500 text-sm">
+                                Error loading customers
+                              </div>
+                            ) : Array.isArray(customers) && customers.length > 0 ? (
+                              customers.map((customer: Customer) => (
+                                <SelectItem key={customer.id} value={customer.id}>
+                                  <div className="flex items-center justify-between w-full">
+                                    <span>{customer.name}</span>
+                                    <Badge variant="outline" className="ml-2">
+                                      {customer.customerType}
+                                    </Badge>
+                                  </div>
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <div className="px-4 py-2 text-gray-500 text-sm">
+                                No customers available. Please add a customer first.
+                              </div>
+                            )}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -389,6 +405,18 @@ export default function QuotationForm({ enquiryId: propEnquiryId, onSuccess, onC
                   />
 
                   <div className="flex gap-3 pt-4">
+                    {onCancel && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={onCancel}
+                        data-testid="button-back"
+                        className="flex items-center gap-2"
+                      >
+                        <ArrowLeft className="h-4 w-4" />
+                        Back
+                      </Button>
+                    )}
                     <Button
                       type="submit"
                       disabled={createQuotationMutation.isPending}
@@ -407,18 +435,6 @@ export default function QuotationForm({ enquiryId: propEnquiryId, onSuccess, onC
                         </>
                       )}
                     </Button>
-                    {onCancel && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={onCancel}
-                        data-testid="button-cancel"
-                        className="flex items-center gap-2"
-                      >
-                        <FaTimes className="h-4 w-4" />
-                        Cancel
-                      </Button>
-                    )}
                   </div>
                 </form>
               </Form>

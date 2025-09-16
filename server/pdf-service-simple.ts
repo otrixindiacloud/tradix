@@ -226,6 +226,7 @@ export function createEnhancedInvoicePDF(invoiceData: EnhancedInvoicePDFData): B
         
         // Material specifications (mock data for comprehensive display)
         const materialSpecs = [
+          // TODO: Update to use supplier name once invoice items include supplier data
           `Supplier Code: ${item.supplierCode || 'N/A'}`,
           `Barcode: ${item.barcode || 'N/A'}`,
           'Material: Premium Grade',
