@@ -27,6 +27,15 @@ export const supplierLpoStatusEnum = pgEnum("supplier_lpo_status", ["Draft", "Pe
 export const goodsReceiptStatusEnum = pgEnum("goods_receipt_status", ["Pending", "Partial", "Complete", "Discrepancy"]);
 export const deliveryStatusEnum = pgEnum("delivery_status", ["Pending", "Partial", "Complete", "Cancelled"]);
 export const invoiceStatusEnum = pgEnum("invoice_status", ["Draft", "Sent", "Paid", "Overdue", "Cancelled"]);
+export const requisitionStatusEnum = pgEnum("requisition_status", ["Draft", "Pending Approval", "Approved", "Rejected", "Processing", "Completed", "Cancelled"]);
+export const requisitionPriorityEnum = pgEnum("requisition_priority", ["Low", "Medium", "High", "Urgent"]);
+export const requisitionItemUrgencyEnum = pgEnum("requisition_item_urgency", ["Standard", "Urgent"]);
+export const physicalStockStatusEnum = pgEnum("physical_stock_status", ["Draft", "In Progress", "Completed", "Approved", "Cancelled"]);
+export const stockCountStatusEnum = pgEnum("stock_count_status", ["Pending", "Counted", "Verified", "Discrepancy", "Adjusted"]);
+export const shipmentStatusEnum = pgEnum("shipment_status", ["Pending", "Picked Up", "In Transit", "Out for Delivery", "Delivered", "Delayed", "Cancelled", "Lost"]);
+export const shipmentPriorityEnum = pgEnum("shipment_priority", ["Low", "Medium", "High", "Urgent"]);
+export const shipmentServiceTypeEnum = pgEnum("shipment_service_type", ["Standard", "Express", "Overnight", "Economy"]);
+export const trackingEventTypeEnum = pgEnum("tracking_event_type", ["Pickup", "In Transit", "Sorting", "Out for Delivery", "Delivered", "Exception"]);
 
 // Users table
 export const users = pgTable("users", {
@@ -129,6 +138,42 @@ export const enquiryItems = pgTable("enquiry_items", {
   quantity: integer("quantity").notNull(),
   unitPrice: decimal("unit_price", { precision: 10, scale: 2 }),
   notes: text("notes"),
+});
+
+// Requisitions
+export const requisitions = pgTable("requisitions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  requisitionNumber: varchar("requisition_number", { length: 50 }).unique().notNull(),
+  requestedBy: varchar("requested_by", { length: 255 }).notNull(),
+  department: varchar("department", { length: 100 }).notNull(),
+  priority: requisitionPriorityEnum("priority").notNull(),
+  status: requisitionStatusEnum("status").default("Draft"),
+  requestDate: timestamp("request_date").defaultNow(),
+  requiredDate: timestamp("required_date").notNull(),
+  approvedBy: varchar("approved_by", { length: 255 }),
+  approvedDate: timestamp("approved_date"),
+  totalEstimatedCost: decimal("total_estimated_cost", { precision: 12, scale: 2 }).notNull(),
+  justification: text("justification").notNull(),
+  notes: text("notes"),
+  itemCount: integer("item_count").default(0),
+  createdBy: uuid("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Requisition Items
+export const requisitionItems = pgTable("requisition_items", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  requisitionId: uuid("requisition_id").references(() => requisitions.id).notNull(),
+  itemDescription: text("item_description").notNull(),
+  quantity: integer("quantity").notNull(),
+  unitOfMeasure: varchar("unit_of_measure", { length: 50 }).notNull(),
+  estimatedCost: decimal("estimated_cost", { precision: 10, scale: 2 }).notNull(),
+  specification: text("specification"),
+  preferredSupplier: varchar("preferred_supplier", { length: 255 }),
+  urgency: requisitionItemUrgencyEnum("urgency").default("Standard"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Approval Levels enum
@@ -679,6 +724,57 @@ export const acceptanceConfirmations = pgTable("acceptance_confirmations", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Shipments - Comprehensive tracking and logistics management
+export const shipments = pgTable("shipments", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  shipmentNumber: varchar("shipment_number", { length: 50 }).unique().notNull(),
+  trackingNumber: varchar("tracking_number", { length: 100 }).unique().notNull(),
+  salesOrderId: uuid("sales_order_id").references(() => salesOrders.id),
+  supplierId: uuid("supplier_id").references(() => suppliers.id),
+  carrierId: uuid("carrier_id").references(() => suppliers.id), // Carriers are treated as suppliers
+  carrierName: varchar("carrier_name", { length: 255 }).notNull(),
+  serviceType: shipmentServiceTypeEnum("service_type").default("Standard").notNull(),
+  status: shipmentStatusEnum("status").default("Pending").notNull(),
+  priority: shipmentPriorityEnum("priority").default("Medium").notNull(),
+  origin: varchar("origin", { length: 255 }).notNull(),
+  destination: varchar("destination", { length: 255 }).notNull(),
+  estimatedDelivery: timestamp("estimated_delivery"),
+  actualDelivery: timestamp("actual_delivery"),
+  weight: decimal("weight", { precision: 8, scale: 2 }),
+  dimensions: varchar("dimensions", { length: 100 }),
+  declaredValue: decimal("declared_value", { precision: 12, scale: 2 }),
+  currency: varchar("currency", { length: 10 }).default("AED"),
+  shippingCost: decimal("shipping_cost", { precision: 10, scale: 2 }),
+  customerReference: varchar("customer_reference", { length: 100 }),
+  specialInstructions: text("special_instructions"),
+  packageCount: integer("package_count").default(1),
+  isInsured: boolean("is_insured").default(false),
+  requiresSignature: boolean("requires_signature").default(false),
+  currentLocation: varchar("current_location", { length: 255 }),
+  lastUpdate: timestamp("last_update").defaultNow(),
+  createdBy: uuid("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Shipment Tracking Events - Detailed tracking history
+export const shipmentTrackingEvents = pgTable("shipment_tracking_events", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  shipmentId: uuid("shipment_id").references(() => shipments.id).notNull(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  location: varchar("location", { length: 255 }).notNull(),
+  status: varchar("status", { length: 100 }).notNull(),
+  description: text("description").notNull(),
+  scanType: trackingEventTypeEnum("scan_type").notNull(),
+  latitude: decimal("latitude", { precision: 10, scale: 8 }),
+  longitude: decimal("longitude", { precision: 11, scale: 8 }),
+  employeeId: uuid("employee_id").references(() => users.id),
+  facilityId: varchar("facility_id", { length: 100 }),
+  nextExpectedLocation: varchar("next_expected_location", { length: 255 }),
+  estimatedArrival: timestamp("estimated_arrival"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const customersRelations = relations(customers, ({ many }) => ({
   enquiries: many(enquiries),
@@ -709,6 +805,17 @@ export const enquiriesRelations = relations(enquiries, ({ one, many }) => ({
   }),
   items: many(enquiryItems),
   quotations: many(quotations),
+}));
+
+export const requisitionsRelations = relations(requisitions, ({ many }) => ({
+  items: many(requisitionItems),
+}));
+
+export const requisitionItemsRelations = relations(requisitionItems, ({ one }) => ({
+  requisition: one(requisitions, {
+    fields: [requisitionItems.requisitionId],
+    references: [requisitions.id],
+  }),
 }));
 
 export const quotationsRelations = relations(quotations, ({ one, many }) => ({
@@ -782,6 +889,38 @@ export const salesOrdersRelations = relations(salesOrders, ({ one, many }) => ({
   items: many(salesOrderItems),
   deliveries: many(deliveries),
   invoices: many(invoices),
+  shipments: many(shipments),
+}));
+
+export const shipmentsRelations = relations(shipments, ({ one, many }) => ({
+  salesOrder: one(salesOrders, {
+    fields: [shipments.salesOrderId],
+    references: [salesOrders.id],
+  }),
+  supplier: one(suppliers, {
+    fields: [shipments.supplierId],
+    references: [suppliers.id],
+  }),
+  carrier: one(suppliers, {
+    fields: [shipments.carrierId],
+    references: [suppliers.id],
+  }),
+  createdBy: one(users, {
+    fields: [shipments.createdBy],
+    references: [users.id],
+  }),
+  trackingEvents: many(shipmentTrackingEvents),
+}));
+
+export const shipmentTrackingEventsRelations = relations(shipmentTrackingEvents, ({ one }) => ({
+  shipment: one(shipments, {
+    fields: [shipmentTrackingEvents.shipmentId],
+    references: [shipments.id],
+  }),
+  employee: one(users, {
+    fields: [shipmentTrackingEvents.employeeId],
+    references: [users.id],
+  }),
 }));
 
 // Insert schemas
@@ -816,6 +955,21 @@ export const insertEnquiryItemSchema = createInsertSchema(enquiryItems).omit({ i
   quantity: z.number().min(1, "Quantity must be at least 1"),
   unitPrice: z.union([z.number(), z.string().transform(val => parseFloat(val))]).optional(),
 });
+
+export const insertRequisitionSchema = createInsertSchema(requisitions, {
+  requiredDate: z.string().transform(val => new Date(val)),
+  totalEstimatedCost: z.union([z.number(), z.string().transform(val => parseFloat(val))]),
+  createdBy: z.string().uuid().optional(),
+}).omit({ id: true, requisitionNumber: true, createdAt: true, updatedAt: true });
+
+export const insertRequisitionItemSchema = createInsertSchema(requisitionItems, {
+  estimatedCost: z.union([z.number(), z.string().transform(val => parseFloat(val))]),
+}).omit({ id: true, createdAt: true, updatedAt: true }).extend({
+  itemDescription: z.string().min(1, "Item description is required"),
+  quantity: z.number().min(1, "Quantity must be at least 1"),
+  unitOfMeasure: z.string().min(1, "Unit of measure is required"),
+});
+
 export const insertQuotationSchema = createInsertSchema(quotations, {
   validUntil: z.union([z.string(), z.date()]).optional().transform(val => val ? new Date(val) : undefined),
   createdBy: z.string().uuid().optional(),
@@ -1144,6 +1298,8 @@ export type Supplier = typeof suppliers.$inferSelect;
 export type Item = typeof items.$inferSelect;
 export type Enquiry = typeof enquiries.$inferSelect;
 export type EnquiryItem = typeof enquiryItems.$inferSelect;
+export type Requisition = typeof requisitions.$inferSelect;
+export type RequisitionItem = typeof requisitionItems.$inferSelect;
 export type Quotation = typeof quotations.$inferSelect;
 export type QuotationItem = typeof quotationItems.$inferSelect;
 export type ApprovalRule = typeof approvalRules.$inferSelect;
@@ -1174,6 +1330,8 @@ export type InsertItem = z.infer<typeof insertItemSchema>;
 export type InsertEnquiry = z.infer<typeof insertEnquirySchema>;
 export type UpdateEnquiry = z.infer<typeof updateEnquirySchema>;
 export type InsertEnquiryItem = z.infer<typeof insertEnquiryItemSchema>;
+export type InsertRequisition = z.infer<typeof insertRequisitionSchema>;
+export type InsertRequisitionItem = z.infer<typeof insertRequisitionItemSchema>;
 export type InsertQuotation = z.infer<typeof insertQuotationSchema>;
 export type InsertQuotationItem = z.infer<typeof insertQuotationItemSchema>;
 export type InsertApprovalRule = z.infer<typeof insertApprovalRuleSchema>;
@@ -1230,6 +1388,18 @@ export const insertDeliveryPickedItemSchema = createInsertSchema(deliveryPickedI
   id: true, 
   pickedAt: true 
 });
+
+// Insert schemas for shipment tracking
+export const insertShipmentSchema = createInsertSchema(shipments).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true,
+  lastUpdate: true
+});
+export const insertShipmentTrackingEventSchema = createInsertSchema(shipmentTrackingEvents).omit({ 
+  id: true, 
+  createdAt: true
+});
 export const insertCreditNoteSchema = createInsertSchema(creditNotes).omit({ 
   id: true, 
   createdAt: true, 
@@ -1254,6 +1424,8 @@ export type InsertDeliveryPickingSession = z.infer<typeof insertDeliveryPickingS
 export type InsertDeliveryPickedItem = z.infer<typeof insertDeliveryPickedItemSchema>;
 export type InsertCreditNote = z.infer<typeof insertCreditNoteSchema>;
 export type InsertCreditNoteItem = z.infer<typeof insertCreditNoteItemSchema>;
+export type InsertShipment = z.infer<typeof insertShipmentSchema>;
+export type InsertShipmentTrackingEvent = z.infer<typeof insertShipmentTrackingEventSchema>;
 
 // PRICING & COSTING ENGINE TABLES
 export const pricingMarkupLevelEnum = pgEnum("pricing_markup_level", ["System", "Category", "Item"]);
@@ -1566,6 +1738,175 @@ export const insertBulkPricingOperationSchema = createInsertSchema(bulkPricingOp
   createdAt: true,
 });
 
+// Physical Stock Management Tables
+export const physicalStockCounts = pgTable("physical_stock_counts", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  countNumber: varchar("count_number", { length: 50 }).notNull().unique(),
+  description: text("description"),
+  countDate: timestamp("count_date").defaultNow(),
+  storageLocation: varchar("storage_location", { length: 255 }),
+  countType: varchar("count_type", { length: 50 }).default("Full Count"), // "Full Count", "Cycle Count", "Spot Check"
+  status: physicalStockStatusEnum("status").default("Draft"),
+  scheduledDate: timestamp("scheduled_date"),
+  startedBy: uuid("started_by").references(() => users.id),
+  startedAt: timestamp("started_at"),
+  completedBy: uuid("completed_by").references(() => users.id),
+  completedAt: timestamp("completed_at"),
+  approvedBy: uuid("approved_by").references(() => users.id),
+  approvedAt: timestamp("approved_at"),
+  totalItemsExpected: integer("total_items_expected").default(0),
+  totalItemsCounted: integer("total_items_counted").default(0),
+  totalDiscrepancies: integer("total_discrepancies").default(0),
+  notes: text("notes"),
+  createdBy: uuid("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const physicalStockCountItems = pgTable("physical_stock_count_items", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  physicalStockCountId: uuid("physical_stock_count_id").references(() => physicalStockCounts.id, { onDelete: "cascade" }).notNull(),
+  inventoryItemId: uuid("inventory_item_id").references(() => inventoryItems.id).notNull(),
+  lineNumber: integer("line_number"),
+  supplierCode: varchar("supplier_code", { length: 255 }).notNull(),
+  barcode: varchar("barcode", { length: 255 }),
+  description: text("description").notNull(),
+  storageLocation: varchar("storage_location", { length: 255 }),
+  // System quantities
+  systemQuantity: integer("system_quantity").default(0),
+  reservedQuantity: integer("reserved_quantity").default(0),
+  availableQuantity: integer("available_quantity").default(0),
+  // Physical count quantities
+  firstCountQuantity: integer("first_count_quantity"),
+  firstCountBy: uuid("first_count_by").references(() => users.id),
+  firstCountAt: timestamp("first_count_at"),
+  secondCountQuantity: integer("second_count_quantity"),
+  secondCountBy: uuid("second_count_by").references(() => users.id),
+  secondCountAt: timestamp("second_count_at"),
+  finalCountQuantity: integer("final_count_quantity"),
+  // Discrepancy tracking
+  variance: integer("variance").default(0), // final_count - system_quantity
+  varianceValue: decimal("variance_value", { precision: 12, scale: 2 }).default("0"),
+  status: stockCountStatusEnum("status").default("Pending"),
+  requiresRecount: boolean("requires_recount").default(false),
+  discrepancyReason: text("discrepancy_reason"),
+  adjustmentRequired: boolean("adjustment_required").default(false),
+  adjustmentApplied: boolean("adjustment_applied").default(false),
+  adjustmentAppliedBy: uuid("adjustment_applied_by").references(() => users.id),
+  adjustmentAppliedAt: timestamp("adjustment_applied_at"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Physical Stock Scanning Sessions for barcode-based counting
+export const physicalStockScanningSessions = pgTable("physical_stock_scanning_sessions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  physicalStockCountId: uuid("physical_stock_count_id").references(() => physicalStockCounts.id, { onDelete: "cascade" }).notNull(),
+  sessionName: varchar("session_name", { length: 255 }).notNull(),
+  sessionType: varchar("session_type", { length: 50 }).default("First Count"), // "First Count", "Second Count", "Recount"
+  storageLocation: varchar("storage_location", { length: 255 }),
+  status: varchar("status", { length: 50 }).default("Active"), // "Active", "Paused", "Completed", "Cancelled"
+  startedBy: uuid("started_by").references(() => users.id).notNull(),
+  startedAt: timestamp("started_at").defaultNow(),
+  pausedAt: timestamp("paused_at"),
+  completedAt: timestamp("completed_at"),
+  totalScansExpected: integer("total_scans_expected").default(0),
+  totalScansCompleted: integer("total_scans_completed").default(0),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const physicalStockScannedItems = pgTable("physical_stock_scanned_items", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  scanningSessionId: uuid("scanning_session_id").references(() => physicalStockScanningSessions.id, { onDelete: "cascade" }).notNull(),
+  physicalStockCountItemId: uuid("physical_stock_count_item_id").references(() => physicalStockCountItems.id),
+  inventoryItemId: uuid("inventory_item_id").references(() => inventoryItems.id),
+  barcode: varchar("barcode", { length: 255 }).notNull(),
+  supplierCode: varchar("supplier_code", { length: 255 }),
+  quantityScanned: integer("quantity_scanned").notNull().default(1),
+  storageLocation: varchar("storage_location", { length: 255 }),
+  scannedBy: uuid("scanned_by").references(() => users.id).notNull(),
+  scannedAt: timestamp("scanned_at").defaultNow(),
+  verified: boolean("verified").default(false),
+  verifiedBy: uuid("verified_by").references(() => users.id),
+  verifiedAt: timestamp("verified_at"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Physical Stock Adjustments - Track inventory adjustments from physical counts
+export const physicalStockAdjustments = pgTable("physical_stock_adjustments", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  adjustmentNumber: varchar("adjustment_number", { length: 50 }).notNull().unique(),
+  physicalStockCountId: uuid("physical_stock_count_id").references(() => physicalStockCounts.id).notNull(),
+  adjustmentDate: timestamp("adjustment_date").defaultNow(),
+  totalAdjustmentValue: decimal("total_adjustment_value", { precision: 12, scale: 2 }).default("0"),
+  status: varchar("status", { length: 50 }).default("Draft"), // "Draft", "Applied", "Cancelled"
+  appliedBy: uuid("applied_by").references(() => users.id),
+  appliedAt: timestamp("applied_at"),
+  approvedBy: uuid("approved_by").references(() => users.id),
+  approvedAt: timestamp("approved_at"),
+  reason: text("reason"),
+  notes: text("notes"),
+  createdBy: uuid("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const physicalStockAdjustmentItems = pgTable("physical_stock_adjustment_items", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  adjustmentId: uuid("adjustment_id").references(() => physicalStockAdjustments.id, { onDelete: "cascade" }).notNull(),
+  physicalStockCountItemId: uuid("physical_stock_count_item_id").references(() => physicalStockCountItems.id).notNull(),
+  inventoryItemId: uuid("inventory_item_id").references(() => inventoryItems.id).notNull(),
+  supplierCode: varchar("supplier_code", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  storageLocation: varchar("storage_location", { length: 255 }),
+  systemQuantity: integer("system_quantity").notNull(),
+  physicalQuantity: integer("physical_quantity").notNull(),
+  adjustmentQuantity: integer("adjustment_quantity").notNull(), // physical - system
+  unitCost: decimal("unit_cost", { precision: 10, scale: 2 }),
+  adjustmentValue: decimal("adjustment_value", { precision: 12, scale: 2 }),
+  reason: text("reason"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Insert schemas for physical stock management
+export const insertPhysicalStockCountSchema = createInsertSchema(physicalStockCounts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertPhysicalStockCountItemSchema = createInsertSchema(physicalStockCountItems).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertPhysicalStockScanningSessionSchema = createInsertSchema(physicalStockScanningSessions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertPhysicalStockScannedItemSchema = createInsertSchema(physicalStockScannedItems).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertPhysicalStockAdjustmentSchema = createInsertSchema(physicalStockAdjustments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertPhysicalStockAdjustmentItemSchema = createInsertSchema(physicalStockAdjustmentItems).omit({
+  id: true,
+  createdAt: true,
+});
+
 // PRICING TYPE EXPORTS
 export type ProductCategory = typeof productCategories.$inferSelect;
 export type MarkupConfiguration = typeof markupConfiguration.$inferSelect;
@@ -1586,3 +1927,18 @@ export type InsertPriceList = z.infer<typeof insertPriceListSchema>;
 export type InsertPriceListItem = z.infer<typeof insertPriceListItemSchema>;
 export type InsertPriceChangeHistory = z.infer<typeof insertPriceChangeHistorySchema>;
 export type InsertBulkPricingOperation = z.infer<typeof insertBulkPricingOperationSchema>;
+
+// PHYSICAL STOCK TYPE EXPORTS
+export type PhysicalStockCount = typeof physicalStockCounts.$inferSelect;
+export type PhysicalStockCountItem = typeof physicalStockCountItems.$inferSelect;
+export type PhysicalStockScanningSession = typeof physicalStockScanningSessions.$inferSelect;
+export type PhysicalStockScannedItem = typeof physicalStockScannedItems.$inferSelect;
+export type PhysicalStockAdjustment = typeof physicalStockAdjustments.$inferSelect;
+export type PhysicalStockAdjustmentItem = typeof physicalStockAdjustmentItems.$inferSelect;
+
+export type InsertPhysicalStockCount = z.infer<typeof insertPhysicalStockCountSchema>;
+export type InsertPhysicalStockCountItem = z.infer<typeof insertPhysicalStockCountItemSchema>;
+export type InsertPhysicalStockScanningSession = z.infer<typeof insertPhysicalStockScanningSessionSchema>;
+export type InsertPhysicalStockScannedItem = z.infer<typeof insertPhysicalStockScannedItemSchema>;
+export type InsertPhysicalStockAdjustment = z.infer<typeof insertPhysicalStockAdjustmentSchema>;
+export type InsertPhysicalStockAdjustmentItem = z.infer<typeof insertPhysicalStockAdjustmentItemSchema>;

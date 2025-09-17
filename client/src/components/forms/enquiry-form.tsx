@@ -44,11 +44,12 @@ type EnquiryFormData = z.infer<typeof enquiryFormSchema>;
 
 interface EnquiryFormProps {
   onSuccess?: () => void;
+  onCancel?: () => void; // Called when user presses Cancel
   initialData?: Partial<EnquiryFormData>;
   enquiryId?: string; // For editing existing enquiries
 }
 
-export default function EnquiryForm({ onSuccess, initialData, enquiryId }: EnquiryFormProps) {
+export default function EnquiryForm({ onSuccess, onCancel, initialData, enquiryId }: EnquiryFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -244,7 +245,10 @@ export default function EnquiryForm({ onSuccess, initialData, enquiryId }: Enqui
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={() => form.reset()}
+                onClick={() => {
+                  form.reset();
+                  onCancel?.();
+                }}
                 data-testid="button-cancel"
                 className="flex items-center gap-2"
               >

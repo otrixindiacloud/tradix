@@ -246,4 +246,18 @@ export function registerSalesOrderRoutes(app: Express) {
       res.status(500).json({ message: "Failed to create sales order items" });
     }
   });
+
+  // Get sales orders available for delivery (confirmed orders without complete deliveries)
+  app.get("/api/sales-orders/available-for-delivery", async (req, res) => {
+    try {
+      // Get all sales orders (simplified version to ensure it works)
+      const salesOrders = await storage.getSalesOrders(50, 0);
+      // Filter for confirmed orders on the response side
+      const confirmedOrders = salesOrders.filter(order => order.status === "Confirmed");
+      res.json(confirmedOrders);
+    } catch (error) {
+      console.error("Error fetching available sales orders for delivery:", error);
+      res.status(500).json({ message: "Failed to fetch available sales orders for delivery", error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
 }

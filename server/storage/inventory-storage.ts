@@ -20,7 +20,19 @@ export class InventoryStorage extends BaseStorage implements IInventoryStorage {
   }): Promise<InventoryItemWithSupplier[]> {
     let query = db
       .select({
-        ...inventoryItems,
+        id: inventoryItems.id,
+        supplierCode: inventoryItems.supplierCode,
+        barcode: inventoryItems.barcode,
+        description: inventoryItems.description,
+        category: inventoryItems.category,
+        unitOfMeasure: inventoryItems.unitOfMeasure,
+        costPrice: inventoryItems.costPrice,
+        stockQuantity: inventoryItems.stockQuantity,
+        reorderLevel: inventoryItems.reorderLevel,
+        isActive: inventoryItems.isActive,
+        supplierId: inventoryItems.supplierId,
+        createdAt: inventoryItems.createdAt,
+        updatedAt: inventoryItems.updatedAt,
         supplierName: suppliers.name,
         supplier: suppliers
       })

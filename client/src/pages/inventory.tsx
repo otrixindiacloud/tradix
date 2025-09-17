@@ -4,13 +4,36 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Filter, Package, AlertTriangle, TrendingUp, TrendingDown, Scan, Boxes, DollarSign, Lock, XCircle } from "lucide-react";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Search, Filter, Package, AlertTriangle, TrendingUp, TrendingDown, Scan, Boxes, DollarSign, Lock, XCircle, Warehouse, Plus } from "lucide-react";
 import DataTable, { Column } from "@/components/tables/data-table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+// Form schema for creating inventory items
+const createItemSchema = z.object({
+  supplierCode: z.string().min(1, "Supplier code is required"),
+  barcode: z.string().optional(),
+  description: z.string().min(1, "Description is required"),
+  category: z.string().min(1, "Category is required"),
+  unitOfMeasure: z.string().min(1, "Unit of measure is required"),
+  costPrice: z.number().min(0, "Cost price must be non-negative"),
+  quantity: z.number().min(0, "Initial quantity must be non-negative"),
+  totalStock: z.number().min(0, "Total stock must be non-negative"),
+  reservedQuantity: z.number().min(0, "Reserved quantity must be non-negative"),
+  availableQuantity: z.number().min(0, "Available quantity must be non-negative"),
+  storageLocation: z.string().optional(),
+});
+
+type CreateItemForm = z.infer<typeof createItemSchema>;
 
 export default function Inventory() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -18,76 +41,211 @@ export default function Inventory() {
   const [stockFilter, setStockFilter] = useState("all");
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showStockAdjustDialog, setShowStockAdjustDialog] = useState(false);
+  const [adjustingItem, setAdjustingItem] = useState<any>(null);
+  const [adjustmentQuantity, setAdjustmentQuantity] = useState<number>(0);
+  const [adjustmentType, setAdjustmentType] = useState<"increase" | "decrease" | "set">("increase");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: inventory, isLoading, error: inventoryError } = useQuery({
-    queryKey: ["/api/inventory"],
-    queryFn: async () => {
-      const response = await fetch("/api/inventory");
-      if (!response.ok) {
-        throw new Error(`Failed to fetch inventory: ${response.statusText}`);
-      }
-      return response.json();
+  // Form for creating new items
+  const createItemForm = useForm<CreateItemForm>({
+    resolver: zodResolver(createItemSchema),
+    defaultValues: {
+      supplierCode: "",
+      barcode: "",
+      description: "",
+      category: "",
+      unitOfMeasure: "",
+      costPrice: 0,
+      quantity: 0,
+      totalStock: 0,
+      reservedQuantity: 0,
+      availableQuantity: 0,
+      storageLocation: "",
     },
   });
 
-  const { data: items, error: itemsError } = useQuery({
-    queryKey: ["/api/items"],
+  const { data: inventoryItems, isLoading, error: inventoryError } = useQuery({
+    queryKey: ["/api/inventory-items"],
     queryFn: async () => {
-      const response = await fetch("/api/items");
+      const response = await fetch("/api/inventory-items");
       if (!response.ok) {
-        throw new Error(`Failed to fetch items: ${response.statusText}`);
+        throw new Error(`Failed to fetch inventory items: ${response.statusText}`);
       }
       return response.json();
     },
   });
 
   const updateStock = useMutation({
-    mutationFn: async ({ itemId, quantity, type }: { itemId: string; quantity: number; type: "adjustment" | "cycle_count" }) => {
-      const response = await apiRequest("PUT", `/api/inventory/${itemId}`, { quantity, type });
+    mutationFn: async ({ itemId, quantity, type, adjustmentType }: { 
+      itemId: string; 
+      quantity: number; 
+      type: "adjustment" | "cycle_count";
+      adjustmentType?: "increase" | "decrease" | "set";
+    }) => {
+      const response = await apiRequest("PUT", `/api/inventory-items/${itemId}`, { 
+        quantity, 
+        type, 
+        adjustmentType 
+      });
+      if (!response.ok) {
+        throw new Error("Failed to update stock");
+      }
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
+    onSuccess: (data) => {
+      // Invalidate and refetch inventory data to update frontend
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory-items"] });
+      
+      // Close dialog and reset state
+      setShowStockAdjustDialog(false);
+      setAdjustingItem(null);
+      setAdjustmentQuantity(0);
+      setAdjustmentType("increase");
+      
+      // Also close the item details dialog if it's open
+      setSelectedItem(null);
+      
       toast({
         title: "Success",
-        description: "Inventory updated successfully",
+        description: `Stock adjusted successfully. New quantity: ${data.quantity || 'updated'}`,
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Stock adjustment error:", error);
       toast({
         title: "Error",
-        description: "Failed to update inventory",
+        description: error.message || "Failed to adjust stock",
         variant: "destructive",
       });
     },
   });
 
-  // Combine inventory data with item details
-  const inventoryWithDetails = inventory?.map((inv: any) => {
-    const item = items?.find((i: any) => i.id === inv.itemId);
+  // Create item mutation
+  const createItem = useMutation({
+    mutationFn: async (data: CreateItemForm) => {
+      const response = await apiRequest("POST", "/api/inventory-items", data);
+      if (!response.ok) {
+        throw new Error("Failed to create item");
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory-items"] });
+      setShowCreateDialog(false);
+      createItemForm.reset();
+      toast({
+        title: "Success",
+        description: `Item "${data.description}" created successfully`,
+      });
+    },
+    onError: (error: any) => {
+      console.error("Create item error:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create item",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handle create item form submission
+  const handleCreateItem = async (data: z.infer<typeof createItemSchema>) => {
+    try {
+      await createItem.mutateAsync(data);
+      setShowCreateDialog(false);
+      createItemForm.reset();
+    } catch (error) {
+      // Error is handled by the mutation
+      console.error('Error creating item:', error);
+    }
+  };
+
+  const handleStockAdjust = (item: any) => {
+    setAdjustingItem(item);
+    setShowStockAdjustDialog(true);
+    setAdjustmentQuantity(1);
+    setAdjustmentType("increase");
+    setSelectedItem(null);
+
+    // Auto-focus on quantity input after dialog opens
+    setTimeout(() => {
+      const quantityInput = document.querySelector('[data-testid="adjustment-quantity-input"]') as HTMLInputElement;
+      if (quantityInput) {
+        quantityInput.focus();
+        quantityInput.select();
+      }
+    }, 100);
+  };
+
+  const handleStockAdjustSubmit = () => {
+    if (!adjustingItem) {
+      toast({
+        title: "Error",
+        description: "No item selected for adjustment",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (adjustmentQuantity <= 0) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid quantity greater than 0",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    let finalQuantity = adjustmentQuantity;
+    const currentQuantity = adjustingItem.quantity || 0;
+    
+    if (adjustmentType === "increase") {
+      finalQuantity = currentQuantity + adjustmentQuantity;
+    } else if (adjustmentType === "decrease") {
+      finalQuantity = Math.max(0, currentQuantity - adjustmentQuantity);
+      if (currentQuantity - adjustmentQuantity < 0) {
+        toast({
+          title: "Warning",
+          description: `Reducing quantity to 0 (requested ${adjustmentQuantity} but only ${currentQuantity} available)`,
+        });
+      }
+    } else { // set
+      finalQuantity = adjustmentQuantity;
+    }
+
+    // Send update to backend
+    updateStock.mutate({
+      itemId: adjustingItem.id,
+      quantity: finalQuantity,
+      type: "adjustment",
+      adjustmentType,
+    });
+  };
+
+  // Use inventory items data directly (assuming it includes all necessary fields)
+  const inventoryWithDetails = inventoryItems?.map((item: any) => {
     return {
-      ...inv,
-      item,
-      availableQuantity: inv.quantity - inv.reservedQuantity,
+      ...item,
+      availableQuantity: (item.quantity || 0) - (item.reservedQuantity || 0),
     };
   });
 
-  const filteredInventory = inventoryWithDetails?.filter((inv: any) => {
-    const matchesSearch = inv.item?.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         inv.item?.supplierCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         inv.item?.barcode?.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredInventory = inventoryWithDetails?.filter((item: any) => {
+    const matchesSearch = item.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         item.supplierCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         item.barcode?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesCategory = categoryFilter === "all" || inv.item?.category === categoryFilter;
+    const matchesCategory = categoryFilter === "all" || item.category === categoryFilter;
     
     let matchesStock = true;
     if (stockFilter === "low") {
-      matchesStock = inv.availableQuantity <= 10; // Low stock threshold
+      matchesStock = item.availableQuantity <= 10; // Low stock threshold
     } else if (stockFilter === "out") {
-      matchesStock = inv.availableQuantity <= 0;
+      matchesStock = item.availableQuantity <= 0;
     } else if (stockFilter === "reserved") {
-      matchesStock = inv.reservedQuantity > 0;
+      matchesStock = (item.reservedQuantity || 0) > 0;
     }
     
     return matchesSearch && matchesCategory && matchesStock;
@@ -95,27 +253,27 @@ export default function Inventory() {
 
   const columns: Column<any>[] = [
     {
-      key: "item.supplierCode",
+      key: "supplierCode",
       header: "Supplier Code",
       render: (value: string) => (
         <span className="font-mono text-sm text-blue-600">{value}</span>
       ),
     },
     {
-      key: "item.barcode",
+      key: "barcode",
       header: "Barcode",
       render: (value: string) => (
         <span className="font-mono text-xs text-gray-600">{value || "N/A"}</span>
       ),
     },
     {
-      key: "item.description",
+      key: "description",
       header: "Item Description",
-      render: (value: string, inv: any) => (
+      render: (value: string, item: any) => (
         <div>
           <p className="text-sm font-medium text-gray-900">{value}</p>
           <p className="text-xs text-gray-600">
-            {inv.item?.category} | {inv.item?.unitOfMeasure}
+            {item.category} | {item.unitOfMeasure}
           </p>
         </div>
       ),
@@ -124,7 +282,7 @@ export default function Inventory() {
       key: "quantity",
       header: "Total Stock",
       render: (value: number) => (
-        <span className="text-sm font-medium">{value}</span>
+        <span className="text-sm font-medium">{value || 0}</span>
       ),
       className: "text-center",
     },
@@ -132,8 +290,8 @@ export default function Inventory() {
       key: "reservedQuantity",
       header: "Reserved",
       render: (value: number) => (
-        <span className={`text-sm ${value > 0 ? "text-orange-600 font-medium" : "text-gray-500"}`}>
-          {value}
+        <span className={`text-sm ${(value || 0) > 0 ? "text-orange-600 font-medium" : "text-gray-500"}`}>
+          {value || 0}
         </span>
       ),
       className: "text-center",
@@ -164,15 +322,15 @@ export default function Inventory() {
     {
       key: "stockStatus",
       header: "Status",
-      render: (_, inv: any) => {
-        if (inv.availableQuantity <= 0) {
+      render: (_, item: any) => {
+        if (item.availableQuantity <= 0) {
           return (
             <Badge variant="destructive">
               <AlertTriangle className="h-3 w-3 mr-1" />
               Out of Stock
             </Badge>
           );
-        } else if (inv.availableQuantity <= 10) {
+        } else if (item.availableQuantity <= 10) {
           return (
             <Badge className="underline decoration-orange-500 text-orange-700">
               <AlertTriangle className="h-3 w-3 mr-1" />
@@ -191,16 +349,16 @@ export default function Inventory() {
     {
       key: "actions",
       header: "Actions",
-      render: (_, inv: any) => (
+      render: (_, item: any) => (
         <div className="flex items-center space-x-2">
           <Button
             size="sm"
             variant="ghost"
             onClick={(e) => {
               e.stopPropagation();
-              setSelectedItem(inv);
+              setSelectedItem(item);
             }}
-            data-testid={`button-view-${inv.id}`}
+            data-testid={`button-view-${item.id}`}
           >
             <Package className="h-4 w-4" />
           </Button>
@@ -209,9 +367,9 @@ export default function Inventory() {
             variant="ghost"
             onClick={(e) => {
               e.stopPropagation();
-              console.log("Scan barcode for:", inv.item?.barcode);
+              console.log("Scan barcode for:", item.barcode);
             }}
-            data-testid={`button-scan-${inv.id}`}
+            data-testid={`button-scan-${item.id}`}
           >
             <Scan className="h-4 w-4" />
           </Button>
@@ -222,58 +380,410 @@ export default function Inventory() {
 
   const inventoryStats = {
     totalItems: inventoryWithDetails?.length || 0,
-    totalValue: inventoryWithDetails?.reduce((sum: number, inv: any) => 
-      sum + (inv.quantity * (inv.item?.costPrice || 0)), 0) || 0,
-    lowStock: inventoryWithDetails?.filter((inv: any) => inv.availableQuantity <= 10 && inv.availableQuantity > 0).length || 0,
-    outOfStock: inventoryWithDetails?.filter((inv: any) => inv.availableQuantity <= 0).length || 0,
-    reserved: inventoryWithDetails?.filter((inv: any) => inv.reservedQuantity > 0).length || 0,
+    totalValue: inventoryWithDetails?.reduce((sum: number, item: any) => 
+      sum + ((item.quantity || 0) * (item.costPrice || 0)), 0) || 0,
+    lowStock: inventoryWithDetails?.filter((item: any) => item.availableQuantity <= 10 && item.availableQuantity > 0).length || 0,
+    outOfStock: inventoryWithDetails?.filter((item: any) => item.availableQuantity <= 0).length || 0,
+    reserved: inventoryWithDetails?.filter((item: any) => (item.reservedQuantity || 0) > 0).length || 0,
   };
 
-  const categories = Array.from(new Set(items?.map((item: any) => item.category).filter(Boolean))) as string[];
+  const categories = Array.from(new Set(inventoryItems?.map((item: any) => item.category).filter(Boolean))) as string[];
 
   return (
     <div>
-      {/* Page Header */}
-      <div className="mb-6">
-        <div className="bg-white rounded-xl shadow-sm flex items-center justify-between px-6 py-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900" data-testid="text-page-title">
-              Inventory Management
-            </h2>
-            <p className="text-gray-600">Step 8: Monitor stock levels and manage inventory with barcode tracking</p>
+      {/* Enhanced Card-style header */}
+      <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl shadow-lg border border-gray-200 relative overflow-hidden mb-6">
+        {/* Background decoration */}
+        <div className="absolute top-0 right-0 w-64 h-32 bg-gradient-to-bl from-emerald-50/50 to-transparent rounded-bl-full"></div>
+        <div className="absolute bottom-0 left-0 w-48 h-24 bg-gradient-to-tr from-teal-50/30 to-transparent rounded-tr-full"></div>
+        
+        <div className="relative px-8 py-6 flex items-center justify-between">
+          <div className="flex-1">
+            <div className="flex items-center gap-4 mb-3">
+              <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center shadow-lg border border-gray-200">
+                <Warehouse className="h-8 w-8 text-emerald-600" />
+              </div>
+              <div>
+                <h2 className="text-3xl font-bold text-gray-900 mb-1" data-testid="text-page-title">
+                  Inventory Items
+                </h2>
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                    <Package className="h-3 w-3 mr-1" />
+                    Step 8
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                    <span className="text-gray-600 text-sm font-medium">
+                      Monitoring stock levels
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p className="text-gray-600 text-base max-w-2xl leading-relaxed">
+              Monitor stock levels and manage inventory with barcode tracking and real-time analytics
+            </p>
           </div>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg" onClick={() => setShowCreateDialog(true)}>
-            <span className="mr-2">+</span> Add Item
-          </Button>
-      {/* Create Item Dialog */}
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Add New Inventory Item</DialogTitle>
-          </DialogHeader>
-          {/* Add your form fields for new item creation here */}
-          <div className="space-y-4">
-            <Input placeholder="Supplier Code" />
-            <Input placeholder="Barcode" />
-            <Input placeholder="Description" />
-            <Input placeholder="Category" />
-            <Input placeholder="Unit of Measure" />
-            <Input placeholder="Cost Price" type="number" />
-            <Input placeholder="Initial Quantity" type="number" />
-            <Input placeholder="Storage Location" />
+          
+          <div className="flex items-center gap-4 ml-8">
+            {/* Add Item Button */}
+            <button
+              className="group flex items-center gap-3 bg-white hover:bg-gray-50 text-gray-900 font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:ring-offset-2 transition-all duration-200 transform hover:-translate-y-0.5 border border-gray-200"
+              onClick={() => setShowCreateDialog(true)}
+            >
+              <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center group-hover:bg-emerald-200 transition-colors">
+                <Package className="h-4 w-4 text-emerald-600 group-hover:scale-110 transition-transform duration-200" />
+              </div>
+              <div className="text-left">
+                <div className="text-sm font-bold">Add Item</div>
+                <div className="text-xs text-gray-500">New Stock</div>
+              </div>
+            </button>
+            {/* Direct Barcode Scan Add Button */}
+            <button
+              className="group flex items-center gap-3 bg-white hover:bg-gray-50 text-gray-900 font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2 transition-all duration-200 transform hover:-translate-y-0.5 border border-gray-200"
+              onClick={() => {
+                // Placeholder for barcode scan logic
+                // You can integrate a modal or scanner component here
+                toast({
+                  title: "Barcode Scan",
+                  description: "Initiate barcode scan to add item.",
+                });
+              }}
+              data-testid="button-barcode-add"
+            >
+              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                <Scan className="h-4 w-4 text-blue-600 group-hover:scale-110 transition-transform duration-200" />
+              </div>
+              <div className="text-left">
+                <div className="text-sm font-bold">Add via Barcode</div>
+                <div className="text-xs text-gray-500">Scan & Add</div>
+              </div>
+            </button>
           </div>
-          <div className="flex justify-end mt-6 space-x-2">
-            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
-              Cancel
-            </Button>
-            <Button>
-              Add Item
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
         </div>
       </div>
+
+      {/* Create Item Dialog */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                <Plus className="h-4 w-4 text-emerald-600" />
+              </div>
+              Add New Inventory Item
+            </DialogTitle>
+            <DialogDescription>
+              Create a new inventory item with all the necessary details for tracking and management.
+            </DialogDescription>
+          </DialogHeader>
+
+          <Form {...createItemForm}>
+            <form onSubmit={createItemForm.handleSubmit(handleCreateItem)} className="space-y-6">
+              {/* Basic Information Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+                  <Package className="h-4 w-4 text-gray-600" />
+                  <h3 className="font-medium text-gray-900">Basic Information</h3>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={createItemForm.control}
+                    name="supplierCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Supplier Code *</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="e.g., SUP-001" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={createItemForm.control}
+                    name="barcode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Barcode (Optional)</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="e.g., 1234567890123" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={createItemForm.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Item Description *</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g., Premium Office Chair" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={createItemForm.control}
+                    name="category"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Category *</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="e.g., Furniture, Electronics" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={createItemForm.control}
+                    name="unitOfMeasure"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Unit of Measure *</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="e.g., pcs, kg, m" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Pricing and Stock Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+                  <DollarSign className="h-4 w-4 text-gray-600" />
+                  <h3 className="font-medium text-gray-900">Pricing & Stock</h3>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={createItemForm.control}
+                    name="costPrice"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cost Price *</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            {...field}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            placeholder="0.00"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={createItemForm.control}
+                    name="quantity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Initial Quantity *</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            placeholder="0"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Stock Management Fields */}
+                <div className="grid grid-cols-3 gap-4">
+                  <FormField
+                    control={createItemForm.control}
+                    name="totalStock"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Total Stock *</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            placeholder="0"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={createItemForm.control}
+                    name="reservedQuantity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Reserved</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            placeholder="0"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={createItemForm.control}
+                    name="availableQuantity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Available</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            placeholder="0"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Location Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+                  <Warehouse className="h-4 w-4 text-gray-600" />
+                  <h3 className="font-medium text-gray-900">Storage</h3>
+                </div>
+                
+                <FormField
+                  control={createItemForm.control}
+                  name="storageLocation"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Storage Location (Optional)</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g., Warehouse A, Shelf B2" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Summary Preview */}
+              <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                <h4 className="font-medium text-gray-900">Item Summary</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">Description:</span>{" "}
+                    <span className="font-medium">
+                      {createItemForm.watch("description") || "Not specified"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Category:</span>{" "}
+                    <span className="font-medium">
+                      {createItemForm.watch("category") || "Not specified"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Cost Price:</span>{" "}
+                    <span className="font-medium text-green-600">
+                      {formatCurrency(createItemForm.watch("costPrice") || 0)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Initial Stock:</span>{" "}
+                    <span className="font-medium text-blue-600">
+                      {createItemForm.watch("quantity") || 0} {createItemForm.watch("unitOfMeasure") || "units"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Total Stock:</span>{" "}
+                    <span className="font-medium text-blue-600">
+                      {createItemForm.watch("totalStock") || 0} {createItemForm.watch("unitOfMeasure") || "units"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Reserved:</span>{" "}
+                    <span className="font-medium text-orange-600">
+                      {createItemForm.watch("reservedQuantity") || 0} {createItemForm.watch("unitOfMeasure") || "units"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Available:</span>{" "}
+                    <span className="font-medium text-green-600">
+                      {createItemForm.watch("availableQuantity") || 0} {createItemForm.watch("unitOfMeasure") || "units"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowCreateDialog(false);
+                    createItemForm.reset();
+                  }}
+                  disabled={createItem.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={createItem.isPending}
+                  className="bg-emerald-600 hover:bg-emerald-700"
+                >
+                  {createItem.isPending ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Item
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
 
       {/* Inventory Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
@@ -420,17 +930,16 @@ export default function Inventory() {
           </div>
         </CardHeader>
         <CardContent>
-          {inventoryError || itemsError ? (
+          {inventoryError ? (
             <div className="text-center py-8">
-              {/* <p className="text-red-600 mb-4">
-                Error loading inventory: {inventoryError?.message || itemsError?.message}
-              </p> */}
-              {/* <Button onClick={() => {
-                queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
-                queryClient.invalidateQueries({ queryKey: ["/api/items"] });
-              }}> */}
-                {/* Retry */}
-              {/* </Button> */}
+              <p className="text-red-600 mb-4">
+                Error loading inventory: {inventoryError?.message}
+              </p>
+              <Button onClick={() => {
+                queryClient.invalidateQueries({ queryKey: ["/api/inventory-items"] });
+              }}>
+                Retry
+              </Button>
             </div>
           ) : (
             <DataTable
@@ -458,25 +967,25 @@ export default function Inventory() {
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <h4 className="font-medium text-gray-900 mb-2">Item Information</h4>
                   <p className="text-sm text-gray-600">
-                    <span className="font-medium">Description:</span> {selectedItem.item?.description}
+                    <span className="font-medium">Description:</span> {selectedItem.description}
                   </p>
                   <p className="text-sm text-gray-600">
-                    <span className="font-medium">Supplier Code:</span> {selectedItem.item?.supplierCode}
+                    <span className="font-medium">Supplier Code:</span> {selectedItem.supplierCode}
                   </p>
                   <p className="text-sm text-gray-600">
-                    <span className="font-medium">Barcode:</span> {selectedItem.item?.barcode || "N/A"}
+                    <span className="font-medium">Barcode:</span> {selectedItem.barcode || "N/A"}
                   </p>
                   <p className="text-sm text-gray-600">
-                    <span className="font-medium">Category:</span> {selectedItem.item?.category || "N/A"}
+                    <span className="font-medium">Category:</span> {selectedItem.category || "N/A"}
                   </p>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <h4 className="font-medium text-gray-900 mb-2">Stock Information</h4>
                   <p className="text-sm text-gray-600">
-                    <span className="font-medium">Total Quantity:</span> {selectedItem.quantity}
+                    <span className="font-medium">Total Quantity:</span> {selectedItem.quantity || 0}
                   </p>
                   <p className="text-sm text-gray-600">
-                    <span className="font-medium">Reserved:</span> {selectedItem.reservedQuantity}
+                    <span className="font-medium">Reserved:</span> {selectedItem.reservedQuantity || 0}
                   </p>
                   <p className="text-sm text-gray-600">
                     <span className="font-medium">Available:</span> {selectedItem.availableQuantity}
@@ -492,18 +1001,18 @@ export default function Inventory() {
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <p className="text-xs text-gray-600">Cost Price</p>
-                    <p className="text-sm font-medium">{formatCurrency(selectedItem.item?.costPrice || 0)}</p>
+                    <p className="text-sm font-medium">{formatCurrency(selectedItem.costPrice || 0)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-600">Stock Value</p>
                     <p className="text-sm font-medium">
-                      {formatCurrency((selectedItem.item?.costPrice || 0) * selectedItem.quantity)}
+                      {formatCurrency((selectedItem.costPrice || 0) * (selectedItem.quantity || 0))}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-600">Available Value</p>
                     <p className="text-lg font-bold text-blue-600">
-                      {formatCurrency((selectedItem.item?.costPrice || 0) * selectedItem.availableQuantity)}
+                      {formatCurrency((selectedItem.costPrice || 0) * selectedItem.availableQuantity)}
                     </p>
                   </div>
                 </div>
@@ -512,7 +1021,7 @@ export default function Inventory() {
               <div className="flex justify-end space-x-2">
                 <Button
                   variant="outline"
-                  onClick={() => console.log("Stock adjustment for:", selectedItem)}
+                  onClick={() => handleStockAdjust(selectedItem)}
                   data-testid="button-adjust-stock"
                 >
                   Adjust Stock
@@ -522,6 +1031,121 @@ export default function Inventory() {
                   data-testid="button-close-details"
                 >
                   Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Stock Adjustment Dialog */}
+      <Dialog open={showStockAdjustDialog} onOpenChange={setShowStockAdjustDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Adjust Stock</DialogTitle>
+          </DialogHeader>
+          {adjustingItem && (
+            <div className="space-y-4">
+              {/* Item Information */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium text-gray-900 mb-2">Item Details</h4>
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">Description:</span> {adjustingItem.description}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">Supplier Code:</span> {adjustingItem.supplierCode}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">Current Stock:</span> {adjustingItem.quantity || 0}
+                </p>
+              </div>
+
+              {/* Adjustment Type */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-900">Adjustment Type</label>
+                <Select value={adjustmentType} onValueChange={(value: "increase" | "decrease" | "set") => setAdjustmentType(value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="increase">Increase Stock</SelectItem>
+                    <SelectItem value="decrease">Decrease Stock</SelectItem>
+                    <SelectItem value="set">Set Stock Level</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Quantity Input */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-900">
+                  {adjustmentType === "increase" ? "Quantity to Add" : 
+                   adjustmentType === "decrease" ? "Quantity to Remove" : 
+                   "New Stock Level"}
+                </label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={adjustmentQuantity}
+                  onChange={(e) => setAdjustmentQuantity(parseInt(e.target.value) || 0)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && adjustmentQuantity > 0 && !updateStock.isPending) {
+                      handleStockAdjustSubmit();
+                    }
+                  }}
+                  placeholder="Enter quantity"
+                  data-testid="adjustment-quantity-input"
+                />
+              </div>
+
+              {/* Preview */}
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <p className="text-sm text-gray-700">
+                  <span className="font-medium">Current Stock:</span> {adjustingItem.quantity || 0}
+                </p>
+                <p className="text-sm text-gray-700">
+                  <span className="font-medium">Adjustment:</span> {
+                    adjustmentType === "increase" ? `+${adjustmentQuantity}` :
+                    adjustmentType === "decrease" ? `-${adjustmentQuantity}` :
+                    `Set to ${adjustmentQuantity}`
+                  }
+                </p>
+                <p className="text-sm font-bold text-blue-700 pt-1 border-t border-blue-200 mt-2">
+                  <span className="font-medium">New Stock Level:</span>{" "}
+                  {adjustmentType === "increase" 
+                    ? (adjustingItem.quantity || 0) + adjustmentQuantity
+                    : adjustmentType === "decrease"
+                    ? Math.max(0, (adjustingItem.quantity || 0) - adjustmentQuantity)
+                    : adjustmentQuantity
+                  }
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowStockAdjustDialog(false)}
+                  disabled={updateStock.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleStockAdjustSubmit}
+                  disabled={updateStock.isPending || adjustmentQuantity <= 0}
+                  className={
+                    adjustmentType === "decrease" && adjustmentQuantity > (adjustingItem.quantity || 0)
+                      ? "bg-orange-600 hover:bg-orange-700"
+                      : ""
+                  }
+                >
+                  {updateStock.isPending ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Updating...
+                    </>
+                  ) : (
+                    `Adjust Stock ${adjustmentType === "increase" ? "↑" : adjustmentType === "decrease" ? "↓" : "→"}`
+                  )}
                 </Button>
               </div>
             </div>

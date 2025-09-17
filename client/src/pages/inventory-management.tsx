@@ -15,7 +15,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { 
-  Package, 
+  Package,
+  Boxes,
   Search, 
   Plus, 
   Edit, 
@@ -48,6 +49,7 @@ const inventoryItemSchema = z.object({
   barcode: z.string().optional(),
   weight: z.number().optional(),
   dimensions: z.string().optional(),
+  quantity: z.number().min(0, "Quantity must be zero or greater"),
   isActive: z.boolean().default(true),
 });
 
@@ -104,6 +106,7 @@ function InventoryItemsTab() {
       barcode: "",
       weight: undefined,
       dimensions: "",
+      quantity: 0,
       isActive: true,
     },
   });
@@ -211,6 +214,7 @@ function InventoryItemsTab() {
       barcode: item.barcode || "",
       weight: item.weight || undefined,
       dimensions: item.dimensions || "",
+      quantity: item.quantity || 0,
       isActive: item.isActive,
     });
   };
@@ -386,6 +390,28 @@ function InventoryItemsTab() {
                           ))}
                         </SelectContent>
                       </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="quantity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Initial Quantity</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          min="0"
+                          step="1"
+                          {...field} 
+                          onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 0)}
+                          value={field.value || 0}
+                          data-testid="input-quantity"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -756,6 +782,7 @@ function StockLevelsTab() {
 
 function GoodsReceiptsTab() {
   const [statusFilter, setStatusFilter] = useState("all");
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const { data: goodsReceipts = [], isLoading } = useQuery({
     queryKey: ["/api/goods-receipt-headers", { status: statusFilter }],
@@ -803,11 +830,43 @@ function GoodsReceiptsTab() {
           </SelectContent>
         </Select>
 
-        <Button data-testid="button-create-receipt">
+        <Button data-testid="button-create-receipt" onClick={() => setShowCreateDialog(true)}>
           <Plus className="h-4 w-4 mr-2" />
           New Goods Receipt
         </Button>
       </div>
+
+      {/* New Goods Receipt Dialog */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Create New Goods Receipt</DialogTitle>
+            <DialogDescription>Enter details for the new goods receipt.</DialogDescription>
+          </DialogHeader>
+          {/* TODO: Add form fields for goods receipt creation */}
+          <div className="space-y-4 mt-4">
+            <Input placeholder="Receipt Number" />
+            <Input placeholder="Supplier LPO ID" />
+            <Input type="date" placeholder="Receipt Date" />
+            <Input placeholder="Received By" />
+            <Select defaultValue="Draft">
+              <SelectTrigger>
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Draft">Draft</SelectItem>
+                <SelectItem value="Completed">Completed</SelectItem>
+                <SelectItem value="Partially Received">Partially Received</SelectItem>
+              </SelectContent>
+            </Select>
+            <Textarea placeholder="Notes (optional)" />
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
+              <Button>Create Receipt</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Goods Receipts List */}
       {isLoading ? (
@@ -866,7 +925,7 @@ function GoodsReceiptsTab() {
             <p className="text-gray-600 text-center mb-4">
               Goods receipts will appear here when you receive items from suppliers.
             </p>
-            <Button data-testid="button-create-first-receipt">
+            <Button data-testid="button-create-first-receipt" onClick={() => setShowCreateDialog(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Create First Receipt
             </Button>
@@ -1122,14 +1181,16 @@ export default function InventoryManagementPage() {
   return (
     <div className="container mx-auto py-6" data-testid="inventory-management-page">
       <div className="mb-6">
-        <div className="bg-white rounded-xl shadow-sm flex items-center justify-between px-6 py-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Inventory Management</h1>
-            <p className="text-gray-600 mt-1">Step 8: Monitor stock levels and manage inventory with barcode tracking</p>
+        <div className="rounded-xl shadow-sm flex items-center justify-between px-6 py-6 bg-gray-50">
+          <div className="flex items-center space-x-4">
+            <span className="p-2 rounded-lg bg-gray-100 flex items-center justify-center">
+              <Boxes className="h-9 w-9 text-blue-600" aria-label="Inventory Management Icon" />
+            </span>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Inventory Management</h1>
+              <p className="text-gray-600 mt-1">Step 8: Monitor stock levels and manage inventory with barcode tracking</p>
+            </div>
           </div>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg" onClick={() => {}}>
-            <span className="mr-2">+</span> Add Item
-          </Button>
         </div>
       </div>
 

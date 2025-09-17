@@ -253,24 +253,53 @@ export default function Suppliers() {
 
   return (
     <div>
-      {/* Page Header - Card Style */}
-      <div className="mb-6">
-        <Card className="rounded-2xl shadow-sm">
-          <div className="flex items-center justify-between p-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900" data-testid="text-page-title">
-                Suppliers
-              </h2>
-              <p className="text-gray-600">
-                Manage your supplier database and relationships
-              </p>
+      {/* Enhanced Card-style header */}
+      <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl shadow-lg border border-gray-200 relative overflow-hidden mb-6">
+        {/* Background decoration */}
+        <div className="absolute top-0 right-0 w-64 h-32 bg-gradient-to-bl from-blue-50/50 to-transparent rounded-bl-full"></div>
+        <div className="absolute bottom-0 left-0 w-48 h-24 bg-gradient-to-tr from-indigo-50/30 to-transparent rounded-tr-full"></div>
+        
+        <div className="relative px-8 py-6 flex items-center justify-between">
+          <div className="flex-1">
+            <div className="flex items-center gap-4 mb-3">
+              <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center shadow-lg border border-gray-200">
+                <Building2 className="h-8 w-8 text-blue-600" />
+              </div>
+              <div>
+                <h2 className="text-3xl font-bold text-gray-900 mb-1" data-testid="text-page-title">
+                  Suppliers
+                </h2>
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
+                    <Building2 className="h-3 w-3 mr-1" />
+                    Supplier Network
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    <span className="text-gray-600 text-sm font-medium">
+                      Managing supplier relationships
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
+            <p className="text-gray-600 text-base max-w-2xl leading-relaxed">
+              Manage your supplier database and build strong business relationships
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-4 ml-8"> 
             <Dialog open={showNewSupplier} onOpenChange={setShowNewSupplier}>
               <DialogTrigger asChild>
-                <Button className="flex items-center space-x-2" data-testid="button-new-supplier">
-                  <Plus className="h-4 w-4" />
-                  <span>New Supplier</span>
-                </Button>
+                <button className="group flex items-center gap-3 bg-white hover:bg-gray-50 text-gray-900 font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2 transition-all duration-200 transform hover:-translate-y-0.5 border border-gray-200" data-testid="button-new-supplier">
+                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                    <Plus className="h-4 w-4 text-blue-600 group-hover:scale-110 transition-transform duration-200" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-sm font-bold">New Supplier</div>
+                    <div className="text-xs text-gray-500">Add Partner</div>
+                  </div>
+                </button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
@@ -354,7 +383,10 @@ export default function Suppliers() {
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={() => setShowNewSupplier(false)}
+                        onClick={() => {
+                          setShowNewSupplier(false);
+                          form.reset();
+                        }}
                       >
                         Cancel
                       </Button>
@@ -364,7 +396,7 @@ export default function Suppliers() {
               </DialogContent>
             </Dialog>
           </div>
-        </Card>
+        </div>
       </div>
 
       {/* Stats Cards */}

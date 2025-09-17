@@ -17,7 +17,8 @@ import {
   AlertTriangle,
   CalendarIcon,
   FileDown,
-  ChevronDown
+  ChevronDown,
+  Calculator
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -456,19 +457,41 @@ export default function QuotationsPage() {
   return (
     <div className="space-y-6">
       {/* Card-style header */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 px-8 py-6 flex items-center justify-between mb-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Quotations</h2>
-          <p className="text-gray-600 text-base mt-1">Step 2: Manage quotations, pricing, and approvals</p>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg">
+              <Calculator className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-emerald-600 to-emerald-800 bg-clip-text text-transparent">
+                  Quotations
+                </h2>
+              </div>
+              <p className="text-muted-foreground text-lg">
+                Step 2: Manage quotations, pricing, and approvals
+              </p>
+              <div className="flex items-center gap-4 mt-2">
+                <div className="flex items-center gap-1 text-sm text-emerald-600">
+                  <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
+                  <span className="font-medium">Live Pricing</span>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Total Quotes: {Array.isArray(quotations) ? quotations.length : 0}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Link href="/quotations/new">
+              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-200 transition flex items-center gap-2" data-testid="button-new-quotation">
+                <Plus className="h-4 w-4" />
+                New Quotation
+              </Button>
+            </Link>
+          </div>
         </div>
-        <Link href="/quotations/new">
-          <button
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
-            data-testid="button-new-quotation"
-          >
-            <span className="text-xl font-bold">+</span> New Quotation
-          </button>
-        </Link>
       </div>
 
       {/* Stats Cards - Card/Box UI */}

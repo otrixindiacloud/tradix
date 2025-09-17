@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, Filter, Package, Scan, AlertTriangle, Check, Clock, CheckCircle } from "lucide-react";
+import { Search, Filter, Package, Scan, AlertTriangle, Check, Clock, CheckCircle, Truck } from "lucide-react";
 import DataTable, { Column } from "@/components/tables/data-table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatDate, formatCurrency, getStatusColor } from "@/lib/utils";
@@ -57,7 +57,9 @@ export default function GoodsReceipt() {
   });
 
   // Filter for confirmed supplier LPOs ready for goods receipt
-  const confirmedLpos = supplierLpos?.filter((lpo: any) => lpo.status === "Confirmed");
+  const confirmedLpos = Array.isArray(supplierLpos)
+    ? supplierLpos.filter((lpo: any) => lpo.status === "Confirmed")
+    : [];
   
   const filteredLpos = confirmedLpos?.filter((lpo: any) =>
     lpo.lpoNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -109,7 +111,7 @@ export default function GoodsReceipt() {
       key: "receiptStatus",
       header: "Receipt Status",
       render: (_, lpo: any) => {
-        const receipt = goodsReceipts?.find((gr: any) => gr.supplierLpoId === lpo.id);
+        const receipt = (Array.isArray(goodsReceipts) ? goodsReceipts : []).find((gr: any) => gr.supplierLpoId === lpo.id);
         if (!receipt) {
           return (
             <Badge variant="outline" className="text-orange-600">
@@ -134,7 +136,7 @@ export default function GoodsReceipt() {
       key: "actions",
       header: "Actions",
       render: (_, lpo: any) => {
-        const receipt = goodsReceipts?.find((gr: any) => gr.supplierLpoId === lpo.id);
+        const receipt = (Array.isArray(goodsReceipts) ? goodsReceipts : []).find((gr: any) => gr.supplierLpoId === lpo.id);
         return (
           <div className="flex items-center space-x-2">
             {!receipt && (
@@ -180,11 +182,11 @@ export default function GoodsReceipt() {
 
   const receiptStats = {
     pending: confirmedLpos?.filter((lpo: any) => 
-      !goodsReceipts?.some((gr: any) => gr.supplierLpoId === lpo.id)
+      !(Array.isArray(goodsReceipts) ? goodsReceipts : [])?.some((gr: any) => gr.supplierLpoId === lpo.id)
     ).length || 0,
-    partial: goodsReceipts?.filter((gr: any) => gr.status === "Partial").length || 0,
-    complete: goodsReceipts?.filter((gr: any) => gr.status === "Complete").length || 0,
-    discrepancy: goodsReceipts?.filter((gr: any) => gr.status === "Discrepancy").length || 0,
+    partial: (Array.isArray(goodsReceipts) ? goodsReceipts : [])?.filter((gr: any) => gr.status === "Partial").length || 0,
+    complete: (Array.isArray(goodsReceipts) ? goodsReceipts : [])?.filter((gr: any) => gr.status === "Complete").length || 0,
+    discrepancy: (Array.isArray(goodsReceipts) ? goodsReceipts : [])?.filter((gr: any) => gr.status === "Discrepancy").length || 0,
   };
 
   const handleItemQuantityChange = (index: number, field: string, value: number) => {
@@ -220,26 +222,43 @@ export default function GoodsReceipt() {
 
   return (
     <div>
-      {/* Page Header - Card Style */}
-      <div className="mb-6">
-        <Card className="rounded-2xl shadow-sm">
-          <div className="flex items-center justify-between p-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900" data-testid="text-page-title">
-                Goods Receipt
-              </h2>
-              <p className="text-gray-600">
-                Step 7: Receive and validate goods against supplier LPOs with barcode scanning
-              </p>
+      {/* Enhanced Card-style header */}
+      <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl shadow-lg border border-gray-200 relative overflow-hidden mb-6">
+        {/* Background decoration */}
+        <div className="absolute top-0 right-0 w-64 h-32 bg-gradient-to-bl from-green-50/50 to-transparent rounded-bl-full"></div>
+        <div className="absolute bottom-0 left-0 w-48 h-24 bg-gradient-to-tr from-emerald-50/30 to-transparent rounded-tr-full"></div>
+        
+        <div className="relative px-8 py-6 flex items-center justify-between">
+          <div className="flex-1">
+            <div className="flex items-center gap-4 mb-3">
+              <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center shadow-lg border border-gray-200">
+                <Truck className="h-8 w-8 text-green-600" />
+              </div>
+              <div>
+                <h2 className="text-3xl font-bold text-gray-900 mb-1" data-testid="text-page-title">
+                  Goods Receipt
+                </h2>
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-200">
+                    <Package className="h-3 w-3 mr-1" />
+                    Step 7
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+                    <span className="text-gray-600 text-sm font-medium">
+                      Processing incoming shipments
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <Badge variant="outline" className="text-orange-600">
-                <Package className="h-4 w-4 mr-1" />
-                {receiptStats.pending} Pending Receipt
-              </Badge>
-            </div>
+            <p className="text-gray-600 text-base max-w-2xl leading-relaxed">
+              Receive and validate goods against supplier LPOs with barcode scanning and quality control
+            </p>
           </div>
-        </Card>
+          
+          
+        </div>
       </div>
 
       {/* Status Overview Cards */}
@@ -351,7 +370,7 @@ export default function GoodsReceipt() {
             isLoading={isLoading}
             emptyMessage="No confirmed LPOs ready for goods receipt."
             onRowClick={(lpo) => {
-              const receipt = goodsReceipts?.find((gr: any) => gr.supplierLpoId === lpo.id);
+              const receipt = (Array.isArray(goodsReceipts) ? goodsReceipts : []).find((gr: any) => gr.supplierLpoId === lpo.id);
               if (!receipt) {
                 setSelectedLpo(lpo);
                 setReceiptData({

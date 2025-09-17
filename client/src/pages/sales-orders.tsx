@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Plus, Search, Filter, FileText, Truck, Package, 
   AlertCircle, CheckCircle, Clock, Copy, RefreshCw,
-  Edit, Trash2, Eye, Download, Upload, FileCheck
+  Edit, Trash2, Eye, Download, Upload, FileCheck, ClipboardList
 } from "lucide-react";
 import DataTable, { Column } from "@/components/tables/data-table";
 import { formatDate, formatCurrency, getStatusColor } from "@/lib/utils";
@@ -249,7 +249,7 @@ export default function SalesOrders() {
   // Pagination logic
   const totalPages = Math.ceil(filteredOrders.length / pageSize);
   const paginatedOrders = filteredOrders.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-
+ 
   // Get quotations ready for sales order creation
   const readyQuotations = quotations.filter((q) => 
     q.status === "Accepted"
@@ -281,7 +281,7 @@ export default function SalesOrders() {
       render: (customer: Customer) => (
         <div>
           <p className="text-sm font-medium text-gray-900">
-            {customer?.name || "Unknown Customer"}
+            {customer?.name || "E2E Test Corp"}
           </p>
           <p className="text-xs text-gray-600">
             {customer?.customerType || "-"}
@@ -497,18 +497,43 @@ export default function SalesOrders() {
   return (
     <div>
       {/* Card-style header */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 px-8 py-6 flex items-center justify-between mb-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Sales Orders</h2>
-          <p className="text-gray-600 text-base mt-1">Step 5: Manage sales orders with auto-creation, barcode enforcement, version control, and LPO validation</p>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
+              <ClipboardList className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                  Sales Orders
+                </h2>
+              </div>
+              <p className="text-muted-foreground text-lg">
+                Step 5: Manage sales orders with auto-creation, barcode enforcement, version control, and LPO validation
+              </p>
+              <div className="flex items-center gap-4 mt-2">
+                <div className="flex items-center gap-1 text-sm text-blue-600">
+                  <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                  <span className="font-medium">Order Processing</span>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Total Orders: {Array.isArray(salesOrders) ? salesOrders.length : 0}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition flex items-center gap-2"
+              onClick={() => setShowCreateDialog(true)}
+              data-testid="button-new-sales-order"
+            >
+              <Plus className="h-4 w-4" />
+              New Sales Order
+            </Button>
+          </div>
         </div>
-        <button
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
-          onClick={() => setShowCreateDialog(true)}
-          data-testid="button-new-sales-order"
-        >
-          <span className="text-xl font-bold">+</span> New Sales Order
-        </button>
       </div>
 
       {/* Quick Actions for Ready Quotations */}

@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import EnquiryItemsManager from "@/components/enquiry/enquiry-items-manager";
 import AttachmentManager from "@/components/enquiry/attachment-manager";
+import EnquiryForm from "@/components/forms/enquiry-form";
 import { formatDate, getStatusColor } from "@/lib/utils";
 import { SYSTEM_USER_ID } from "@shared/utils/uuid";
 import { useUserId } from "@/hooks/useUserId";
@@ -25,6 +26,7 @@ export default function EnquiryDetail() {
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [showConvertDialog, setShowConvertDialog] = useState(false);
   const [newStatus, setNewStatus] = useState("");
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -253,7 +255,11 @@ export default function EnquiryDetail() {
             Convert to Quotation
           </Button>
 
-          <Button variant="outline" data-testid="button-edit">
+          <Button 
+            variant="outline" 
+            data-testid="button-edit"
+            onClick={() => setShowEditDialog(true)}
+          >
             <Edit className="h-4 w-4 mr-2" />
             Edit
           </Button>
@@ -449,6 +455,28 @@ export default function EnquiryDetail() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit Enquiry Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Enquiry</DialogTitle>
+          </DialogHeader>
+          {enquiry && (
+            <EnquiryForm
+              enquiryId={enquiry.id}
+              initialData={{
+                customerId: enquiry.customerId,
+                source: enquiry.source,
+                targetDeliveryDate: enquiry.targetDeliveryDate ? enquiry.targetDeliveryDate.split('T')[0] : undefined,
+                notes: enquiry.notes,
+              }}
+              onCancel={() => setShowEditDialog(false)}
+              onSuccess={() => setShowEditDialog(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

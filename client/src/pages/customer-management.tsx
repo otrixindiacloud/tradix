@@ -315,14 +315,44 @@ export default function CustomerManagementPage() {
     }).format(value);
   };
 
+  const formatCurrencyCompact = (value: number | null) => {
+    if (!value) return "No limit";
+    
+    if (value >= 1000000) {
+      return `${(value / 1000000).toFixed(value % 1000000 === 0 ? 0 : 1)}M BHD`;
+    } else if (value >= 1000) {
+      return `${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}K BHD`;
+    } else {
+      return `${value.toFixed(value % 1 === 0 ? 0 : 1)} BHD`;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Customer Management</h1>
-          <p className="text-muted-foreground">
-            Manage customer master data and information
-          </p>
+        <div className="flex items-center gap-4">
+          <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
+            <Users className="h-8 w-8 text-white" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                Customer Management
+              </h1>
+            </div>
+            <p className="text-muted-foreground text-lg">
+              Manage customer master data and information
+            </p>
+            <div className="flex items-center gap-4 mt-2">
+              <div className="flex items-center gap-1 text-sm text-blue-600">
+                <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                <span className="font-medium">Active System</span>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Last updated: {new Date().toLocaleDateString()}
+              </div>
+            </div>
+          </div>
         </div>
         <div className="flex gap-2">
           <Button onClick={() => fetchCustomers()} variant="outline" size="sm">
@@ -539,11 +569,11 @@ export default function CustomerManagementPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-orange-800 dark:text-orange-200 mb-1">
-                {formatCurrency(stats.totalCreditLimit)}
+                {formatCurrencyCompact(stats.totalCreditLimit)}
               </div>
               <div className="text-sm text-orange-600 dark:text-orange-400 flex items-center gap-1">
                 <span className="text-orange-500">Avg:</span>
-                {formatCurrency(stats.averageCreditLimit)}
+                {formatCurrencyCompact(stats.averageCreditLimit)}
               </div>
             </CardContent>
           </Card>

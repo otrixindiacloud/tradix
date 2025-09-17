@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Eye, Edit, Trash2, PlusCircle, Clock, FileText, CheckCircle, BarChart3 } from "lucide-react";
+import { Plus, Eye, Edit, Trash2, PlusCircle, Clock, FileText, CheckCircle, BarChart3, MessageSquare } from "lucide-react";
 import DataTable, { Column } from "@/components/tables/data-table";
 import EnquiryForm from "@/components/forms/enquiry-form";
 import EnquiryFilters from "@/components/enquiry/enquiry-filters";
@@ -287,13 +287,29 @@ export default function Enquiries() {
       {/* Page Header */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-bold text-gray-900" data-testid="text-page-title">
-              Customer Enquiries
-            </h2>
-            <p className="text-gray-600 text-lg">
-              Step 1: Manage customer enquiries from multiple channels
-            </p>
+          <div className="flex items-center gap-4">
+            <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg">
+              <MessageSquare className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent" data-testid="text-page-title">
+                  Customer Enquiries
+                </h2>
+              </div>
+              <p className="text-muted-foreground text-lg">
+                Step 1: Manage customer enquiries from multiple channels
+              </p>
+              <div className="flex items-center gap-4 mt-2">
+                <div className="flex items-center gap-1 text-sm text-purple-600">
+                  <div className="h-2 w-2 rounded-full bg-purple-500"></div>
+                  <span className="font-medium">Live Tracking</span>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Total Enquiries: {Array.isArray(enquiries) ? enquiries.length : 0}
+                </div>
+              </div>
+            </div>
           </div>
           <div className="flex gap-2">
             {selectedEnquiries.length > 0 && (
@@ -318,7 +334,10 @@ export default function Enquiries() {
                 <DialogHeader>
                   <DialogTitle>Create New Enquiry</DialogTitle>
                 </DialogHeader>
-                <EnquiryForm onSuccess={() => setShowNewEnquiry(false)} />
+                <EnquiryForm 
+                  onSuccess={() => setShowNewEnquiry(false)} 
+                  onCancel={() => setShowNewEnquiry(false)}
+                />
               </DialogContent>
             </Dialog>
           </div>
@@ -478,6 +497,10 @@ export default function Enquiries() {
                 source: editingEnquiry.source,
                 targetDeliveryDate: editingEnquiry.targetDeliveryDate,
                 notes: editingEnquiry.notes,
+              }}
+              onCancel={() => {
+                setShowEditEnquiry(false);
+                setEditingEnquiry(null);
               }}
               onSuccess={() => {
                 setShowEditEnquiry(false);

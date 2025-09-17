@@ -6,10 +6,13 @@ export * from './supplier-storage.js';
 export * from './item-storage.js';
 export * from './inventory-storage.js';
 export * from './enquiry-storage.js';
+export * from './requisition-storage.js';
 export * from './audit-storage.js';
 export * from './quotation-storage.js';
 export * from './sales-order-storage.js';
 export * from './delivery-storage.js';
+export * from './shipment-storage.js';
+export * from './physical-stock-storage.js';
 export * from './modular-storage-clean.js';
 
 // Provide a unified storage instance (modular) for all route imports.

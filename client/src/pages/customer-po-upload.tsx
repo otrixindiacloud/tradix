@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Search, Filter, FileText, Check, AlertTriangle, X, Clock, FileUp, CheckCircle } from "lucide-react";
+import { Upload, Search, Filter, FileText, Check, AlertTriangle, X, Clock, FileUp, CheckCircle, ShoppingBag } from "lucide-react";
 import DataTable, { Column } from "@/components/tables/data-table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatDate, formatCurrency, getStatusColor } from "@/lib/utils";
@@ -241,18 +241,43 @@ export default function PoUpload() {
   return (
     <div>
       {/* Card-style header */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 px-8 py-6 flex items-center justify-between mb-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Purchase Order Upload</h2>
-          <p className="text-gray-600 text-base mt-1">Step 4: Upload and validate customer PO documents against accepted quotations</p>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg">
+              <ShoppingBag className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-amber-600 to-amber-800 bg-clip-text text-transparent">
+                  Purchase Order Upload
+                </h2>
+              </div>
+              <p className="text-muted-foreground text-lg">
+                Step 4: Upload and validate customer PO documents against accepted quotations
+              </p>
+              <div className="flex items-center gap-4 mt-2">
+                <div className="flex items-center gap-1 text-sm text-amber-600">
+                  <div className="h-2 w-2 rounded-full bg-amber-500"></div>
+                  <span className="font-medium">Document Validation</span>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Pending: {uploadStats.pending} | Uploaded: {uploadStats.uploaded}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              className="bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-200 transition flex items-center gap-2"
+              onClick={() => setSelectedQuotation({})}
+              data-testid="button-new-customer-po-upload"
+            >
+              <Upload className="h-4 w-4" />
+              Upload PO
+            </Button>
+          </div>
         </div>
-        <button
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
-          onClick={() => setSelectedQuotation({})}
-          data-testid="button-new-customer-po-upload"
-        >
-          <span className="text-xl font-bold">+</span> Upload PO
-        </button>
       </div>
 
       {/* Status Overview Cards */}

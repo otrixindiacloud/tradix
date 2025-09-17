@@ -5,11 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Filter, FileText, Send, DollarSign, Clock, CheckCircle, Download, Edit, Plane, AlertTriangle, FileDown, ChevronDown } from "lucide-react";
+import { Plus, Search, Filter, FileText, Send, DollarSign, Clock, CheckCircle, Download, Edit, Plane, AlertTriangle, FileDown, ChevronDown, Receipt } from "lucide-react";
 import DataTable, { Column } from "@/components/tables/data-table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { formatDate, formatCurrency, getStatusColor } from "@/lib/utils";
+import { formatDate, formatCurrency, formatCurrencyCompact, getStatusColor } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -151,12 +151,13 @@ export default function Invoicing() {
     },
   });
 
-  const downloadInvoicePDF = async (invoiceId: string, invoiceNumber: string) => {
+  const downloadInvoicePDF = async (invoiceId: string, invoiceNumber: string, invoiceType: string = 'Standard') => {
     try {
       // Show loading state
+      const isProforma = invoiceType === 'Proforma';
       toast({
         title: "Generating PDF",
-        description: "Creating comprehensive invoice with material specifications...",
+        description: `Creating comprehensive ${isProforma ? 'proforma' : ''} invoice with material specifications...`,
       });
 
       const response = await fetch(`/api/invoices/${invoiceId}/pdf`, {
@@ -175,7 +176,8 @@ export default function Invoicing() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Golden-Tag-Invoice-${invoiceNumber}-${new Date().toISOString().split('T')[0]}.pdf`;
+      const filePrefix = isProforma ? 'Golden-Tag-Proforma' : 'Golden-Tag-Invoice';
+      a.download = `${filePrefix}-${invoiceNumber}-${new Date().toISOString().split('T')[0]}.pdf`;
       a.style.display = 'none';
       document.body.appendChild(a);
       a.click();
@@ -188,7 +190,7 @@ export default function Invoicing() {
       
       toast({
         title: "Success",
-        description: "Comprehensive invoice PDF downloaded successfully with all material specifications and company details",
+        description: `Comprehensive ${isProforma ? 'proforma' : ''} invoice PDF downloaded successfully with all material specifications and company details`,
       });
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -413,6 +415,22 @@ export default function Invoicing() {
       render: (value: string) => formatDate(value),
     },
     {
+      key: "invoiceType",
+      header: "Type",
+      render: (value: string) => (
+        <Badge 
+          variant="outline" 
+          className={
+            value === "Proforma" 
+              ? "bg-purple-100 text-purple-800 border-purple-300" 
+              : "bg-blue-100 text-blue-800 border-blue-300"
+          }
+        >
+          {value || "Standard"}
+        </Badge>
+      ),
+    },
+    {
       key: "actions",
       header: "Actions",
       render: (_, invoice: any) => (
@@ -452,10 +470,10 @@ export default function Invoicing() {
             variant="ghost"
             onClick={(e) => {
               e.stopPropagation();
-              downloadInvoicePDF(invoice.id, invoice.invoiceNumber);
+              downloadInvoicePDF(invoice.id, invoice.invoiceNumber, invoice.invoiceType);
             }}
             data-testid={`button-download-${invoice.id}`}
-            title="Download Comprehensive PDF with Material Specs"
+            title={`Download ${invoice.invoiceType === 'Proforma' ? 'Proforma' : 'Standard'} Invoice PDF with Material Specs`}
             className="text-black hover:text-black hover:bg-gray-50"
           >
             <Download className="h-4 w-4 text-black" />
@@ -485,7 +503,10 @@ export default function Invoicing() {
       return inv.status === "Sent" && inv.dueDate && new Date(inv.dueDate) < new Date();
     }).length || 0,
     totalRevenue: invoices?.filter((inv: any) => inv.status === "Paid")
-      .reduce((sum: number, inv: any) => sum + (inv.totalAmount || 0), 0) || 0,
+      .reduce((sum: number, inv: any) => {
+        const amt = Number(inv.totalAmount);
+        return sum + (isNaN(amt) ? 0 : amt);
+      }, 0) || 0,
   };
 
   // Ref for scrolling to deliveries section
@@ -501,23 +522,41 @@ export default function Invoicing() {
     <div>
       {/* Page Header - Card Style */}
       <div className="mb-6">
-        <Card className="rounded-2xl shadow-sm">
+        <Card className="rounded-xl shadow-sm border border-gray-100">
           <div className="flex items-center justify-between p-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900" data-testid="text-page-title">
-                Invoicing
-              </h2>
-              <p className="text-gray-600">
-                Step 10: Generate and manage customer invoices with multi-currency support
-              </p>
+            <div className="flex items-center gap-4">
+              <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg">
+                <Receipt className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent" data-testid="text-page-title">
+                    Invoicing
+                  </h2>
+                </div>
+                <p className="text-muted-foreground text-lg">
+                  Step 10: Generate and manage customer invoices with multi-currency support
+                </p>
+                <div className="flex items-center gap-4 mt-2">
+                  <div className="flex items-center gap-1 text-sm text-green-600">
+                    <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                    <span className="font-medium">Invoice Generation</span>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Total Invoices: {Array.isArray(invoices) ? invoices.length : 0}
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="flex items-center space-x-3">
               <Button
                 variant="outline"
                 onClick={() => setShowGenerateDialog(true)}
                 data-testid="button-open-generate-invoice"
+                className="flex items-center gap-2"
               >
-                <Plus className="h-4 w-4 mr-2" /> Generate Invoice
+                <Plus className="h-4 w-4" /> 
+                Generate Invoice
               </Button>
               <Button
                 variant="outline"
@@ -536,16 +575,18 @@ export default function Invoicing() {
                 }}
                 disabled={generateProformaInvoiceAlt.isPending}
                 data-testid="button-generate-proforma-quick"
+                className="flex items-center gap-2"
               >
+                <FileText className="h-4 w-4" />
                 {generateProformaInvoiceAlt.isPending ? "Generating..." : "Quick Proforma"}
               </Button>
               <Button
-                className="flex items-center px-4 py-1 bg-green-500 text-white rounded-md font-medium text-base shadow-sm border border-green-600 hover:bg-green-600 focus:ring-2 focus:ring-green-300"
+                className="flex items-center px-4 py-2 bg-green-500 text-white rounded-lg font-medium shadow-sm border border-green-600 hover:bg-green-600 focus:ring-2 focus:ring-green-300 gap-2"
                 data-testid="badge-ready-for-invoice"
                 onClick={handleReadyForInvoiceClick}
                 style={{ cursor: "pointer" }}
               >
-                <DollarSign className="h-4 w-4 mr-1" />
+                <DollarSign className="h-4 w-4" />
                 {completedDeliveries?.length || 0} Ready for Invoice
               </Button>
             </div>
@@ -669,8 +710,12 @@ export default function Invoicing() {
               </div>
               <div>
                 <p className="text-sm text-gray-600 font-bold">Total Revenue</p>
-                <p className="text-2xl font-bold text-green-600" data-testid="stat-total-revenue">
-                  {formatCurrency(invoiceStats.totalRevenue)}
+                <p
+                  className="text-2xl font-bold text-green-600 whitespace-nowrap overflow-hidden text-ellipsis max-w-[180px] md:max-w-[140px] lg:max-w-[180px]"
+                  data-testid="stat-total-revenue"
+                  title={formatCurrency(invoiceStats.totalRevenue)}
+                >
+                  {formatCurrencyCompact(invoiceStats.totalRevenue).short}
                 </p>
                 <div className="mt-2 text-sm text-gray-600">
                   From paid invoices

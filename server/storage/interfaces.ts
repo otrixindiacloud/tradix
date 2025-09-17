@@ -475,7 +475,7 @@ export interface IDeliveryStorage {
     dateTo?: string;
     limit?: number;
     offset?: number;
-  }): Promise<Delivery[]>;
+  }): Promise<any[]>;
   getDelivery(id: string): Promise<Delivery | undefined>;
   getDeliveryByNumber(deliveryNumber: string): Promise<Delivery | undefined>;
   createDelivery(delivery: InsertDelivery): Promise<Delivery>;
@@ -498,19 +498,51 @@ export interface IDeliveryStorage {
   getDeliveryPickingSession(id: string): Promise<DeliveryPickingSession | undefined>;
   createDeliveryPickingSession(session: InsertDeliveryPickingSession): Promise<DeliveryPickingSession>;
   updateDeliveryPickingSession(id: string, session: Partial<InsertDeliveryPickingSession>): Promise<DeliveryPickingSession>;
-  completePickingSession(sessionId: string): Promise<DeliveryPickingSession>;
+  deleteDeliveryPickingSession(id: string): Promise<void>;
 
   // Delivery Picked Item operations
   getDeliveryPickedItems(sessionId: string): Promise<DeliveryPickedItem[]>;
   getDeliveryPickedItem(id: string): Promise<DeliveryPickedItem | undefined>;
   createDeliveryPickedItem(item: InsertDeliveryPickedItem): Promise<DeliveryPickedItem>;
   updateDeliveryPickedItem(id: string, item: Partial<InsertDeliveryPickedItem>): Promise<DeliveryPickedItem>;
-  verifyPickedItem(itemId: string, userId: string): Promise<DeliveryPickedItem>;
+  deleteDeliveryPickedItem(id: string): Promise<void>;
+  bulkCreateDeliveryPickedItems(items: InsertDeliveryPickedItem[]): Promise<DeliveryPickedItem[]>;
+}
 
-  // Barcode scanning and verification
-  verifyItemBarcode(barcode: string, expectedItemId?: string): Promise<{ valid: boolean; item?: any; message: string }>;
-  scanItemForPicking(barcode: string, sessionId: string, quantity: number, userId: string, storageLocation?: string): Promise<DeliveryPickedItem>;
-  getAvailableItemsForPicking(deliveryId: string): Promise<any[]>;
+export interface IShipmentStorage {
+  // Shipment operations
+  getShipments(filters?: {
+    status?: string;
+    priority?: string;
+    carrierId?: string;
+    serviceType?: string;
+    search?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<any[]>;
+  getShipment(id: string): Promise<any>;
+  getShipmentByNumber(shipmentNumber: string): Promise<any>;
+  getShipmentByTrackingNumber(trackingNumber: string): Promise<any>;
+  createShipment(shipment: any): Promise<any>;
+  updateShipment(id: string, shipment: any): Promise<any>;
+  deleteShipment(id: string): Promise<void>;
+  updateShipmentStatus(id: string, status: string, location?: string): Promise<any>;
+
+  // Shipment tracking operations
+  getShipmentTrackingEvents(shipmentId: string): Promise<any[]>;
+  createTrackingEvent(event: any): Promise<any>;
+  getLatestTrackingEvent(shipmentId: string): Promise<any>;
+  
+  // Analytics and reporting
+  getShipmentAnalytics(): Promise<{
+    totalShipments: number;
+    pendingShipments: number;
+    inTransitShipments: number;
+    deliveredShipments: number;
+    outForDeliveryShipments: number;
+  }>;
 }
 
 export interface IInvoiceStorage {
@@ -621,6 +653,7 @@ export interface IStorage extends
   IInventoryStorage,
   IGoodsReceiptStorage,
   IDeliveryStorage,
+  IShipmentStorage,
   IInvoiceStorage,
   ICreditNoteStorage,
   IAuditStorage,

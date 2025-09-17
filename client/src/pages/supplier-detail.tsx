@@ -6,6 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { 
   ArrowLeft, 
   Building2, 
@@ -31,7 +35,20 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+const supplierSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  contactPerson: z.string().optional(),
+  email: z.string().email("Invalid email address").optional(),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+});
+
+type SupplierFormData = z.infer<typeof supplierSchema>;
 
 interface Supplier {
   id: string;
@@ -135,7 +152,20 @@ export default function SupplierDetail() {
   const { id } = useParams();
   const [location, navigate] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("overview");
+  const [showEditDialog, setShowEditDialog] = useState(false);
+
+  const form = useForm<SupplierFormData>({
+    resolver: zodResolver(supplierSchema),
+    defaultValues: {
+      name: "",
+      contactPerson: "",
+      email: "",
+      phone: "",
+      address: "",
+    },
+  });
 
   // Fetch supplier details
   const { data: supplierDetails, isLoading, error } = useQuery<SupplierDetails>({
@@ -201,6 +231,53 @@ export default function SupplierDetail() {
     },
     enabled: !!id,
   });
+
+  // Update supplier mutation
+  const updateSupplier = useMutation({
+    mutationFn: async (data: SupplierFormData) => {
+      const response = await fetch(`/api/suppliers/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error("Failed to update supplier");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/suppliers/${id}/details`] });
+      toast({
+        title: "Success",
+        description: "Supplier updated successfully",
+      });
+      setShowEditDialog(false);
+      form.reset();
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update supplier",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleEdit = () => {
+    if (supplierDetails?.supplier) {
+      const supplier = supplierDetails.supplier;
+      form.reset({
+        name: supplier.name,
+        contactPerson: supplier.contactPerson || "",
+        email: supplier.email || "",
+        phone: supplier.phone || "",
+        address: supplier.address || "",
+      });
+      setShowEditDialog(true);
+    }
+  };
+
+  const onSubmit = (data: SupplierFormData) => {
+    updateSupplier.mutate(data);
+  };
 
   if (isLoading) {
     return (
@@ -275,8 +352,15 @@ export default function SupplierDetail() {
           <Badge variant={supplier.isActive ? "default" : "secondary"}>
             {supplier.isActive ? "Active" : "Inactive"}
           </Badge>
-          <Button variant="outline" size="sm">
-            <Edit className="h-4 w-4 mr-2" />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleEdit}
+            className="flex items-center gap-2 hover:bg-blue-50 hover:border-blue-200 transition-colors"
+          >
+            <div className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center">
+              <Edit className="h-3 w-3 text-blue-600" />
+            </div>
             Edit Supplier
           </Button>
         </div>
@@ -286,8 +370,10 @@ export default function SupplierDetail() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-3">
+              <Package className="h-6 w-6 text-blue-600" />
+              <CardTitle className="text-base font-bold">Total Orders</CardTitle>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalLpos}</div>
@@ -299,8 +385,10 @@ export default function SupplierDetail() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Order Value</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-3">
+              <DollarSign className="h-6 w-6 text-green-600" />
+              <CardTitle className="text-base font-bold">Order Value</CardTitle>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(stats.totalLpoValue)}</div>
@@ -312,8 +400,10 @@ export default function SupplierDetail() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Items Supplied</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-3">
+              <FileText className="h-6 w-6 text-orange-600" />
+              <CardTitle className="text-base font-bold">Items Supplied</CardTitle>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalItems}</div>
@@ -325,8 +415,10 @@ export default function SupplierDetail() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">On-Time Delivery</CardTitle>
-            <Truck className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-3">
+              <Truck className="h-6 w-6 text-purple-600" />
+              <CardTitle className="text-base font-bold">On-Time Delivery</CardTitle>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.onTimeDeliveryRate.toFixed(1)}%</div>
@@ -340,12 +432,30 @@ export default function SupplierDetail() {
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="orders">Orders</TabsTrigger>
-          <TabsTrigger value="items">Items</TabsTrigger>
-          <TabsTrigger value="receipts">Receipts</TabsTrigger>
-          <TabsTrigger value="performance">Performance</TabsTrigger>
-          <TabsTrigger value="activities">Activities</TabsTrigger>
+          <TabsTrigger value="overview" className="flex items-center gap-2">
+            <Building2 className="h-4 w-4" />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="orders" className="flex items-center gap-2">
+            <Package className="h-4 w-4" />
+            Orders
+          </TabsTrigger>
+          <TabsTrigger value="items" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Items
+          </TabsTrigger>
+          <TabsTrigger value="receipts" className="flex items-center gap-2">
+            <Receipt className="h-4 w-4" />
+            Receipts
+          </TabsTrigger>
+          <TabsTrigger value="performance" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Performance
+          </TabsTrigger>
+          <TabsTrigger value="activities" className="flex items-center gap-2">
+            <Activity className="h-4 w-4" />
+            Activities
+          </TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -509,8 +619,8 @@ export default function SupplierDetail() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
-                Supplier Items
-              </CardTitle>
+                Supplier 
+                           </CardTitle>
               <CardDescription>
                 All items supplied by this supplier
               </CardDescription>
@@ -785,6 +895,102 @@ export default function SupplierDetail() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Edit Supplier Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Supplier</DialogTitle>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Company Name *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter company name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="contactPerson"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contact Person</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter contact person name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="Enter email address" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter phone number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Address</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Enter full address" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex gap-3 pt-4">
+                <Button
+                  type="submit"
+                  disabled={updateSupplier.isPending}
+                >
+                  {updateSupplier.isPending ? "Updating..." : "Update Supplier"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowEditDialog(false);
+                    form.reset();
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

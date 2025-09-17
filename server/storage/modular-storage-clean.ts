@@ -5,15 +5,18 @@ import { SupplierStorage } from './supplier-storage.js';
 import { ItemStorage } from './item-storage.js';
 import { InventoryStorage } from './inventory-storage.js';
 import { EnquiryStorage } from './enquiry-storage.js';
+import { RequisitionStorage } from './requisition-storage.js';
 import { AuditStorage } from './audit-storage.js';
 import { QuotationStorage } from './quotation-storage.js';
 import { DeliveryStorage } from './delivery-storage.js';
+import { ShipmentStorage } from './shipment-storage.js';
 import { SalesOrderStorage } from './sales-order-storage.js';
 import { PurchaseOrderStorage } from './purchase-order-storage.js';
 import { AcceptanceStorage } from './acceptance-storage.js';
 import { GoodsReceiptStorage } from './goods-receipt-storage.js';
 import { SupplierLpoStorage } from './supplier-lpo-storage.js';
 import { InvoiceStorage } from './invoice-storage.js';
+import { PhysicalStockStorage } from './physical-stock-storage.js';
 
 // Import the existing DatabaseStorage as a fallback for operations
 // not yet modularized
@@ -33,15 +36,18 @@ export class ModularStorage extends BaseStorage {
   private itemStorage: ItemStorage;
   private inventoryStorage: InventoryStorage;
   private enquiryStorage: EnquiryStorage;
+  private requisitionStorage: RequisitionStorage;
   private auditStorage: AuditStorage;
   private quotationStorage: QuotationStorage;
   private deliveryStorage: DeliveryStorage;
+  private shipmentStorage: ShipmentStorage;
   private salesOrderStorage: SalesOrderStorage;
   private purchaseOrderStorage: PurchaseOrderStorage;
   private acceptanceStorage: AcceptanceStorage;
   private goodsReceiptStorage: GoodsReceiptStorage;
   private supplierLpoStorage: SupplierLpoStorage;
   private invoiceStorage: InvoiceStorage;
+  private physicalStockStorage: PhysicalStockStorage;
 
   constructor() {
     super();
@@ -51,15 +57,18 @@ export class ModularStorage extends BaseStorage {
     this.itemStorage = new ItemStorage();
     this.inventoryStorage = new InventoryStorage();
     this.enquiryStorage = new EnquiryStorage();
+    this.requisitionStorage = new RequisitionStorage();
     this.auditStorage = new AuditStorage();
     this.quotationStorage = new QuotationStorage();
     this.deliveryStorage = new DeliveryStorage();
+    this.shipmentStorage = new ShipmentStorage();
     this.salesOrderStorage = new SalesOrderStorage();
     this.purchaseOrderStorage = new PurchaseOrderStorage();
     this.acceptanceStorage = new AcceptanceStorage();
     this.goodsReceiptStorage = new GoodsReceiptStorage();
   this.supplierLpoStorage = new SupplierLpoStorage();
     this.invoiceStorage = new InvoiceStorage();
+    this.physicalStockStorage = new PhysicalStockStorage();
 
     // Create proxy to forward any missing methods with helpful error messages
     return new Proxy(this, {
@@ -215,6 +224,55 @@ export class ModularStorage extends BaseStorage {
 
   async deleteEnquiryItem(id: string) {
     return this.enquiryStorage.deleteEnquiryItem(id);
+  }
+
+  // Requisition operations - delegate to RequisitionStorage
+  async getRequisitions(limit?: number, offset?: number, filters?: Parameters<RequisitionStorage['getRequisitions']>[2]) {
+    return this.requisitionStorage.getRequisitions(limit, offset, filters);
+  }
+
+  async getRequisition(id: string) {
+    return this.requisitionStorage.getRequisition(id);
+  }
+
+  async getRequisitionByNumber(requisitionNumber: string) {
+    return this.requisitionStorage.getRequisitionByNumber(requisitionNumber);
+  }
+
+  async createRequisition(requisition: Parameters<RequisitionStorage['createRequisition']>[0]) {
+    return this.requisitionStorage.createRequisition(requisition);
+  }
+
+  async updateRequisition(id: string, requisition: Parameters<RequisitionStorage['updateRequisition']>[1]) {
+    return this.requisitionStorage.updateRequisition(id, requisition);
+  }
+
+  async deleteRequisition(id: string) {
+    return this.requisitionStorage.deleteRequisition(id);
+  }
+
+  async getRequisitionItems(requisitionId: string) {
+    return this.requisitionStorage.getRequisitionItems(requisitionId);
+  }
+
+  async createRequisitionItem(requisitionItem: Parameters<RequisitionStorage['createRequisitionItem']>[0]) {
+    return this.requisitionStorage.createRequisitionItem(requisitionItem);
+  }
+
+  async updateRequisitionItem(id: string, requisitionItem: Parameters<RequisitionStorage['updateRequisitionItem']>[1]) {
+    return this.requisitionStorage.updateRequisitionItem(id, requisitionItem);
+  }
+
+  async deleteRequisitionItem(id: string) {
+    return this.requisitionStorage.deleteRequisitionItem(id);
+  }
+
+  async searchRequisitions(searchTerm: string) {
+    return this.requisitionStorage.searchRequisitions(searchTerm);
+  }
+
+  async getRequisitionsCount(filters?: any) {
+    return this.requisitionStorage.getRequisitionsCount(filters);
   }
 
   // Customer Acceptance operations - delegate to AcceptanceStorage
@@ -640,6 +698,55 @@ export class ModularStorage extends BaseStorage {
     return this.deliveryStorage.verifyPickedItem(itemId, userId);
   }
 
+  // Shipment operations - delegate to ShipmentStorage
+  async getShipments(filters?: any) {
+    return this.shipmentStorage.getShipments(filters);
+  }
+
+  async getShipment(id: string) {
+    return this.shipmentStorage.getShipment(id);
+  }
+
+  async getShipmentByNumber(shipmentNumber: string) {
+    return this.shipmentStorage.getShipmentByNumber(shipmentNumber);
+  }
+
+  async getShipmentByTrackingNumber(trackingNumber: string) {
+    return this.shipmentStorage.getShipmentByTrackingNumber(trackingNumber);
+  }
+
+  async createShipment(shipment: any) {
+    return this.shipmentStorage.createShipment(shipment);
+  }
+
+  async updateShipment(id: string, shipment: any) {
+    return this.shipmentStorage.updateShipment(id, shipment);
+  }
+
+  async deleteShipment(id: string) {
+    return this.shipmentStorage.deleteShipment(id);
+  }
+
+  async updateShipmentStatus(id: string, status: string, location?: string) {
+    return this.shipmentStorage.updateShipmentStatus(id, status, location);
+  }
+
+  async getShipmentTrackingEvents(shipmentId: string) {
+    return this.shipmentStorage.getShipmentTrackingEvents(shipmentId);
+  }
+
+  async createTrackingEvent(event: any) {
+    return this.shipmentStorage.createTrackingEvent(event);
+  }
+
+  async getLatestTrackingEvent(shipmentId: string) {
+    return this.shipmentStorage.getLatestTrackingEvent(shipmentId);
+  }
+
+  async getShipmentAnalytics() {
+    return this.shipmentStorage.getShipmentAnalytics();
+  }
+
   // Barcode scanning and verification
   async verifyItemBarcode(barcode: string, expectedItemId?: string) {
     return this.deliveryStorage.verifyItemBarcode(barcode, expectedItemId);
@@ -822,5 +929,90 @@ export class ModularStorage extends BaseStorage {
         averageCreditLimit: 0
       };
     }
+  }
+
+  // Physical Stock operations - delegate to PhysicalStockStorage
+  async getPhysicalStockCounts(limit?: number, offset?: number) {
+    return this.physicalStockStorage.getPhysicalStockCounts(limit, offset);
+  }
+
+  async getPhysicalStockCountById(id: string) {
+    return this.physicalStockStorage.getPhysicalStockCountById(id);
+  }
+
+  async getPhysicalStockCountByNumber(countNumber: string) {
+    return this.physicalStockStorage.getPhysicalStockCountByNumber(countNumber);
+  }
+
+  async createPhysicalStockCount(data: Parameters<PhysicalStockStorage['createPhysicalStockCount']>[0]) {
+    return this.physicalStockStorage.createPhysicalStockCount(data);
+  }
+
+  async updatePhysicalStockCount(id: string, data: Parameters<PhysicalStockStorage['updatePhysicalStockCount']>[1], userId?: string) {
+    return this.physicalStockStorage.updatePhysicalStockCount(id, data, userId);
+  }
+
+  async deletePhysicalStockCount(id: string, userId?: string) {
+    return this.physicalStockStorage.deletePhysicalStockCount(id, userId);
+  }
+
+  async getPhysicalStockCountItems(physicalStockCountId: string) {
+    return this.physicalStockStorage.getPhysicalStockCountItems(physicalStockCountId);
+  }
+
+  async createPhysicalStockCountItem(data: Parameters<PhysicalStockStorage['createPhysicalStockCountItem']>[0]) {
+    return this.physicalStockStorage.createPhysicalStockCountItem(data);
+  }
+
+  async updatePhysicalStockCountItem(id: string, data: Parameters<PhysicalStockStorage['updatePhysicalStockCountItem']>[1]) {
+    return this.physicalStockStorage.updatePhysicalStockCountItem(id, data);
+  }
+
+  async populatePhysicalStockCountItems(physicalStockCountId: string, storageLocation?: string) {
+    return this.physicalStockStorage.populatePhysicalStockCountItems(physicalStockCountId, storageLocation);
+  }
+
+  async createScanningSession(data: Parameters<PhysicalStockStorage['createScanningSession']>[0]) {
+    return this.physicalStockStorage.createScanningSession(data);
+  }
+
+  async getScanningSessionsByCountId(physicalStockCountId: string) {
+    return this.physicalStockStorage.getScanningSessionsByCountId(physicalStockCountId);
+  }
+
+  async updateScanningSession(id: string, data: Parameters<PhysicalStockStorage['updateScanningSession']>[1]) {
+    return this.physicalStockStorage.updateScanningSession(id, data);
+  }
+
+  async createScannedItem(data: Parameters<PhysicalStockStorage['createScannedItem']>[0]) {
+    return this.physicalStockStorage.createScannedItem(data);
+  }
+
+  async getScannedItemsBySession(scanningSessionId: string) {
+    return this.physicalStockStorage.getScannedItemsBySession(scanningSessionId);
+  }
+
+  async processBarcodeScan(scanningSessionId: string, barcode: string, scannedBy: string, quantity?: number, storageLocation?: string) {
+    return this.physicalStockStorage.processBarcodeScan(scanningSessionId, barcode, scannedBy, quantity, storageLocation);
+  }
+
+  async createPhysicalStockAdjustment(data: Parameters<PhysicalStockStorage['createPhysicalStockAdjustment']>[0]) {
+    return this.physicalStockStorage.createPhysicalStockAdjustment(data);
+  }
+
+  async generateAdjustmentsFromCount(physicalStockCountId: string, createdBy?: string) {
+    return this.physicalStockStorage.generateAdjustmentsFromCount(physicalStockCountId, createdBy);
+  }
+
+  async applyPhysicalStockAdjustment(adjustmentId: string, appliedBy: string) {
+    return this.physicalStockStorage.applyPhysicalStockAdjustment(adjustmentId, appliedBy);
+  }
+
+  async getPhysicalStockCountSummary(physicalStockCountId: string) {
+    return this.physicalStockStorage.getPhysicalStockCountSummary(physicalStockCountId);
+  }
+
+  async finalizePhysicalStockCount(physicalStockCountId: string, completedBy: string) {
+    return this.physicalStockStorage.finalizePhysicalStockCount(physicalStockCountId, completedBy);
   }
 }

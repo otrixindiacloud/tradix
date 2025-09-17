@@ -5,26 +5,53 @@
 DATABASE_URL from env: SET
 NODE_ENV: development
 [STORAGE] Using modular database storage
-[dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+[dotenv@17.2.1] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
 ✅ Pricing routes registered
 [STORAGE] ModularStorage initialized successfully
-node:events:496
-      throw er; // Unhandled 'error' event
-      ^
-
-Error: listen EADDRINUSE: address already in use ::1:5000
-    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
-    at listenInCluster (node:net:1997:12)
-    at GetAddrInfoReqWrap.callback (node:net:2206:7)
-    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:134:8)
-Emitted 'error' event on Server instance at:
-    at emitErrorNT (node:net:1976:8)
-    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
-  code: 'EADDRINUSE',
-  errno: -98,
-  syscall: 'listen',
-  address: '::1',
-  port: 5000
+2:22:02 PM [express] serving on port 5000 (storage=load-error)
+2:22:22 PM [express] GET /api/delivery-notes 200 in 1922ms :: [{"id":"1831e4e5-58b4-490f-a74a-139580…
+2:23:29 PM [express] GET /api/auth/me 200 in 814ms :: {"user":{"id":"8bcd3a5f-10fc-4491-9258-a62b5bf…
+getEnquiries called with: { limit: 100, offset: 0, filters: undefined }
+Executing query...
+getEnquiries called with: { limit: 5, offset: 0, filters: undefined }
+Executing query...
+2:23:29 PM [express] GET /api/sales-orders 304 in 254ms :: [{"id":"f75a33c4-16d2-47c5-90c1-39cf14450…
+Query result: 5 enquiries found
+2:23:29 PM [express] GET /api/enquiries 304 in 292ms :: [{"id":"3d276e59-7be0-4418-9fe7-ec3a0ea99b54…
+2:23:29 PM [express] GET /api/quotations 304 in 303ms :: [{"id":"c6d3ae67-5cad-464c-80cd-ff4940890dd…
+Query result: 93 enquiries found
+2:23:30 PM [express] GET /api/dashboard/stats 304 in 865ms :: {"activeEnquiries":91,"pendingQuotes":…
+2:23:35 PM [express] GET /api/suppliers 200 in 285ms :: [{"id":"a78ed93d-aa32-4df5-97e3-fde7628c3769…
+getStockMovements: Using stub implementation - should be moved to InventoryStorage
+2:23:38 PM [express] GET /api/stock-movements 200 in 1ms :: []
+2:23:38 PM [express] GET /api/items 200 in 307ms :: [{"id":"c19058e1-fb1c-4cfc-b5be-00ff1f9f891d","s…
+2:23:54 PM [vite] hmr update /src/pages/physical-stock.tsx, /src/index.css?v=Baf2ErHPy40LTRFT5EuCv
+2:24:04 PM [express] GET /api/auth/me 304 in 807ms :: {"user":{"id":"8bcd3a5f-10fc-4491-9258-a62b5bf…
+2:24:04 PM [express] GET /api/items 304 in 303ms :: [{"id":"c19058e1-fb1c-4cfc-b5be-00ff1f9f891d","s…
+2:24:05 PM [express] GET /api/physical-stock 200 in 737ms
+Error fetching sales order: error: invalid input syntax for type uuid: "available-for-delivery"
+    at file:///workspaces/tradix/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async NeonPreparedQuery.execute (/workspaces/tradix/node_modules/src/neon-serverless/session.ts:102:18)
+    at async SalesOrderStorage.getSalesOrder (/workspaces/tradix/server/storage/sales-order-storage.ts:52:20)
+    at async <anonymous> (/workspaces/tradix/server/routes/sales-orders.ts:43:26) {
+  length: 154,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $1 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'uuid.c',
+  line: '133',
+  routine: 'string_to_uuid'
 }
-
-Node.js v22.17.0
+2:24:07 PM [express] GET /api/sales-orders/available-for-delivery 500 in 263ms :: {"message":"Failed…
+2:24:07 PM [express] GET /api/auth/me 304 in 835ms :: {"user":{"id":"8bcd3a5f-10fc-4491-9258-a62b5bf…

@@ -48,9 +48,17 @@ export function registerDeliveryRoutes(app: Express) {
         if (!isNaN(parsedDate.getTime())) raw.deliveryDate = parsedDate;
       }
       if (!raw.deliveryDate) raw.deliveryDate = new Date();
+      
+      // Ensure salesOrderId is present
+      if (!raw.salesOrderId) {
+        return res.status(400).json({ message: "Sales Order ID is required" });
+      }
+      
       // Accept minimal payload; storage will generate deliveryNumber & default status
       if (raw.deliveryNumber === undefined) delete raw.deliveryNumber; // ensure absent so storage layer generates
-      const deliveryData = insertDeliverySchema.partial().parse(raw);
+      
+      // Use full schema validation but only require salesOrderId
+      const deliveryData = insertDeliverySchema.parse(raw);
       const delivery = await storage.createDelivery(deliveryData as any);
       res.status(201).json(delivery);
     } catch (error) {
@@ -226,6 +234,86 @@ export function registerDeliveryRoutes(app: Express) {
     } catch (error) {
       console.error("Error confirming delivery:", error);
       res.status(500).json({ message: "Failed to confirm delivery" });
+    }
+  });
+
+  // Delivery Notes routes (aliases to delivery routes for UI consistency)
+  app.get("/api/delivery-notes", async (req, res) => {
+    try {
+      const { customerId, status, dateFrom, dateTo, limit, offset, search } = req.query;
+      const filters = {
+        customerId: customerId as string,
+        status: status as string,
+        dateFrom: dateFrom as string,
+        dateTo: dateTo as string,
+        limit: limit ? parseInt(limit as string) : undefined,
+        offset: offset ? parseInt(offset as string) : undefined,
+      };
+      const deliveries = await storage.getDeliveries(filters);
+      res.json(deliveries);
+    } catch (error) {
+      console.error("Error fetching delivery notes:", error);
+      res.status(500).json({ message: "Failed to fetch delivery notes" });
+    }
+  });
+
+  app.get("/api/delivery-notes/:id", async (req, res) => {
+    try {
+      const delivery = await storage.getDelivery(req.params.id);
+      if (!delivery) {
+        return res.status(404).json({ message: "Delivery note not found" });
+      }
+      res.json(delivery);
+    } catch (error) {
+      console.error("Error fetching delivery note:", error);
+      res.status(500).json({ message: "Failed to fetch delivery note" });
+    }
+  });
+
+  app.post("/api/delivery-notes", async (req, res) => {
+    try {
+      const raw = { ...req.body } as any;
+      if (raw.deliveryDate && typeof raw.deliveryDate === 'string') {
+        const parsedDate = new Date(raw.deliveryDate);
+        if (!isNaN(parsedDate.getTime())) raw.deliveryDate = parsedDate;
+      }
+      if (!raw.deliveryDate) raw.deliveryDate = new Date();
+
+      const validated = insertDeliverySchema.parse(raw);
+      const delivery = await storage.createDelivery(validated);
+      res.json(delivery);
+    } catch (error) {
+      console.error("Error creating delivery note:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create delivery note" });
+    }
+  });
+
+  app.patch("/api/delivery-notes/:id", async (req, res) => {
+    try {
+      const raw = { ...req.body } as any;
+      if (raw.deliveryDate && typeof raw.deliveryDate === 'string') {
+        const parsedDate = new Date(raw.deliveryDate);
+        if (!isNaN(parsedDate.getTime())) raw.deliveryDate = parsedDate;
+      }
+
+      const delivery = await storage.updateDelivery(req.params.id, raw);
+      res.json(delivery);
+    } catch (error) {
+      console.error("Error updating delivery note:", error);
+      res.status(500).json({ message: "Failed to update delivery note" });
+    }
+  });
+
+  app.delete("/api/delivery-notes/:id", async (req, res) => {
+    try {
+      await storage.deleteDelivery(req.params.id);
+      res.json({ message: "Delivery note deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting delivery note:", error);
+      res.status(500).json({ message: "Failed to delete delivery note" });
     }
   });
 }

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Supplier Quote Detail</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-item {
+            margin: 10px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #fafafa;
+        }
+        .test-link {
+            display: inline-block;
+            margin: 5px 10px 5px 0;
+            padding: 8px 16px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .test-link:hover {
+            background-color: #0056b3;
+        }
+        .status {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-received { background-color: #d4edda; color: #155724; }
+        .status-under-review { background-color: #fff3cd; color: #856404; }
+        .status-pending { background-color: #cce7ff; color: #004085; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Supplier Quote Detail Page Test</h1>
+        <p><strong>Test Date:</strong> <span id="current-date"></span></p>
+        
+        <div class="test-item">
+            <h3>Test Available Routes:</h3>
+            <a href="http://localhost:5000/supplier-quotes" class="test-link" target="_blank">Supplier Quotes List</a>
+            <a href="http://localhost:5000/supplier-quotes/sq-2024-001" class="test-link" target="_blank">Quote Detail (SQ-2024-001)</a>
+            <a href="http://localhost:5000/supplier-quotes/sq-2024-002" class="test-link" target="_blank">Quote Detail (SQ-2024-002)</a>
+        </div>
+
+        <div class="test-item">
+            <h3>Sample Supplier Quotes:</h3>
+            
+            <div style="margin: 10px 0; padding: 10px; border: 1px solid #ccc;">
+                <strong>SQ-2024-001</strong> - Tech Solutions LLC
+                <br>Status: <span class="status status-received">Received</span>
+                <br>Amount: AED 5,200.00
+                <br>Priority: High
+                <br>Valid Until: Feb 15, 2024
+            </div>
+            
+            <div style="margin: 10px 0; padding: 10px; border: 1px solid #ccc;">
+                <strong>SQ-2024-002</strong> - Office Supplies Co
+                <br>Status: <span class="status status-under-review">Under Review</span>
+                <br>Amount: AED 2,100.00
+                <br>Priority: Medium
+                <br>Valid Until: Feb 14, 2024
+            </div>
+        </div>
+
+        <div class="test-item">
+            <h3>Expected Functionality:</h3>
+            <ul>
+                <li>✅ Detail page shows quote information</li>
+                <li>✅ Status pills display correctly</li>
+                <li>✅ Approve/Reject buttons for "Under Review" status</li>
+                <li>✅ Items table shows quote line items</li>
+                <li>✅ Back button returns to list</li>
+                <li>✅ Edit and Delete buttons available</li>
+                <li>✅ Mock data loads without backend</li>
+            </ul>
+        </div>
+
+        <div class="test-item">
+            <h3>Quick Status Check:</h3>
+            <p>If the links above work and show detailed pages with proper formatting, the supplier quote detail page is working correctly!</p>
+            <p><strong>Note:</strong> This uses mock data, so no backend is required for testing.</p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('current-date').textContent = new Date().toLocaleString();
+    </script>
+</body>
+</html>

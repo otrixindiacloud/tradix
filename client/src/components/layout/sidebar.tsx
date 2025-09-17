@@ -186,6 +186,20 @@ export default function Sidebar() {
                 <Badge variant="secondary" className="ml-auto bg-green-100 text-green-800">15</Badge>
               </a>
             </Link>
+            <Link href="/delivery-note">
+              <a
+                className={cn(
+                  "sidebar-item",
+                  isActive("/delivery-note")
+                    ? "sidebar-item-active"
+                    : "text-gray-700"
+                )}
+                data-testid="link-delivery-note"
+              >
+                <FaTruckMoving className="h-5 w-5 text-blue-600" />
+                <span className="font-medium">Delivery Note</span>
+              </a>
+            </Link>
             <Link href="/invoicing">
               <a
                 className={cn(
@@ -209,6 +223,52 @@ export default function Sidebar() {
             Purchase Management
           </h3>
           <div className="space-y-1">
+            {/* Suppliers */}
+            <Link href="/suppliers">
+              <a
+                className={cn(
+                  "sidebar-item",
+                  isActive("/suppliers")
+                    ? "sidebar-item-active"
+                    : "text-gray-700"
+                )}
+                data-testid="link-suppliers"
+              >
+                <FaBuilding className="h-5 w-5 text-gray-600" />
+                <span className="font-medium">Suppliers</span>
+              </a>
+            </Link>
+            {/* Requisitions */}
+            <Link href="/requisitions">
+              <a
+                className={cn(
+                  "sidebar-item",
+                  isActive("/requisitions")
+                    ? "sidebar-item-active"
+                    : "text-gray-700"
+                )}
+                data-testid="link-requisitions"
+              >
+                <FaClipboardList className="h-5 w-5 text-blue-700" />
+                <span className="font-medium">Requisitions</span>
+              </a>
+            </Link>
+            {/* Supplier Quotes */}
+            <Link href="/supplier-quotes">
+              <a
+                className={cn(
+                  "sidebar-item",
+                  isActive("/supplier-quotes")
+                    ? "sidebar-item-active"
+                    : "text-gray-700"
+                )}
+                data-testid="link-supplier-quotes"
+              >
+                <FaFileExport className="h-5 w-5 text-amber-700" />
+                <span className="font-medium">Supplier Quotes</span>
+              </a>
+            </Link>
+            {/* Supplier LPO */}
             <Link href="/supplier-lpo">
               <a
                 className={cn(
@@ -223,6 +283,22 @@ export default function Sidebar() {
                 <span className="font-medium">Supplier LPO</span>
               </a>
             </Link>
+            {/* Shipment Tracking */}
+            <Link href="/shipment-tracking">
+              <a
+                className={cn(
+                  "sidebar-item",
+                  isActive("/shipment-tracking")
+                    ? "sidebar-item-active"
+                    : "text-gray-700"
+                )}
+                data-testid="link-shipment-tracking"
+              >
+                <FaTruckLoading className="h-5 w-5 text-blue-600" />
+                <span className="font-medium">Shipment Tracking</span>
+              </a>
+            </Link>
+            {/* Goods Receipts (GRN) */}
             <Link href="/goods-receipt">
               <a
                 className={cn(
@@ -233,22 +309,23 @@ export default function Sidebar() {
                 )}
                 data-testid="link-goods-receipt"
               >
-                <FaBox className="h-5 w-5 text-orange-500" />
-                <span className="font-medium">Goods Receipt</span>
+                <FaBoxOpen className="h-5 w-5 text-orange-500" />
+                <span className="font-medium">Goods Receipts (GRN)</span>
               </a>
             </Link>
-            <Link href="/suppliers">
+            {/* Purchase Invoices */}
+            <Link href="/purchase-invoices">
               <a
                 className={cn(
                   "sidebar-item",
-                  isActive("/suppliers")
+                  isActive("/purchase-invoices")
                     ? "sidebar-item-active"
                     : "text-gray-700"
                 )}
-                data-testid="link-suppliers"
+                data-testid="link-purchase-invoices"
               >
-                <FaBuilding className="h-5 w-5 text-gray-600" />
-                <span className="font-medium">Suppliers</span>
+                <FaFileInvoiceDollar className="h-5 w-5 text-green-700" />
+                <span className="font-medium">Purchase Invoices</span>
               </a>
             </Link>
           </div>
@@ -271,7 +348,7 @@ export default function Sidebar() {
                 data-testid="link-inventory"
               >
                 <FaWarehouse className="h-5 w-5 text-gray-600" />
-                <span className="font-medium">Inventory</span>
+                <span className="font-medium">Inventory Items</span>
               </a>
             </Link>
             <Link href="/delivery">
@@ -288,7 +365,7 @@ export default function Sidebar() {
                 <span className="font-medium">Delivery & Picking</span>
               </a>
             </Link>
-            <Link href="/delivery-management">
+            {/* <Link href="/delivery-management">
               <a
                 className={cn(
                   "sidebar-item",
@@ -301,7 +378,7 @@ export default function Sidebar() {
                 <FaTruckMoving className="h-5 w-5 text-blue-500" />
                 <span className="font-medium">Delivery Management</span>
               </a>
-            </Link>
+            </Link> */}
             <Link href="/inventory-management">
               <a 
                 className={cn(
@@ -314,6 +391,105 @@ export default function Sidebar() {
               >
                 <FaBoxes className="h-5 w-5 text-purple-600" />
                 <span className="font-medium">Inventory Management</span>
+              </a>
+            </Link>
+            {/* New Inventory Management Navigation */}
+            {/* <Link href="/items">
+              <a
+                className={cn(
+                  "sidebar-item",
+                  isActive("/items")
+                    ? "sidebar-item-active"
+                    : "text-gray-700"
+                )}
+                data-testid="link-items"
+              >
+                <FaBox className="h-5 w-5 text-blue-700" />
+                <span className="font-medium">Items</span>
+              </a>
+            </Link> */}
+            <Link href="/material-requests">
+              <a
+                className={cn(
+                  "sidebar-item",
+                  isActive("/material-requests")
+                    ? "sidebar-item-active"
+                    : "text-gray-700"
+                )}
+                data-testid="link-material-requests"
+              >
+                <FaClipboardList className="h-5 w-5 text-amber-700" />
+                <span className="font-medium">Material Requests</span>
+              </a>
+            </Link>
+            <Link href="/receipts">
+              <a
+                className={cn(
+                  "sidebar-item",
+                  isActive("/receipts")
+                    ? "sidebar-item-active"
+                    : "text-gray-700"
+                )}
+                data-testid="link-receipts"
+              >
+                <FaReceipt className="h-5 w-5 text-green-700" />
+                <span className="font-medium">Inventory Receipts</span>
+              </a>
+            </Link>
+            <Link href="/stock-issues">
+              <a
+                className={cn(
+                  "sidebar-item",
+                  isActive("/stock-issues")
+                    ? "sidebar-item-active"
+                    : "text-gray-700"
+                )}
+                data-testid="link-stock-issues"
+              >
+                <FaBoxOpen className="h-5 w-5 text-orange-500" />
+                <span className="font-medium">Stock Issues</span>
+              </a>
+            </Link>
+            <Link href="/receipt-returns">
+              <a
+                className={cn(
+                  "sidebar-item",
+                  isActive("/receipt-returns")
+                    ? "sidebar-item-active"
+                    : "text-gray-700"
+                )}
+                data-testid="link-receipt-returns"
+              >
+                <FaMoneyBillWave className="h-5 w-5 text-red-600" />
+                <span className="font-medium">Returns Receipt </span>
+              </a>
+            </Link>
+            <Link href="/stock-transfer">
+              <a
+                className={cn(
+                  "sidebar-item",
+                  isActive("/stock-transfer")
+                    ? "sidebar-item-active"
+                    : "text-gray-700"
+                )}
+                data-testid="link-stock-transfer"
+              >
+                <FaTruck className="h-5 w-5 text-indigo-500" />
+                <span className="font-medium">Transfer Stocks</span>
+              </a>
+            </Link>
+            <Link href="/physical-stock">
+              <a
+                className={cn(
+                  "sidebar-item",
+                  isActive("/physical-stock")
+                    ? "sidebar-item-active"
+                    : "text-gray-700"
+                )}
+                data-testid="link-physical-stock"
+              >
+                <FaBoxesAlt className="h-5 w-5 text-purple-700" />
+                <span className="font-medium">Physical Stock</span>
               </a>
             </Link>
           </div>

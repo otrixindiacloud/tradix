@@ -30,7 +30,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
     dateTo?: string;
     limit?: number;
     offset?: number;
-  }): Promise<Delivery[]> {
+  }): Promise<any[]> {
     try {
       let query = db
         .select()
@@ -61,7 +61,13 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
       }
 
       const results = await query;
-      return results.map(row => row.deliveries);
+      return results.map(row => ({
+        ...row.deliveries,
+        salesOrder: row.sales_orders ? {
+          ...row.sales_orders,
+          customer: row.customers
+        } : null
+      }));
     } catch (error) {
       console.error('Error fetching deliveries:', error);
       throw new Error('Failed to fetch deliveries');

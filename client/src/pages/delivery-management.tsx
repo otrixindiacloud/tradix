@@ -59,7 +59,11 @@ const DeliveryManagement = () => {
   const { data: deliveries = [], isLoading: deliveriesLoading, error: deliveriesError } = useQuery({
     queryKey: ["/api/deliveries", filters],
     queryFn: async () => {
-      const result = await apiRequest("GET", `/api/deliveries?${new URLSearchParams(filters)}`);
+      // Only include non-empty filters in the query string
+      const cleanedFilters = Object.fromEntries(
+        Object.entries(filters).filter(([_, v]) => v !== undefined && v !== null && v !== "" && v !== "all")
+      );
+      const result = await apiRequest("GET", `/api/deliveries?${new URLSearchParams(cleanedFilters)}`);
       console.log("Deliveries API response:", result);
       if (!Array.isArray(result)) {
         console.error("Deliveries API returned non-array:", result);
@@ -201,15 +205,18 @@ const DeliveryManagement = () => {
   };
 
   // Filter deliveries based on search and filters
-  const filteredDeliveries = Array.isArray(deliveries) ? deliveries.filter((delivery: DeliveryWithDetails) => {
-    const matchesStatus = !filters.status || delivery.status === filters.status;
-    const matchesSearch = !filters.search || 
-      delivery.deliveryNumber.toLowerCase().includes(filters.search.toLowerCase()) ||
-      delivery.salesOrder?.orderNumber?.toLowerCase().includes(filters.search.toLowerCase()) ||
-      delivery.customer?.name?.toLowerCase().includes(filters.search.toLowerCase());
-    
-    return matchesStatus && matchesSearch;
-  }) : [];
+  const filteredDeliveries = Array.isArray(deliveries)
+    ? deliveries.filter((delivery: DeliveryWithDetails) => {
+        // If no filters, show all deliveries
+        if (!filters.status && !filters.search) return true;
+        const matchesStatus = !filters.status || delivery.status === filters.status;
+        const matchesSearch = !filters.search || 
+          delivery.deliveryNumber?.toLowerCase().includes(filters.search.toLowerCase()) ||
+          delivery.salesOrder?.orderNumber?.toLowerCase().includes(filters.search.toLowerCase()) ||
+          delivery.customer?.name?.toLowerCase().includes(filters.search.toLowerCase());
+        return matchesStatus && matchesSearch;
+      })
+    : [];
 
   const deliveryStats = {
     total: Array.isArray(deliveries) ? deliveries.length : 0,
@@ -220,15 +227,30 @@ const DeliveryManagement = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
+      {/* Enhanced Card-style header */}
       <div className="mb-6">
-        <div className="bg-white rounded-xl shadow-sm flex items-center justify-between px-6 py-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <Truck className="h-8 w-8" />
-              Delivery & Invoicing Management
-            </h1>
-            <p className="text-gray-600 mt-1">Step 9: Comprehensive delivery management with barcode picking and automated invoicing</p>
+        <div className="rounded-2xl border border-gray-200 shadow-lg flex items-center justify-between px-8 py-8 bg-gradient-to-r from-gray-50 to-gray-100">
+          <div className="flex items-center gap-5">
+            <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center shadow-lg border border-gray-200">
+              <Truck className="h-8 w-8 text-blue-600" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-1 flex items-center gap-2" data-testid="text-page-title">
+                Delivery & Invoicing Management
+              </h1>
+              <div className="flex items-center gap-3 mb-2">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
+                  <Package className="h-3 w-3 mr-1" />
+                  Step 9
+                </span>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-gray-600 text-sm font-medium">
+                    Comprehensive delivery management with barcode picking and automated invoicing
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
           <Button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg" onClick={() => setShowCreateDialog(true)} data-testid="button-create-delivery">
             <span className="mr-2">+</span> Create Delivery
@@ -381,13 +403,13 @@ const DeliveryManagement = () => {
                       <TableRow key={delivery.id}>
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2">
-                            {getStatusIcon(delivery.status)}
+                            {getStatusIcon(delivery.status ?? "")}
                             {delivery.deliveryNumber}
                           </div>
                         </TableCell>
                         <TableCell>{delivery.salesOrder?.orderNumber || "N/A"}</TableCell>
                         <TableCell>{delivery.customer?.name || "N/A"}</TableCell>
-                        <TableCell>{getStatusBadge(delivery.status)}</TableCell>
+                        <TableCell>{getStatusBadge(delivery.status ?? "")}</TableCell>
                         <TableCell>
                           {delivery.deliveryDate ? 
                             new Date(delivery.deliveryDate).toLocaleDateString() : 
@@ -505,7 +527,7 @@ const DeliveryManagement = () => {
                       <div className="p-4 bg-muted rounded-lg">
                         <p><strong>Delivery:</strong> {selectedDelivery.deliveryNumber}</p>
                         <p><strong>Customer:</strong> {selectedDelivery.customer?.name}</p>
-                        <p><strong>Status:</strong> {getStatusBadge(selectedDelivery.status)}</p>
+                        <p><strong>Status:</strong> {getStatusBadge(selectedDelivery.status ?? "")}</p>
                       </div>
                     </div>
                   )}
@@ -689,7 +711,7 @@ const DeliveryManagement = () => {
                   <SelectContent>
                     {salesOrders.map((order: SalesOrder) => (
                       <SelectItem key={order.id} value={order.id}>
-                        {order.orderNumber} - {order.customer?.name || order.customerId}
+                        {order.orderNumber} - {order.customerId}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -781,7 +803,7 @@ const DeliveryManagement = () => {
                   <div className="space-y-1 text-sm">
                     <p><strong>Delivery:</strong> {selectedDelivery.deliveryNumber}</p>
                     <p><strong>Customer:</strong> {selectedDelivery.customer?.name}</p>
-                    <p><strong>Status:</strong> {getStatusBadge(selectedDelivery.status)}</p>
+                    <p><strong>Status:</strong> {getStatusBadge(selectedDelivery.status ?? "")}</p>
                   </div>
                 </div>
                 <div>
