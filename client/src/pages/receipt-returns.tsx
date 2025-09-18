@@ -102,9 +102,15 @@ export default function ReceiptReturnsPage() {
     queryKey: ["goods-receipts"],
     queryFn: async () => {
       try {
-        const response = await apiRequest("GET", "/api/goods-receipts");
+        const response = await apiRequest("GET", "/api/goods-receipt-headers");
         const data = await response.json();
-        return Array.isArray(data) ? data : [];
+        // Ensure each receipt has a receiptNumber property
+        return Array.isArray(data)
+          ? data.map((receipt: any) => ({
+              ...receipt,
+              receiptNumber: receipt.receiptNumber || receipt.number || receipt.id,
+            }))
+          : [];
       } catch (error) {
         console.error("Failed to fetch goods receipts:", error);
         return [];
@@ -114,14 +120,14 @@ export default function ReceiptReturnsPage() {
 
   // Fetch items for dropdown
   const { data: items = [] } = useQuery({
-    queryKey: ["items"],
+    queryKey: ["inventory-items"],
     queryFn: async () => {
       try {
-        const response = await apiRequest("GET", "/api/items");
+        const response = await apiRequest("GET", "/api/inventory-items");
         const data = await response.json();
         return Array.isArray(data) ? data : [];
       } catch (error) {
-        console.error("Failed to fetch items:", error);
+        console.error("Failed to fetch inventory items:", error);
         return [];
       }
     },
@@ -320,7 +326,7 @@ export default function ReceiptReturnsPage() {
           </div>
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
-              <Button className="bg-orange-600 hover:bg-orange-700 shadow-md hover:shadow-lg transition-all duration-200 px-6 py-2.5 text-white font-medium rounded-lg">
+              <Button variant="outline" className="border-orange-500 text-orange-600 hover:bg-orange-50 shadow-md hover:shadow-lg transition-all duration-200 px-6 py-2.5 font-medium rounded-lg">
                 <Plus className="h-4 w-4 mr-2" />
                 Process Return
               </Button>
@@ -353,7 +359,7 @@ export default function ReceiptReturnsPage() {
                       name="goodsReceiptId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Goods Receipt</FormLabel>
+                          <FormLabel>Goods Receipt (Receipt Number)</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger>
@@ -361,11 +367,22 @@ export default function ReceiptReturnsPage() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {goodsReceipts.map((receipt: any) => (
-                                <SelectItem key={receipt.id} value={receipt.id}>
-                                  {receipt.receiptNumber || `GR-${receipt.id}`}
-                                </SelectItem>
-                              ))}
+                              {goodsReceipts.length === 0 ? (
+                                <div className="px-4 py-2 text-gray-500 text-sm">No goods receipts available</div>
+                              ) : (
+                                goodsReceipts.map((receipt: any) => (
+                                  <SelectItem key={receipt.id} value={receipt.id}>
+                                    {receipt.receiptNumber && typeof receipt.receiptNumber === "string"
+                                      ? receipt.receiptNumber
+                                      : `GR-${receipt.id}`}
+                                    {receipt.supplierName
+                                      ? ` — ${receipt.supplierName}`
+                                      : receipt.supplier?.name
+                                        ? ` — ${receipt.supplier.name}`
+                                        : ""}
+                                  </SelectItem>
+                                ))
+                              )}
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -387,11 +404,21 @@ export default function ReceiptReturnsPage() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {items.map((item: any) => (
-                                <SelectItem key={item.id} value={item.id}>
-                                  {item.name || item.description || item.itemCode}
-                                </SelectItem>
-                              ))}
+                              {items.length === 0 ? (
+                                <div className="px-4 py-2 text-gray-500 text-sm">No items available</div>
+                              ) : (
+                                items.map((item: any) => (
+                                  <SelectItem key={item.id} value={item.id}>
+                                    {item.name
+                                      ? item.name
+                                      : item.description
+                                        ? item.description
+                                        : item.itemCode
+                                          ? item.itemCode
+                                          : `Item-${item.id}`}
+                                  </SelectItem>
+                                ))
+                              )}
                             </SelectContent>
                           </Select>
                           <FormMessage />

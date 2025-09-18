@@ -308,7 +308,7 @@ export default function ProcessFlowDetailsPage() {
         
         <div className="flex items-center gap-2">
             <Badge className={`${getPriorityColor(processFlow.priority)} flex items-center gap-1`}>
-              <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold mr-2">High</span>
+              <span className="border border-blue-500 text-blue-600 bg-blue-50 px-3 py-1 rounded-full text-xs font-semibold mr-2">High</span>
           </Badge>
           <Badge variant="outline" className="flex items-center gap-1">
             <Clock className="h-4 w-4" />

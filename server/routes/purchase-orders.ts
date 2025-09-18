@@ -231,7 +231,7 @@ export function registerPurchaseOrderRoutes(app: Express) {
         documentName,
         documentType,
         uploadedBy: resolvedUploadedBy,
-        currency: currency || 'USD',
+        currency: currency || 'BHD',
         paymentTerms: paymentTerms || undefined,
         deliveryTerms: deliveryTerms || undefined,
         specialInstructions: specialInstructions || undefined

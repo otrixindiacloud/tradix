@@ -17,14 +17,7 @@ import {
   type DynamicPricingConfig,
   type PricingCalculation,
   type CurrencyExchangeRate,
-  type MarginAnalysis,
-  type InsertVolumePricingTier,
-  type InsertContractPricing,
-  type InsertCompetitorPricing,
-  type InsertDynamicPricingConfig,
-  type InsertPricingCalculation,
-  type InsertCurrencyExchangeRate,
-  type InsertMarginAnalysis
+  type MarginAnalysis
 } from "@shared/schemas/pricing";
 import {
   items,
@@ -56,7 +49,7 @@ export class EnhancedPricingStorage extends BaseStorage {
       .orderBy(asc(volumePricingTiers.minQuantity));
   }
 
-  async createVolumePricingTier(tier: InsertVolumePricingTier): Promise<VolumePricingTier> {
+  async createVolumePricingTier(tier: any): Promise<VolumePricingTier> {
     const [created] = await db.insert(volumePricingTiers).values(tier).returning();
     
     await this.logAuditEvent(
@@ -71,7 +64,7 @@ export class EnhancedPricingStorage extends BaseStorage {
     return created;
   }
 
-  async updateVolumePricingTier(id: string, updates: Partial<InsertVolumePricingTier>): Promise<VolumePricingTier> {
+  async updateVolumePricingTier(id: string, updates: any): Promise<VolumePricingTier> {
     const existing = await this.getVolumePricingTier(id);
     if (!existing) {
       throw new Error("Volume pricing tier not found");
@@ -144,7 +137,7 @@ export class EnhancedPricingStorage extends BaseStorage {
       .orderBy(desc(contractPricing.contractStartDate));
   }
 
-  async createContractPricing(contract: InsertContractPricing): Promise<ContractPricing> {
+  async createContractPricing(contract: any): Promise<ContractPricing> {
     // Generate contract number if not provided
     const contractNumber = contract.contractNumber || this.generateNumber("CNT");
     
@@ -167,7 +160,7 @@ export class EnhancedPricingStorage extends BaseStorage {
     return created;
   }
 
-  async updateContractPricing(id: string, updates: Partial<InsertContractPricing>): Promise<ContractPricing> {
+  async updateContractPricing(id: string, updates: any): Promise<ContractPricing> {
     const existing = await this.getContractPricing({ customerId: updates.customerId });
     
     const [updated] = await db
@@ -209,7 +202,7 @@ export class EnhancedPricingStorage extends BaseStorage {
       .orderBy(desc(competitorPricing.verifiedAt));
   }
 
-  async createCompetitorPricing(pricing: InsertCompetitorPricing): Promise<CompetitorPricing> {
+  async createCompetitorPricing(pricing: any): Promise<CompetitorPricing> {
     const [created] = await db.insert(competitorPricing).values(pricing).returning();
     
     await this.logAuditEvent(
@@ -224,7 +217,7 @@ export class EnhancedPricingStorage extends BaseStorage {
     return created;
   }
 
-  async updateCompetitorPricing(id: string, updates: Partial<InsertCompetitorPricing>): Promise<CompetitorPricing> {
+  async updateCompetitorPricing(id: string, updates: any): Promise<CompetitorPricing> {
     const [updated] = await db
       .update(competitorPricing)
       .set(updates)
@@ -264,7 +257,7 @@ export class EnhancedPricingStorage extends BaseStorage {
       .orderBy(desc(dynamicPricingConfig.updatedAt));
   }
 
-  async createDynamicPricingConfig(config: InsertDynamicPricingConfig): Promise<DynamicPricingConfig> {
+  async createDynamicPricingConfig(config: any): Promise<DynamicPricingConfig> {
     const [created] = await db.insert(dynamicPricingConfig).values(config).returning();
     
     await this.logAuditEvent(
@@ -279,7 +272,7 @@ export class EnhancedPricingStorage extends BaseStorage {
     return created;
   }
 
-  async updateDynamicPricingConfig(id: string, updates: Partial<InsertDynamicPricingConfig>): Promise<DynamicPricingConfig> {
+  async updateDynamicPricingConfig(id: string, updates: any): Promise<DynamicPricingConfig> {
     const [updated] = await db
       .update(dynamicPricingConfig)
       .set({ ...updates, updatedAt: this.getCurrentTimestamp() })
@@ -319,7 +312,7 @@ export class EnhancedPricingStorage extends BaseStorage {
       .orderBy(desc(currencyExchangeRates.effectiveDate));
   }
 
-  async createCurrencyExchangeRate(rate: InsertCurrencyExchangeRate): Promise<CurrencyExchangeRate> {
+  async createCurrencyExchangeRate(rate: any): Promise<CurrencyExchangeRate> {
     const [created] = await db.insert(currencyExchangeRates).values(rate).returning();
     
     await this.logAuditEvent(
@@ -367,8 +360,8 @@ export class EnhancedPricingStorage extends BaseStorage {
           customerId,
           customerType: customer.customerType,
           method,
-          baseCurrency: "USD",
-          targetCurrency: "USD",
+          baseCurrency: "BHD",
+          targetCurrency: "BHD",
           volumeTiers: volumeTiers.map(vt => ({
             minQuantity: vt.minQuantity,
             maxQuantity: vt.maxQuantity || undefined,
@@ -403,7 +396,7 @@ export class EnhancedPricingStorage extends BaseStorage {
   }
 
   private async storePricingCalculation(result: PricingResult, quantity: number): Promise<void> {
-    const calculationData: InsertPricingCalculation = {
+    const calculationData: any = {
       itemId: result.itemId,
       customerId: result.customerId,
       method: result.method as any,
@@ -421,7 +414,7 @@ export class EnhancedPricingStorage extends BaseStorage {
       validUntil: result.validUntil || null
     };
 
-    await db.insert(pricingCalculations).values(calculationData);
+  await db.insert(pricingCalculations).values(calculationData as any);
   }
 
   // Margin Analysis
@@ -437,7 +430,7 @@ export class EnhancedPricingStorage extends BaseStorage {
     const defaultPeriodEnd = periodEnd || new Date();
 
     // Aggregate sales data for the period (this would typically come from sales order items)
-    const mockAnalysisData: InsertMarginAnalysis = {
+  const mockAnalysisData: any = {
       itemId: itemId || "",
       customerId,
       categoryId,

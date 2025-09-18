@@ -1,6 +1,6 @@
 import { db } from "../db";
 import { salesOrders, salesOrderItems, quotations, quotationItems, items, customers } from "@shared/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, or, like } from "drizzle-orm";
 import { validateUUID, SYSTEM_USER_ID } from "@shared/utils/uuid";
 import { ISalesOrderStorage } from "./interfaces";
 import { BaseStorage } from "./base";
@@ -177,24 +177,36 @@ export class SalesOrderStorage extends BaseStorage implements ISalesOrderStorage
     
     // Use transaction to ensure atomic operation
     return await db.transaction(async (tx) => {
+      // Extract base order number (remove any existing amendment suffix)
       const baseOrderNumber = parentOrder.orderNumber.replace(/-A\d+$/, '');
       
-      // Lock and get all existing amendments for this parent to prevent race conditions
-      const existingRows: any = await tx.execute(sql`
-        SELECT order_number, amendment_sequence FROM sales_orders
-        WHERE (parent_order_id = ${parentOrderId} OR order_number = ${baseOrderNumber})
-        FOR UPDATE
-      `);
+      // Lock and get all existing orders related to this base order to prevent race conditions
+      const existingOrders = await tx
+        .select({
+          orderNumber: salesOrders.orderNumber,
+          amendmentSequence: salesOrders.amendmentSequence
+        })
+        .from(salesOrders)
+        .where(
+          or(
+            eq(salesOrders.parentOrderId, parentOrderId),
+            eq(salesOrders.orderNumber, baseOrderNumber),
+            like(salesOrders.orderNumber, `${baseOrderNumber}-A%`)
+          )
+        )
+        .for('update');
       
       // Find next available sequence number
       const used = new Set<number>();
-      for (const r of existingRows.rows || []) {
-        if (r.amendment_sequence && Number(r.amendment_sequence) > 0) {
-          used.add(Number(r.amendment_sequence));
+      for (const order of existingOrders) {
+        if (order.amendmentSequence && order.amendmentSequence > 0) {
+          used.add(order.amendmentSequence);
         }
         // Also extract from order_number pattern for safety
-        const m = /-A(\d+)$/.exec(r.order_number);
-        if (m) used.add(Number(m[1]));
+        const match = /-A(\d+)$/.exec(order.orderNumber);
+        if (match) {
+          used.add(Number(match[1]));
+        }
       }
       
       let nextSeq = 1;

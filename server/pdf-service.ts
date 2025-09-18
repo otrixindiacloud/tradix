@@ -84,7 +84,7 @@ export class PDFService {
       
       // Items Table with Material Specifications
       const itemsStartY = 180;
-      this.addEnhancedItemsTable(doc, data.items, itemsStartY, data.invoice.currency || 'USD');
+  this.addEnhancedItemsTable(doc, data.items, itemsStartY, data.invoice.currency || 'BHD');
       
       // Financial Summary with Multi-Currency Support
       const finalY = (doc as any).lastAutoTable?.finalY || itemsStartY + 100;
@@ -92,7 +92,7 @@ export class PDFService {
       
       // Banking Information for Payment
       const bankingY = finalY + 80;
-      this.addBankingInformation(doc, data.invoice.currency || 'USD', bankingY);
+  this.addBankingInformation(doc, data.invoice.currency || 'BHD', bankingY);
       
       // Terms and Conditions
       const termsY = bankingY + 60;
@@ -137,27 +137,68 @@ export class PDFService {
     doc.text(data.customer.name, 20, 90);
     if (data.customer.email) doc.text(data.customer.email, 20, 100);
     
-    // Simple items table
-    const tableData = data.items.map((item, index) => [
-      (index + 1).toString(),
-      item.description || '',
-      item.quantity.toString(),
-      `${data.invoice.currency || 'USD'} ${parseFloat(item.unitPrice.toString()).toFixed(2)}`,
-      `${data.invoice.currency || 'USD'} ${parseFloat(item.totalPrice.toString()).toFixed(2)}`
-    ]);
+    // Enhanced items table with comprehensive structure
+    const tableData = data.items.map((item, index) => {
+      const qty = Number(item.quantity) || 0;
+      const rate = Number(item.unitPrice) || 0;
+      const discountPerc = Number((item as any).discountPercentage) || 0;
+      const discountAmt = (rate * qty * discountPerc) / 100;
+      const netAmount = (rate * qty) - discountAmt;
+      const taxRate = Number((item as any).taxRate) || 0;
+      const taxAmount = (netAmount * taxRate) / 100;
+      const lineTotal = netAmount + taxAmount;
+      
+      return [
+        (index + 1).toString(),
+        item.description || 'Item Description',
+        `${qty} PCS`,
+        `${data.invoice.currency || 'BHD'} ${rate.toFixed(3)}`,
+        discountPerc ? `${discountPerc.toFixed(1)}%` : '0%',
+        `${data.invoice.currency || 'BHD'} ${discountAmt.toFixed(2)}`,
+        `${data.invoice.currency || 'BHD'} ${netAmount.toFixed(2)}`,
+        taxRate ? `${taxRate.toFixed(1)}%` : '0%',
+        `${data.invoice.currency || 'BHD'} ${taxAmount.toFixed(2)}`,
+        `${data.invoice.currency || 'BHD'} ${lineTotal.toFixed(2)}`
+      ];
+    });
     
     autoTable(doc, {
       startY: 120,
-      head: [['#', 'Description', 'Qty', 'Unit Price', 'Total']],
+      head: [['#', 'Description', 'Qty', 'Unit Rate', 'Disc.%', 'Disc. Amt', 'Net Amt', 'Tax %', 'Tax Amt', 'Line Total']],
       body: tableData,
-      styles: { fontSize: 10, cellPadding: 4 },
-      headStyles: { fillColor: [212, 175, 55], textColor: [255, 255, 255], fontStyle: 'bold' }
+      styles: { 
+        fontSize: 9, 
+        cellPadding: 3,
+        lineColor: [200, 200, 200],
+        lineWidth: 0.1
+      },
+      headStyles: { 
+        fillColor: [41, 128, 185], 
+        textColor: [255, 255, 255], 
+        fontStyle: 'bold',
+        halign: 'center'
+      },
+      columnStyles: {
+        0: { cellWidth: 12, halign: 'center' },
+        1: { cellWidth: 50, halign: 'left' },
+        2: { cellWidth: 15, halign: 'center' },
+        3: { cellWidth: 20, halign: 'right' },
+        4: { cellWidth: 15, halign: 'center' },
+        5: { cellWidth: 18, halign: 'right' },
+        6: { cellWidth: 20, halign: 'right' },
+        7: { cellWidth: 12, halign: 'center' },
+        8: { cellWidth: 18, halign: 'right' },
+        9: { cellWidth: 20, halign: 'right', fontStyle: 'bold' }
+      },
+      alternateRowStyles: {
+        fillColor: [248, 249, 250]
+      }
     });
     
     // Total
     const finalY = (doc as any).lastAutoTable?.finalY || 200;
     doc.setFont('helvetica', 'bold');
-    doc.text(`Total: ${data.invoice.currency || 'USD'} ${parseFloat(data.invoice.totalAmount?.toString() || '0').toFixed(2)}`, 
+  doc.text(`Total: ${data.invoice.currency || 'BHD'} ${parseFloat(data.invoice.totalAmount?.toString() || '0').toFixed(2)}`, 
              pageWidth - 20, finalY + 20, { align: 'right' });
     
     return Buffer.from(doc.output('arraybuffer'));
@@ -229,7 +270,7 @@ export class PDFService {
       ['Invoice Number:', invoice.invoiceNumber],
       ['Date:', new Date(invoice.invoiceDate || invoice.createdAt!).toLocaleDateString()],
       ['Due Date:', invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : 'Upon Receipt'],
-      ['Currency:', invoice.currency || 'USD'],
+  ['Currency:', invoice.currency || 'BHD'],
       ['Status:', invoice.status]
     ];
     
@@ -290,53 +331,71 @@ export class PDFService {
   private addEnhancedItemsTable(doc: jsPDF, items: (InvoiceItem & { item?: Item })[], startY: number, currency: string) {
     const tableData = items.map((item, index) => {
       const materialSpecs = [];
-      if (item.supplierCode) materialSpecs.push(`Supplier: ${item.supplierCode}`);
-      if (item.barcode) materialSpecs.push(`Barcode: ${item.barcode}`);
+      if ((item as any).supplierCode) materialSpecs.push(`Supplier: ${(item as any).supplierCode}`);
+      if ((item as any).barcode) materialSpecs.push(`Barcode: ${(item as any).barcode}`);
       if (item.item?.category) materialSpecs.push(`Category: ${item.item.category}`);
       if (item.item?.unitOfMeasure) materialSpecs.push(`UOM: ${item.item.unitOfMeasure}`);
       
       const descriptionWithSpecs = item.description + 
         (materialSpecs.length > 0 ? `\n${materialSpecs.join(' | ')}` : '');
       
+      const qty = Number(item.quantity) || 0;
+      const rate = Number(item.unitPrice) || 0;
+      const discountPerc = Number(item.discountPercentage) || 0;
+      const discountAmt = (rate * qty * discountPerc) / 100;
+      const netAmount = (rate * qty) - discountAmt;
+      const taxRate = Number(item.taxRate) || 0;
+      const taxAmount = (netAmount * taxRate) / 100;
+      const lineTotal = netAmount + taxAmount;
+      
       return [
         (index + 1).toString(),
         descriptionWithSpecs,
-        item.quantity.toString(),
-        `${currency} ${parseFloat(item.unitPrice.toString()).toFixed(2)}`,
-        item.discountPercentage ? `${item.discountPercentage}%` : '0%',
-        item.taxRate ? `${item.taxRate}%` : '0%',
-        `${currency} ${parseFloat(item.totalPrice.toString()).toFixed(2)}`
+        `${qty} PCS`,
+        `${currency} ${rate.toFixed(3)}`,
+        discountPerc ? `${discountPerc.toFixed(1)}%` : '0%',
+        `${currency} ${discountAmt.toFixed(2)}`,
+        `${currency} ${netAmount.toFixed(2)}`,
+        taxRate ? `${taxRate.toFixed(1)}%` : '0%',
+        `${currency} ${taxAmount.toFixed(2)}`,
+        `${currency} ${lineTotal.toFixed(2)}`
       ];
     });
     
     autoTable(doc, {
       startY: startY,
-      head: [['#', 'Description & Material Specs', 'Qty', 'Unit Price', 'Disc.', 'Tax', 'Total']],
+      head: [['#', 'Description & Material Specs', 'Qty', 'Unit Rate', 'Disc.%', 'Disc. Amt', 'Net Amount', 'Tax %', 'Tax Amt', 'Line Total']],
       body: tableData,
       styles: {
-        fontSize: 9,
+        fontSize: 8,
         cellPadding: 3,
         lineColor: [200, 200, 200],
         lineWidth: 0.1,
+        valign: 'middle'
       },
       headStyles: {
-        fillColor: [212, 175, 55],
+        fillColor: [52, 152, 219], // Professional blue
         textColor: [255, 255, 255],
         fontStyle: 'bold',
-        fontSize: 10
+        fontSize: 9,
+        halign: 'center'
       },
       columnStyles: {
         0: { halign: 'center', cellWidth: 12 },
-        1: { cellWidth: 70 },
+        1: { cellWidth: 55, halign: 'left' },
         2: { halign: 'center', cellWidth: 15 },
-        3: { halign: 'right', cellWidth: 25 },
+        3: { halign: 'right', cellWidth: 20 },
         4: { halign: 'center', cellWidth: 15 },
-        5: { halign: 'center', cellWidth: 15 },
-        6: { halign: 'right', cellWidth: 25 }
+        5: { halign: 'right', cellWidth: 18 },
+        6: { halign: 'right', cellWidth: 20 },
+        7: { halign: 'center', cellWidth: 12 },
+        8: { halign: 'right', cellWidth: 18 },
+        9: { halign: 'right', cellWidth: 20, fontStyle: 'bold' }
       },
       alternateRowStyles: {
         fillColor: [248, 249, 250]
-      }
+      },
+      margin: { left: 20, right: 20 }
     });
   }
 
@@ -344,7 +403,7 @@ export class PDFService {
    * Financial summary with multi-currency support
    */
   private addFinancialSummary(doc: jsPDF, invoice: Invoice, pageWidth: number, startY: number) {
-    const currency = invoice.currency || 'USD';
+  const currency = invoice.currency || 'BHD';
     const summaryX = pageWidth - 90;
     
     // Background
@@ -511,8 +570,8 @@ export class PDFService {
       (index + 1).toString(),
       item.description,
       item.quantity.toString(),
-      `$${parseFloat(item.unitPrice.toString()).toFixed(2)}`,
-      `$${parseFloat(item.lineTotal.toString()).toFixed(2)}`
+      `${data.quotation?.currency || 'BHD'} ${parseFloat(item.unitPrice.toString()).toFixed(2)}`,
+      `${data.quotation?.currency || 'BHD'} ${parseFloat(item.lineTotal.toString()).toFixed(2)}`
     ]);
     
     autoTable(doc, {

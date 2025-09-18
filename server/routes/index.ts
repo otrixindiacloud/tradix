@@ -25,6 +25,7 @@ import { registerShipmentTrackingRoutes } from "./shipment-tracking";
 import { registerInvoiceRoutes } from "./invoice";
 import { registerCreditNoteRoutes } from "./credit-notes";
 import { registerGoodsReceiptRoutes } from "./goods-receipt";
+import { registerPurchaseInvoiceRoutes } from "./purchase-invoices";
 import { registerUtilityRoutes } from "./utility";
 import auditRoutes from "./audit";
 import userRoutes from "./users";
@@ -59,6 +60,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerInvoiceRoutes(app);
   registerCreditNoteRoutes(app);
   registerGoodsReceiptRoutes(app);
+  registerPurchaseInvoiceRoutes(app);
   registerUtilityRoutes(app);
   registerRecentActivitiesRoutes(app);
   registerAuthRoutes(app);

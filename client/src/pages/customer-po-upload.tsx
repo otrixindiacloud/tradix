@@ -164,10 +164,9 @@ export default function PoUpload() {
       render: (value: string) => value || (
             <Badge
               variant="outline"
-              className="bg-blue-600 text-white border-blue-600 flex items-center justify-center gap-2"
-              style={{ borderColor: '#2563eb' }}
+              className="border-orange-500 text-orange-600 hover:bg-orange-50 flex items-center justify-center gap-2"
             >
-              <AlertTriangle className="h-3 w-3 text-white" />
+              <AlertTriangle className="h-3 w-3 text-orange-600" />
               <span className="font-medium">Pending</span>
             </Badge>
       ),
@@ -183,10 +182,9 @@ export default function PoUpload() {
       ) : (
             <Badge
               variant="outline"
-              className="bg-red-600 text-white border-red-600 flex items-center justify-center gap-2"
-              style={{ borderColor: '#dc2626' }}
+              className="border-red-500 text-red-600 hover:bg-red-50 flex items-center justify-center gap-2"
             >
-              <X className="h-3 w-3 text-white" />
+              <X className="h-3 w-3 text-red-600" />
               <span className="font-medium">Missing</span>
             </Badge>
       ),
@@ -204,8 +202,8 @@ export default function PoUpload() {
             {!quotation.customerPoDocument && (
               <Button
                 size="sm"
-                variant="secondary"
-                className="bg-gray-400 text-white hover:bg-gray-500 border-gray-400"
+                variant="outline"
+                className="border-orange-500 text-orange-600 hover:bg-orange-50"
                 onClick={(e) => {
                   e.stopPropagation();
                   setSelectedQuotation(quotation);
@@ -269,7 +267,8 @@ export default function PoUpload() {
           </div>
           <div className="flex gap-2">
             <Button
-              className="bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-200 transition flex items-center gap-2"
+              variant="outline"
+              className="border-amber-500 text-amber-600 hover:bg-amber-50 font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-200 transition flex items-center gap-2"
               onClick={() => setSelectedQuotation({})}
               data-testid="button-new-customer-po-upload"
             >
@@ -357,7 +356,7 @@ export default function PoUpload() {
                 />
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               </div>
-              <Button variant="default" size="icon" data-testid="button-filter" className="bg-blue-600 hover:bg-blue-700 text-white border border-blue-600 shadow-sm">
+              <Button variant="outline" size="icon" data-testid="button-filter" className="border-blue-500 text-blue-600 hover:bg-blue-50 shadow-sm">
                 <Filter className="h-4 w-4" />
               </Button>
             </div>
@@ -512,6 +511,8 @@ export default function PoUpload() {
                 Cancel
               </Button>
               <Button
+                variant="outline"
+                className="border-blue-500 text-blue-600 hover:bg-blue-50"
                 onClick={() => {
                   if (selectedQuotation?.id && poNumber.trim() && uploadedFile) {
                     uploadPO.mutate({
@@ -556,7 +557,7 @@ export default function PoUpload() {
                   <div>
                     <label className="text-sm font-medium text-gray-500">Status</label>
                     <div className="mt-1">
-                      <Badge variant="outline" className="bg-green-600 text-white border-green-600">
+                      <Badge variant="outline" className="border-green-500 text-green-600 bg-green-50">
                         {viewingQuotation.status}
                       </Badge>
                     </div>
@@ -593,8 +594,8 @@ export default function PoUpload() {
                     <label className="text-sm font-medium text-gray-500">PO Number</label>
                     <p className="font-medium">
                       {viewingQuotation.customerPoNumber || (
-                        <Badge variant="outline" className="bg-blue-600 text-white border-blue-600">
-                          <AlertTriangle className="h-3 w-3 mr-1" />
+                        <Badge variant="outline" className="border-orange-500 text-orange-600 hover:bg-orange-50">
+                          <AlertTriangle className="h-3 w-3 mr-1 text-orange-600" />
                           Pending
                         </Badge>
                       )}
@@ -609,8 +610,8 @@ export default function PoUpload() {
                           Uploaded
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="bg-red-600 text-white border-red-600">
-                          <X className="h-3 w-3 mr-1" />
+                        <Badge variant="outline" className="border-red-500 text-red-600 hover:bg-red-50">
+                          <X className="h-3 w-3 mr-1 text-red-600" />
                           Missing
                         </Badge>
                       )}

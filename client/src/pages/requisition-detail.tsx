@@ -214,13 +214,13 @@ export default function RequisitionDetailPage() {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900">Requisition Not Found</h2>
           <p className="text-gray-600 mt-2">The requisition you're looking for doesn't exist.</p>
-          <Button 
-            onClick={() => navigate("/requisitions")} 
-            className="mt-4"
+          <button 
+            onClick={() => navigate("/requisitions")}
+            className="group flex items-center gap-3 bg-white hover:bg-gray-50 text-gray-900 font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2 transition-all duration-200 transform hover:-translate-y-0.5 border border-gray-200"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Requisitions
-          </Button>
+            <ArrowLeft className="h-4 w-4 text-blue-600 group-hover:scale-110 transition-transform duration-200" />
+            <div className="text-sm font-bold">Back to Requisitions</div>
+          </button>
         </div>
       </div>
     );
@@ -231,13 +231,13 @@ export default function RequisitionDetailPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Button 
-            variant="ghost" 
+          <button 
             onClick={() => navigate("/requisitions")}
+            className="group flex items-center gap-3 bg-white hover:bg-gray-50 text-gray-900 font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2 transition-all duration-200 transform hover:-translate-y-0.5 border border-gray-200"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Requisitions
-          </Button>
+            <ArrowLeft className="h-4 w-4 text-blue-600 group-hover:scale-110 transition-transform duration-200" />
+            <div className="text-sm font-bold">Back to Requisitions</div>
+          </button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
               {requisition.requisitionNumber}
@@ -453,7 +453,7 @@ export default function RequisitionDetailPage() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700"
+              className="border-red-500 text-red-600 hover:bg-red-50 bg-transparent"
             >
               Delete
             </AlertDialogAction>

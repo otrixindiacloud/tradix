@@ -96,7 +96,7 @@ export function createSimpleTestInvoicePDF(invoiceData: EnhancedInvoicePDFData):
         
         doc.text(`Item ${index + 1}: ${item.description || 'Product'}`, 25, yPos);
         doc.text(item.quantity.toString(), 120, yPos);
-  const cur = (invoiceData.invoice as any).currency || 'USD';
+  const cur = (invoiceData.invoice as any).currency || 'BHD';
   doc.text(formatCurrency(parseFloat(item.unitPrice.toString()), cur), 140, yPos);
   doc.text(formatCurrency(lineTotal, cur), 170, yPos);
         yPos += 10;
@@ -110,16 +110,16 @@ export function createSimpleTestInvoicePDF(invoiceData: EnhancedInvoicePDFData):
     yPos += 10;
     doc.setFontSize(12);
     doc.text('Subtotal:', 130, yPos);
-  doc.text(formatCurrency(parseFloat((invoiceData.invoice as any).subtotal || 0), (invoiceData.invoice as any).currency || 'USD'), 170, yPos);
+  doc.text(formatCurrency(parseFloat((invoiceData.invoice as any).subtotal || 0), (invoiceData.invoice as any).currency || 'BHD'), 170, yPos);
     
     yPos += 10;
     doc.text('Tax:', 130, yPos);
-  doc.text(formatCurrency(parseFloat((invoiceData.invoice as any).taxAmount || 0), (invoiceData.invoice as any).currency || 'USD'), 170, yPos);
+  doc.text(formatCurrency(parseFloat((invoiceData.invoice as any).taxAmount || 0), (invoiceData.invoice as any).currency || 'BHD'), 170, yPos);
     
     yPos += 10;
     doc.setFont('helvetica', 'bold');
     doc.text('Total:', 130, yPos);
-  doc.text(formatCurrency(parseFloat((invoiceData.invoice as any).totalAmount || 0), (invoiceData.invoice as any).currency || 'USD'), 170, yPos);
+  doc.text(formatCurrency(parseFloat((invoiceData.invoice as any).totalAmount || 0), (invoiceData.invoice as any).currency || 'BHD'), 170, yPos);
     
     // Footer
     doc.setFont('helvetica', 'normal');
@@ -238,8 +238,8 @@ export function createEnhancedInvoicePDF(invoiceData: EnhancedInvoicePDFData): B
           item.description || 'Product',
           materialSpecs,
           item.quantity.toString(),
-          formatCurrency(parseFloat(item.unitPrice.toString()), (invoiceData.invoice as any).currency || 'USD'),
-          formatCurrency(lineTotal, (invoiceData.invoice as any).currency || 'USD')
+          formatCurrency(parseFloat(item.unitPrice.toString()), (invoiceData.invoice as any).currency || 'BHD'),
+          formatCurrency(lineTotal, (invoiceData.invoice as any).currency || 'BHD')
         ]);
       });
     }
@@ -287,7 +287,7 @@ export function createEnhancedInvoicePDF(invoiceData: EnhancedInvoicePDFData): B
           const lineTotal = parseFloat(item.quantity.toString()) * parseFloat(item.unitPrice.toString());
           doc.text(item.description || `Product ${index + 1}`, 25, yPos);
           doc.text(item.quantity.toString(), 120, yPos);
-          const cur2 = (invoiceData.invoice as any).currency || 'USD';
+          const cur2 = (invoiceData.invoice as any).currency || 'BHD';
           doc.text(formatCurrency(parseFloat(item.unitPrice.toString()), cur2), 140, yPos);
           doc.text(formatCurrency(lineTotal, cur2), 170, yPos);
           yPos += 10;
@@ -301,24 +301,24 @@ export function createEnhancedInvoicePDF(invoiceData: EnhancedInvoicePDFData): B
     doc.setFontSize(11);
     
     doc.text('Subtotal:', 130, yPos);
-  doc.text(formatCurrency(parseFloat((invoiceData.invoice as any).subtotal || 0), (invoiceData.invoice as any).currency || 'USD'), 170, yPos);
+  doc.text(formatCurrency(parseFloat((invoiceData.invoice as any).subtotal || 0), (invoiceData.invoice as any).currency || 'BHD'), 170, yPos);
     yPos += 8;
     
   if (parseFloat((invoiceData.invoice as any).discountAmount || 0) > 0) {
       doc.text('Discount:', 130, yPos);
-  doc.text(`-${formatCurrency(parseFloat((invoiceData.invoice as any).discountAmount || 0), (invoiceData.invoice as any).currency || 'USD')}`, 170, yPos);
+  doc.text(`-${formatCurrency(parseFloat((invoiceData.invoice as any).discountAmount || 0), (invoiceData.invoice as any).currency || 'BHD')}`, 170, yPos);
       yPos += 8;
     }
     
   doc.text('Tax:', 130, yPos);
-  doc.text(formatCurrency(parseFloat((invoiceData.invoice as any).taxAmount || 0), (invoiceData.invoice as any).currency || 'USD'), 170, yPos);
+  doc.text(formatCurrency(parseFloat((invoiceData.invoice as any).taxAmount || 0), (invoiceData.invoice as any).currency || 'BHD'), 170, yPos);
     yPos += 8;
     
     // Total with emphasis
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
   doc.text('Total Amount:', 130, yPos);
-  doc.text(formatCurrency(parseFloat((invoiceData.invoice as any).totalAmount || 0), (invoiceData.invoice as any).currency || 'USD'), 170, yPos);
+  doc.text(formatCurrency(parseFloat((invoiceData.invoice as any).totalAmount || 0), (invoiceData.invoice as any).currency || 'BHD'), 170, yPos);
     
     // Banking Information
     yPos += 20;

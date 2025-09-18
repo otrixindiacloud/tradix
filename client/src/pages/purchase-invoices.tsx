@@ -8,7 +8,7 @@ import {
   Search, 
   Download, 
   Eye, 
-  Edit, 
+  Edit,
   Trash2,
   FileText,
   Clock,
@@ -63,7 +63,7 @@ interface PurchaseInvoice {
   totalAmount: string;
   paidAmount: string;
   remainingAmount: string;
-  currency: "AED" | "USD" | "EUR" | "GBP";
+  currency: "BHD" | "AED" | "EUR" | "GBP";
   paymentTerms: string;
   paymentMethod?: "Bank Transfer" | "Cheque" | "Cash" | "Credit Card" | "Letter of Credit";
   bankReference?: string;
@@ -91,6 +91,17 @@ interface PurchaseInvoiceItem {
   goodsReceiptItemId?: string;
 }
 
+type NewPurchaseInvoice = {
+  supplierId: string;
+  supplierInvoiceNumber: string;
+  purchaseOrderNumber: string;
+  invoiceDate: string;
+  dueDate: string;
+  paymentTerms: string;
+  currency: PurchaseInvoice['currency'];
+  notes: string;
+};
+
 export default function PurchaseInvoicesPage() {
   const [, navigate] = useLocation();
   const [currentPage, setCurrentPage] = useState(1);
@@ -115,20 +126,19 @@ export default function PurchaseInvoicesPage() {
   
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [editingInvoice, setEditingInvoice] = useState<PurchaseInvoice | null>(null);
   const [deletingInvoice, setDeletingInvoice] = useState<PurchaseInvoice | null>(null);
   const [paymentInvoice, setPaymentInvoice] = useState<PurchaseInvoice | null>(null);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"Bank Transfer" | "Cheque" | "Cash" | "Credit Card" | "Letter of Credit">("Bank Transfer");
   const [paymentReference, setPaymentReference] = useState("");
-  const [newInvoice, setNewInvoice] = useState({
+  const [newInvoice, setNewInvoice] = useState<NewPurchaseInvoice>({
     supplierId: "",
     supplierInvoiceNumber: "",
     purchaseOrderNumber: "",
     invoiceDate: "",
     dueDate: "",
     paymentTerms: "",
-    currency: "AED" as const,
+    currency: "BHD",
     notes: "",
   });
   
@@ -158,7 +168,7 @@ export default function PurchaseInvoicesPage() {
       totalAmount: "5150.00",
       paidAmount: "0.00",
       remainingAmount: "5150.00",
-      currency: "AED",
+  currency: "BHD",
       paymentTerms: "Net 30",
       notes: "Hardware procurement invoice",
       attachments: ["invoice.pdf", "delivery_note.pdf"],
@@ -187,8 +197,9 @@ export default function PurchaseInvoicesPage() {
       totalAmount: "2050.00",
       paidAmount: "2050.00",
       remainingAmount: "0.00",
-      currency: "AED",
+  currency: "BHD",
       paymentTerms: "Net 15",
+      attachments: [],
       paymentMethod: "Bank Transfer",
       bankReference: "TXN-123456789",
       approvedBy: "John Smith",
@@ -215,8 +226,9 @@ export default function PurchaseInvoicesPage() {
       totalAmount: "8925.00",
       paidAmount: "0.00",
       remainingAmount: "8925.00",
-      currency: "USD",
+  currency: "BHD",
       paymentTerms: "Net 15",
+      attachments: [],
       itemCount: 2,
       isRecurring: false,
       createdAt: "2024-01-07T11:20:00Z",
@@ -230,32 +242,34 @@ export default function PurchaseInvoicesPage() {
     { id: "sup-003", name: "Industrial Equipment Ltd" },
   ];
 
-  const { data: purchaseInvoices = mockPurchaseInvoices, isLoading, error } = useQuery({
+  const { data: purchaseInvoices = [], isLoading, error } = useQuery<PurchaseInvoice[]>({
     queryKey: ["/api/purchase-invoices", filters],
     queryFn: async () => {
-      // For now, return mock data. Replace with actual API call
-      return mockPurchaseInvoices.filter(invoice => {
-        if (filters.status && invoice.status !== filters.status) return false;
-        if (filters.paymentStatus && invoice.paymentStatus !== filters.paymentStatus) return false;
-        if (filters.supplier && invoice.supplierName.toLowerCase().indexOf(filters.supplier.toLowerCase()) === -1) return false;
-        if (filters.currency && invoice.currency !== filters.currency) return false;
-        if (filters.search && !invoice.invoiceNumber.toLowerCase().includes(filters.search.toLowerCase()) 
-            && !invoice.supplierInvoiceNumber?.toLowerCase().includes(filters.search.toLowerCase())
-            && !invoice.supplierName.toLowerCase().includes(filters.search.toLowerCase())) return false;
-        return true;
-      });
+      const params = new URLSearchParams();
+      if (filters.status) params.set('status', filters.status);
+      if (filters.paymentStatus) params.set('paymentStatus', filters.paymentStatus);
+      if (filters.supplier) params.set('supplier', filters.supplier);
+      if (filters.currency) params.set('currency', filters.currency);
+      if (filters.search) params.set('search', filters.search);
+      if (filters.dateFrom) params.set('dateFrom', filters.dateFrom);
+      if (filters.dateTo) params.set('dateTo', filters.dateTo);
+      const resp = await fetch(`/api/purchase-invoices?${params.toString()}`);
+      if (!resp.ok) {
+        throw new Error('Failed to load purchase invoices');
+      }
+      const data = await resp.json();
+      return data as PurchaseInvoice[];
     },
   });
 
   // Create purchase invoice mutation
   const createPurchaseInvoice = useMutation({
-    mutationFn: async (data: typeof newInvoice) => {
+    mutationFn: async (data: NewPurchaseInvoice) => {
       // Mock implementation - replace with actual API call
       const supplier = mockSuppliers.find(s => s.id === data.supplierId);
       const newInvoiceData: PurchaseInvoice = {
         id: `pi-${Date.now()}`,
         invoiceNumber: `PI-2024-${String(mockPurchaseInvoices.length + 1).padStart(3, '0')}`,
-        supplierId: data.supplierId,
         supplierName: supplier?.name || "Unknown Supplier",
         ...data,
         status: "Draft",
@@ -289,7 +303,7 @@ export default function PurchaseInvoicesPage() {
         invoiceDate: "",
         dueDate: "",
         paymentTerms: "",
-        currency: "AED",
+        currency: "BHD",
         notes: "",
       });
     },
@@ -372,22 +386,20 @@ export default function PurchaseInvoicesPage() {
     },
   });
 
-  // Handle edit invoice
-  const handleEdit = (invoice: PurchaseInvoice) => {
-    setEditingInvoice(invoice);
-    navigate(`/purchase-invoices/${invoice.id}`);
-  };
-
-  // Handle delete invoice
+  // Handle delete invoice (disabled in derived view)
   const handleDelete = (invoice: PurchaseInvoice) => {
-    setDeletingInvoice(invoice);
+    toast({
+      title: "Read-only",
+      description: "Deleting purchase invoices isn't available yet.",
+    });
   };
 
-  // Handle payment
+  // Handle payment (disabled in derived view)
   const handlePayment = (invoice: PurchaseInvoice) => {
-    setPaymentInvoice(invoice);
-    setPaymentAmount(invoice.remainingAmount);
-    setShowPaymentDialog(true);
+    toast({
+      title: "Not implemented",
+      description: "Recording payments for purchase invoices will be available once write APIs are added.",
+    });
   };
 
   // Handle date range change
@@ -497,13 +509,35 @@ export default function PurchaseInvoicesPage() {
     }
   };
 
-  const getPaymentStatusColor = (status: string) => {
+  
+
+  const getPaymentStatusBadgeProps = (status: string) => {
     switch (status) {
-      case "Paid": return "text-green-700 bg-green-100";
-      case "Partially Paid": return "text-yellow-700 bg-yellow-100";
-      case "Unpaid": return "text-gray-700 bg-gray-100";
-      case "Overdue": return "text-red-700 bg-red-100";
-      default: return "text-gray-700 bg-gray-100";
+      case "Paid": 
+        return {
+          variant: "outline" as const,
+          className: "border-green-500 text-green-600 hover:bg-green-50"
+        };
+      case "Partially Paid": 
+        return {
+          variant: "outline" as const,
+          className: "border-yellow-500 text-yellow-600 hover:bg-yellow-50"
+        };
+      case "Unpaid": 
+        return {
+          variant: "outline" as const,
+          className: "border-orange-500 text-orange-600 hover:bg-orange-50"
+        };
+      case "Overdue": 
+        return {
+          variant: "outline" as const,
+          className: "border-red-500 text-red-600 hover:bg-red-50"
+        };
+      default: 
+        return {
+          variant: "outline" as const,
+          className: "border-gray-500 text-gray-600 hover:bg-gray-50"
+        };
     }
   };
 
@@ -546,11 +580,17 @@ export default function PurchaseInvoicesPage() {
     {
       key: "paymentStatus",
       header: "Payment",
-      render: (value: string) => (
-        <Badge className={getPaymentStatusColor(value)}>
-          {value}
-        </Badge>
-      ),
+      render: (value: string) => {
+        const badgeProps = getPaymentStatusBadgeProps(value);
+        return (
+          <Badge 
+            variant={badgeProps.variant}
+            className={`${badgeProps.className} flex items-center justify-center gap-2`}
+          >
+            <span className="font-medium">{value}</span>
+          </Badge>
+        );
+      },
     },
     {
       key: "totalAmount",
@@ -626,17 +666,6 @@ export default function PurchaseInvoicesPage() {
             size="sm"
             onClick={(e) => {
               e.stopPropagation();
-              handleEdit(invoice);
-            }}
-            data-testid={`button-edit-${invoice.id}`}
-          >
-            <Edit className="h-4 w-4 text-blue-600" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
               handleDelete(invoice);
             }}
             data-testid={`button-delete-${invoice.id}`}
@@ -653,9 +682,9 @@ export default function PurchaseInvoicesPage() {
   const paginatedInvoices = purchaseInvoices.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   // Calculate totals
-  const totalInvoiceAmount = purchaseInvoices.reduce((sum, inv) => sum + parseFloat(inv.totalAmount), 0);
-  const totalPaidAmount = purchaseInvoices.reduce((sum, inv) => sum + parseFloat(inv.paidAmount), 0);
-  const totalOutstandingAmount = purchaseInvoices.reduce((sum, inv) => sum + parseFloat(inv.remainingAmount), 0);
+  const totalInvoiceAmount = purchaseInvoices.reduce((sum: number, inv: PurchaseInvoice) => sum + parseFloat(inv.totalAmount), 0);
+  const totalPaidAmount = purchaseInvoices.reduce((sum: number, inv: PurchaseInvoice) => sum + parseFloat(inv.paidAmount), 0);
+  const totalOutstandingAmount = purchaseInvoices.reduce((sum: number, inv: PurchaseInvoice) => sum + parseFloat(inv.remainingAmount), 0);
 
   return (
     <div className="space-y-6">
@@ -687,14 +716,11 @@ export default function PurchaseInvoicesPage() {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button 
-              className="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-200 transition flex items-center gap-2" 
-              onClick={() => setShowNewDialog(true)}
-              data-testid="button-new-purchase-invoice"
-            >
-              <Plus className="h-4 w-4" />
-              New Invoice
-            </Button>
+              {/* Creation disabled for derived purchase invoices */}
+              <Button onClick={() => toast({ title: 'Read-only', description: 'Creation of purchase invoices is not available yet.' })} variant="outline" className="border-orange-500 text-orange-600 hover:bg-orange-50" data-testid="button-new-purchase-invoice">
+                <Plus className="h-4 w-4" />
+                New Invoice
+              </Button>
           </div>
         </div>
       </div>
@@ -708,7 +734,7 @@ export default function PurchaseInvoicesPage() {
           <div className="flex-1">
             <div className="text-lg font-bold text-gray-700">Total Invoiced</div>
             <div className="text-2xl font-bold text-gray-900">
-              AED {totalInvoiceAmount.toLocaleString()}
+              BHD {totalInvoiceAmount.toLocaleString()}
             </div>
           </div>
         </Card>
@@ -719,7 +745,7 @@ export default function PurchaseInvoicesPage() {
           <div className="flex-1">
             <div className="text-lg font-bold text-gray-700">Total Paid</div>
             <div className="text-2xl font-bold text-gray-900">
-              AED {totalPaidAmount.toLocaleString()}
+              BHD {totalPaidAmount.toLocaleString()}
             </div>
           </div>
         </Card>
@@ -730,7 +756,7 @@ export default function PurchaseInvoicesPage() {
           <div className="flex-1">
             <div className="text-lg font-bold text-gray-700">Outstanding</div>
             <div className="text-2xl font-bold text-gray-900">
-              AED {totalOutstandingAmount.toLocaleString()}
+              BHD {totalOutstandingAmount.toLocaleString()}
             </div>
           </div>
         </Card>
@@ -748,156 +774,162 @@ export default function PurchaseInvoicesPage() {
       </div>
 
       {/* Filters */}
-      <div>
-        <div className="flex items-center gap-2 mb-4">
-          <Filter className="h-5 w-5" />
-          <h3 className="text-lg font-semibold">Filters</h3>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search invoices..."
-              value={filters.search}
-              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-              className="pl-10 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 rounded-md shadow-none"
-              data-testid="input-search"
-            />
+      <Card className="shadow-lg border border-gray-200 mb-8">
+        <CardHeader>
+          <div className="flex items-center gap-2 mb-2">
+            <Filter className="h-5 w-5" />
+            <h3 className="text-lg font-semibold">Filters</h3>
           </div>
-          <div>
-            <Select
-              value={filters.status}
-              onValueChange={(value) => setFilters({ ...filters, status: value })}
-            >
-              <SelectTrigger data-testid="select-status">
-                <SelectValue placeholder="All Statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="Draft">Draft</SelectItem>
-                <SelectItem value="Pending Approval">Pending Approval</SelectItem>
-                <SelectItem value="Approved">Approved</SelectItem>
-                <SelectItem value="Paid">Paid</SelectItem>
-                <SelectItem value="Partially Paid">Partially Paid</SelectItem>
-                <SelectItem value="Overdue">Overdue</SelectItem>
-                <SelectItem value="Disputed">Disputed</SelectItem>
-                <SelectItem value="Cancelled">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Select
-              value={filters.paymentStatus}
-              onValueChange={(value) => setFilters({ ...filters, paymentStatus: value })}
-            >
-              <SelectTrigger data-testid="select-payment-status">
-                <SelectValue placeholder="Payment Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Payment Statuses</SelectItem>
-                <SelectItem value="Unpaid">Unpaid</SelectItem>
-                <SelectItem value="Partially Paid">Partially Paid</SelectItem>
-                <SelectItem value="Paid">Paid</SelectItem>
-                <SelectItem value="Overdue">Overdue</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Select
-              value={filters.currency}
-              onValueChange={(value) => setFilters({ ...filters, currency: value })}
-            >
-              <SelectTrigger data-testid="select-currency">
-                <SelectValue placeholder="All Currencies" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Currencies</SelectItem>
-                <SelectItem value="AED">AED</SelectItem>
-                <SelectItem value="USD">USD</SelectItem>
-                <SelectItem value="EUR">EUR</SelectItem>
-                <SelectItem value="GBP">GBP</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Input
-              placeholder="Filter by supplier..."
-              value={filters.supplier}
-              onChange={(e) => setFilters({ ...filters, supplier: e.target.value })}
-              className="border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 rounded-md shadow-none"
-            />
-          </div>
-          <div>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !dateRange.from && "text-muted-foreground",
-                    dateRange.from && "border-blue-300 bg-blue-50"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateRange.from ? (
-                    dateRange.to ? (
-                      <>
-                        {format(dateRange.from, "LLL dd, y")} -{" "}
-                        {format(dateRange.to, "LLL dd, y")}
-                      </>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search invoices..."
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                className="pl-10 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 rounded-md shadow-none"
+                data-testid="input-search"
+              />
+            </div>
+            <div>
+              <Select
+                value={filters.status}
+                onValueChange={(value) => setFilters({ ...filters, status: value })}
+              >
+                <SelectTrigger data-testid="select-status">
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="Draft">Draft</SelectItem>
+                  <SelectItem value="Pending Approval">Pending Approval</SelectItem>
+                  <SelectItem value="Approved">Approved</SelectItem>
+                  <SelectItem value="Paid">Paid</SelectItem>
+                  <SelectItem value="Partially Paid">Partially Paid</SelectItem>
+                  <SelectItem value="Overdue">Overdue</SelectItem>
+                  <SelectItem value="Disputed">Disputed</SelectItem>
+                  <SelectItem value="Cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Select
+                value={filters.paymentStatus}
+                onValueChange={(value) => setFilters({ ...filters, paymentStatus: value })}
+              >
+                <SelectTrigger data-testid="select-payment-status">
+                  <SelectValue placeholder="Payment Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Payment Statuses</SelectItem>
+                  <SelectItem value="Unpaid">Unpaid</SelectItem>
+                  <SelectItem value="Partially Paid">Partially Paid</SelectItem>
+                  <SelectItem value="Paid">Paid</SelectItem>
+                  <SelectItem value="Overdue">Overdue</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Select
+                value={filters.currency}
+                onValueChange={(value) => setFilters({ ...filters, currency: value })}
+              >
+                <SelectTrigger data-testid="select-currency">
+                  <SelectValue placeholder="All Currencies" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Currencies</SelectItem>
+                  <SelectItem value="BHD">BHD</SelectItem>
+                  <SelectItem value="AED">AED</SelectItem>
+                  <SelectItem value="EUR">EUR</SelectItem>
+                  <SelectItem value="GBP">GBP</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Input
+                placeholder="Filter by supplier..."
+                value={filters.supplier}
+                onChange={(e) => setFilters({ ...filters, supplier: e.target.value })}
+                className="border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 rounded-md shadow-none"
+              />
+            </div>
+            <div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !dateRange.from && "text-muted-foreground",
+                      dateRange.from && "border-blue-300 bg-blue-50"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateRange.from ? (
+                      dateRange.to ? (
+                        <>
+                          {format(dateRange.from, "LLL dd, y")} -{" "}
+                          {format(dateRange.to, "LLL dd, y")}
+                        </>
+                      ) : (
+                        format(dateRange.from, "LLL dd, y")
+                      )
                     ) : (
-                      format(dateRange.from, "LLL dd, y")
-                    )
-                  ) : (
-                    <span>Pick a date range</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start" side="bottom" sideOffset={8}>
-                <Calendar
-                  initialFocus
-                  mode="range"
-                  defaultMonth={dateRange.from}
-                  selected={dateRange}
-                  onSelect={(range) => handleDateRangeChange(range?.from, range?.to)}
-                  numberOfMonths={2}
-                  disabled={(date) => date > new Date()}
-                />
-              </PopoverContent>
-            </Popover>
+                      <span>Pick a date range</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start" side="bottom" sideOffset={8}>
+                  <Calendar
+                    initialFocus
+                    mode="range"
+                    defaultMonth={dateRange.from}
+                    selected={dateRange}
+                    onSelect={(range) => handleDateRangeChange(range?.from, range?.to)}
+                    numberOfMonths={2}
+                    disabled={(date) => date > new Date()}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Purchase Invoices Table */}
-      <div>
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <h3 className="text-lg font-semibold">Purchase Invoices</h3>
+      <Card className="shadow-lg border border-gray-200 mb-8">
+        <CardHeader>
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h3 className="text-lg font-semibold">Purchase Invoices</h3>
+            </div>
+            <div className="flex items-center space-x-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" data-testid="button-export-table">
+                    <FileDown className="h-4 w-4 mr-2" />
+                    Export
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => exportPurchaseInvoices('csv')}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Export as CSV
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => exportPurchaseInvoices('excel')}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Export as Excel
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" data-testid="button-export-table">
-                  <FileDown className="h-4 w-4 mr-2" />
-                  Export
-                  <ChevronDown className="h-4 w-4 ml-2" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => exportPurchaseInvoices('csv')}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Export as CSV
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => exportPurchaseInvoices('excel')}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Export as Excel
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-        <div>
+        </CardHeader>
+        <CardContent>
           {error ? (
             <div className="text-center py-8">
               <p className="text-red-600 mb-4">Error loading purchase invoices</p>
@@ -944,8 +976,8 @@ export default function PurchaseInvoicesPage() {
               )}
             </div>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* New Purchase Invoice Dialog */}
       <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>
@@ -997,15 +1029,15 @@ export default function PurchaseInvoicesPage() {
                 <Label htmlFor="currency">Currency</Label>
                 <Select
                   value={newInvoice.currency}
-                  onValueChange={(value: "AED" | "USD" | "EUR" | "GBP") => 
+                  onValueChange={(value: PurchaseInvoice['currency']) => 
                     setNewInvoice({ ...newInvoice, currency: value })}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="BHD">BHD</SelectItem>
                     <SelectItem value="AED">AED</SelectItem>
-                    <SelectItem value="USD">USD</SelectItem>
                     <SelectItem value="EUR">EUR</SelectItem>
                     <SelectItem value="GBP">GBP</SelectItem>
                   </SelectContent>

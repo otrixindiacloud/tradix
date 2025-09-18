@@ -95,19 +95,19 @@ export default function StockIssuesPage() {
   });
 
   // Fetch items for dropdown
-  const { data: items = [] } = useQuery({
-    queryKey: ["items"],
-    queryFn: async () => {
-      try {
-        const response = await apiRequest("GET", "/api/items");
-        const data = await response.json();
-        return Array.isArray(data) ? data : [];
-      } catch (error) {
-        console.error("Failed to fetch items:", error);
-        return [];
-      }
-    },
-  });
+   const { data: items = [] } = useQuery({
+      queryKey: ["inventory-items"],
+      queryFn: async () => {
+        try {
+          const response = await apiRequest("GET", "/api/inventory-items");
+          const data = await response.json();
+          return Array.isArray(data) ? data : [];
+        } catch (error) {
+          console.error("Failed to fetch inventory items:", error);
+          return [];
+        }
+      },
+    });
 
   // Fetch statistics
   const { data: stats } = useQuery({
@@ -306,7 +306,7 @@ export default function StockIssuesPage() {
           </div>
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
-              <Button className="bg-red-600 hover:bg-red-700 shadow-md hover:shadow-lg transition-all duration-200 px-6 py-2.5 text-white font-medium rounded-lg">
+              <Button variant="outline" className="border-red-500 text-red-600 hover:bg-red-50 shadow-md hover:shadow-lg transition-all duration-200 px-6 py-2.5 font-medium rounded-lg">
                 <Plus className="h-4 w-4 mr-2" />
                 Issue Stock
               </Button>
@@ -349,7 +349,7 @@ export default function StockIssuesPage() {
                             <SelectContent>
                               {items.map((item: any) => (
                                 <SelectItem key={item.id} value={item.id}>
-                                  {item.name || item.description || item.itemCode}
+                                  {item.description || item.name || item.itemCode}
                                 </SelectItem>
                               ))}
                             </SelectContent>

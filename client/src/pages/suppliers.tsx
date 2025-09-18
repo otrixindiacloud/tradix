@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Eye, Edit, Trash2, Building2 } from "lucide-react";
+import { Plus, Eye, Edit, Trash2, Building2, Filter, Search } from "lucide-react";
 import DataTable, { Column } from "@/components/tables/data-table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -36,28 +36,9 @@ interface Supplier {
 }
 
 export default function Suppliers() {
-  const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 20;
-  const [showNewSupplier, setShowNewSupplier] = useState(false);
-  const [showEditSupplier, setShowEditSupplier] = useState(false);
-  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
-  const [deletingSupplier, setDeletingSupplier] = useState<Supplier | null>(null);
-  const [location, navigate] = useLocation();
-  
-  const { toast } = useToast();
+  const [showFilters, setShowFilters] = useState(false);
   const queryClient = useQueryClient();
-
-  const { data: suppliers = [], isLoading, error } = useQuery({
-    queryKey: ["/api/suppliers"],
-    queryFn: async () => {
-      const response = await fetch("/api/suppliers");
-      if (!response.ok) {
-        throw new Error(`Failed to fetch suppliers: ${response.statusText}`);
-      }
-      return response.json();
-    },
-  });
-
+  const { toast } = useToast();
   const form = useForm<SupplierFormData>({
     resolver: zodResolver(supplierSchema),
     defaultValues: {
@@ -95,6 +76,29 @@ export default function Suppliers() {
         variant: "destructive",
       });
     },
+  });
+  const { data: suppliers = [], isLoading, error } = useQuery({
+    queryKey: ["/api/suppliers"],
+    queryFn: async () => {
+      const response = await fetch("/api/suppliers");
+      if (!response.ok) {
+        throw new Error(`Failed to fetch suppliers: ${response.statusText}`);
+      }
+      return response.json();
+    },
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
+  const [showNewSupplier, setShowNewSupplier] = useState(false);
+  const [showEditSupplier, setShowEditSupplier] = useState(false);
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [deletingSupplier, setDeletingSupplier] = useState<Supplier | null>(null);
+  const [location, navigate] = useLocation();
+  const [filters, setFilters] = useState({
+    companyName: "",
+    contactPerson: "",
+    email: "",
+    phone: "",
   });
 
   const updateSupplier = useMutation({
@@ -247,9 +251,17 @@ export default function Suppliers() {
     },
   ];
 
-  // Pagination logic
-  const totalPages = Math.ceil(suppliers.length / pageSize);
-  const paginatedSuppliers = suppliers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  // Filter and pagination logic
+  const filteredSuppliers = suppliers.filter((supplier: Supplier) => {
+    const matchesCompanyName = !filters.companyName || supplier.name.toLowerCase().includes(filters.companyName.toLowerCase());
+    const matchesContactPerson = !filters.contactPerson || (supplier.contactPerson && supplier.contactPerson.toLowerCase().includes(filters.contactPerson.toLowerCase()));
+    const matchesEmail = !filters.email || supplier.email.toLowerCase().includes(filters.email.toLowerCase());
+    const matchesPhone = !filters.phone || (supplier.phone && supplier.phone.toLowerCase().includes(filters.phone.toLowerCase()));
+    return matchesCompanyName && matchesContactPerson && matchesEmail && matchesPhone;
+  });
+
+  const totalPages = Math.ceil(filteredSuppliers.length / pageSize);
+  const paginatedSuppliers = filteredSuppliers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div>
@@ -297,7 +309,6 @@ export default function Suppliers() {
                   </div>
                   <div className="text-left">
                     <div className="text-sm font-bold">New Supplier</div>
-                    <div className="text-xs text-gray-500">Add Partner</div>
                   </div>
                 </button>
               </DialogTrigger>
@@ -418,6 +429,90 @@ export default function Suppliers() {
         </Card>
       </div>
 
+      {/* Filter Section */}
+      <Card className="shadow-lg border-gray-200 bg-white mb-6">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-lg bg-gray-100 flex items-center justify-center">
+                <Filter className="h-4 w-4 text-gray-600" />
+              </div>
+              <CardTitle className="text-base">Filters</CardTitle>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFilters(!showFilters)}
+                data-testid="button-toggle-filters"
+              >
+                <Filter className="w-4 h-4 mr-2" />
+                {showFilters ? "Hide" : "Show"} Filters
+              </Button>
+              {(filters.companyName || filters.contactPerson || filters.email || filters.phone) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setFilters({ companyName: "", contactPerson: "", email: "", phone: "" })}
+                  data-testid="button-clear-filters"
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+        {showFilters && (
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
+              <div className="text-sm font-medium text-black text-left">Company Name</div>
+              <div className="text-sm font-medium text-black text-left">Contact Person</div>
+              <div className="text-sm font-medium text-black text-left">Email</div>
+              <div className="text-sm font-medium text-black text-left">Phone</div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Company Name"
+                  value={filters.companyName}
+                  onChange={(e) => setFilters({ ...filters, companyName: e.target.value })}
+                  className="pl-10 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg shadow-sm transition-all duration-200"
+                  data-testid="input-company-name-filter"
+                />
+              </div>
+              <div>
+                <Input
+                  placeholder="Contact Person"
+                  value={filters.contactPerson}
+                  onChange={(e) => setFilters({ ...filters, contactPerson: e.target.value })}
+                  className="border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg shadow-sm transition-all duration-200"
+                  data-testid="input-contact-person-filter"
+                />
+              </div>
+              <div>
+                <Input
+                  placeholder="Email"
+                  value={filters.email}
+                  onChange={(e) => setFilters({ ...filters, email: e.target.value })}
+                  className="border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg shadow-sm transition-all duration-200"
+                  data-testid="input-email-filter"
+                />
+              </div>
+              <div>
+                <Input
+                  placeholder="Phone"
+                  value={filters.phone}
+                  onChange={(e) => setFilters({ ...filters, phone: e.target.value })}
+                  className="border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg shadow-sm transition-all duration-200"
+                  data-testid="input-phone-filter"
+                />
+              </div>
+            </div>
+          </CardContent>
+        )}
+      </Card>
+
       {/* Suppliers Table */}
       <Card>
         <CardHeader>
@@ -432,7 +527,7 @@ export default function Suppliers() {
               emptyMessage="No suppliers found. Add your first supplier to get started."
             />
             {/* Pagination Controls */}
-            {suppliers.length > pageSize && (
+            {filteredSuppliers.length > pageSize && (
               <div className="flex justify-center items-center gap-2 mt-4">
                 <Button
                   variant="outline"

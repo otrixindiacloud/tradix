@@ -81,7 +81,7 @@ export class PDFService {
       
       // Items Table with Material Specifications
       const itemsStartY = 180;
-      this.addEnhancedItemsTable(doc, data.items, itemsStartY, data.invoice.currency || 'USD');
+  this.addEnhancedItemsTable(doc, data.items, itemsStartY, data.invoice.currency || 'BHD');
       
       // Financial Summary with Multi-Currency Support
       const finalY = (doc as any).lastAutoTable?.finalY || itemsStartY + 100;
@@ -89,7 +89,7 @@ export class PDFService {
       
       // Banking Information for Payment
       const bankingY = finalY + 80;
-      this.addBankingInformation(doc, data.invoice.currency || 'USD', bankingY);
+  this.addBankingInformation(doc, data.invoice.currency || 'BHD', bankingY);
       
       // Terms and Conditions
       const termsY = bankingY + 60;
@@ -139,8 +139,8 @@ export class PDFService {
       (index + 1).toString(),
       item.description || '',
       item.quantity.toString(),
-      `${data.invoice.currency || 'USD'} ${parseFloat(item.unitPrice.toString()).toFixed(2)}`,
-      `${data.invoice.currency || 'USD'} ${parseFloat(item.totalPrice.toString()).toFixed(2)}`
+      `${data.invoice.currency || 'BHD'} ${parseFloat(item.unitPrice.toString()).toFixed(2)}`,
+      `${data.invoice.currency || 'BHD'} ${parseFloat(item.totalPrice.toString()).toFixed(2)}`
     ]);
     
     autoTable(doc, {
@@ -154,7 +154,7 @@ export class PDFService {
     // Total
     const finalY = (doc as any).lastAutoTable?.finalY || 200;
     doc.setFont('helvetica', 'bold');
-    doc.text(`Total: ${data.invoice.currency || 'USD'} ${parseFloat(data.invoice.totalAmount?.toString() || '0').toFixed(2)}`, 
+  doc.text(`Total: ${data.invoice.currency || 'BHD'} ${parseFloat(data.invoice.totalAmount?.toString() || '0').toFixed(2)}`, 
              pageWidth - 20, finalY + 20, { align: 'right' });
     
     return Buffer.from(doc.output('arraybuffer'));
@@ -226,7 +226,7 @@ export class PDFService {
       ['Invoice Number:', invoice.invoiceNumber],
       ['Date:', new Date(invoice.invoiceDate || invoice.createdAt!).toLocaleDateString()],
       ['Due Date:', invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : 'Upon Receipt'],
-      ['Currency:', invoice.currency || 'USD'],
+  ['Currency:', invoice.currency || 'BHD'],
       ['Status:', invoice.status]
     ];
     

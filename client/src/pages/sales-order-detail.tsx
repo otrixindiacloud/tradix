@@ -278,7 +278,8 @@ export default function SalesOrderDetail() {
                   });
                 }}
                 disabled={updateOrderStatus.isPending}
-                className="bg-green-500 hover:bg-green-600 text-white"
+                variant="outline"
+                className="border-green-500 text-green-600 hover:bg-green-50"
               >
                 {updateOrderStatus.isPending ? (
                   <LoadingSpinner size="sm" />
@@ -294,7 +295,8 @@ export default function SalesOrderDetail() {
             {salesOrder.status === "Confirmed" && salesOrder.customerLpoValidationStatus === "Approved" && (
               <Button
                 onClick={() => updateOrderStatus.mutate({ status: "Processing" })}
-                className="bg-orange-500 hover:bg-orange-600 text-white"
+                variant="outline"
+                className="border-orange-500 text-orange-600 hover:bg-orange-50"
               >
                 <Package className="h-4 w-4 mr-2" />
                 Start Processing
@@ -305,6 +307,7 @@ export default function SalesOrderDetail() {
               <Button
                 onClick={() => updateOrderStatus.mutate({ status: "Shipped" })}
                 variant="outline"
+                className="border-blue-500 text-blue-600 hover:bg-blue-50"
               >
                 <Truck className="h-4 w-4 mr-2" />
                 Mark as Shipped
@@ -315,6 +318,7 @@ export default function SalesOrderDetail() {
               <Button
                 onClick={() => setShowLpoValidationDialog(true)}
                 variant="outline"
+                className="border-amber-500 text-amber-600 hover:bg-amber-50"
               >
                 <FileCheck className="h-4 w-4 mr-2" />
                 Validate Customer LPO
@@ -324,6 +328,7 @@ export default function SalesOrderDetail() {
             <Button
               onClick={() => setShowAmendDialog(true)}
               variant="outline"
+              className="border-purple-500 text-purple-600 hover:bg-purple-50"
             >
               <Edit className="h-4 w-4 mr-2" />
               Create Amendment
@@ -556,7 +561,7 @@ export default function SalesOrderDetail() {
                             </p>
                           )}
                         </div>
-                        <Badge className="bg-green-500 text-white">Current</Badge>
+                        <Badge variant="outline" className="border-green-500 text-green-600">Current</Badge>
                       </div>
                     </div>
                     
@@ -669,6 +674,8 @@ export default function SalesOrderDetail() {
                 }
               }}
               disabled={!amendmentReason.trim() || createAmendedOrder.isPending}
+              variant="outline"
+              className="border-blue-500 text-blue-600 hover:bg-blue-50"
             >
               {createAmendedOrder.isPending ? (
                 <LoadingSpinner size="sm" />
@@ -731,6 +738,8 @@ export default function SalesOrderDetail() {
                 }
               }}
               disabled={!lpoValidationStatus || validateCustomerLpo.isPending}
+              variant="outline"
+              className="border-green-500 text-green-600 hover:bg-green-50"
             >
               {validateCustomerLpo.isPending ? (
                 <LoadingSpinner size="sm" />

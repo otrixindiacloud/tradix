@@ -82,7 +82,7 @@ export function getStatusColor(status: string): string {
   const statusColors: Record<string, string> = {
     // Enquiry statuses
     "New": "bg-blue-100 text-blue-800 border-blue-200",
-    "In Progress": "bg-amber-100 text-amber-800 border-amber-200",
+    "In Progress": "bg-transparent text-orange-700 border-orange-300 border-2",
     "Quoted": "bg-green-100 text-green-800 border-green-200",
     "Closed": "bg-gray-100 text-gray-800 border-gray-200",
     

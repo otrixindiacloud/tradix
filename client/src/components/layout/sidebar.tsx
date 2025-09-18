@@ -139,7 +139,6 @@ export default function Sidebar() {
               >
                 <FaQuestionCircle className="h-5 w-5 text-amber-500" />
                 <span className="font-medium">Enquiry</span>
-                <Badge variant="secondary" className="ml-auto bg-green-100 text-green-800">14</Badge>
               </a>
             </Link>
             <Link href="/quotations">
@@ -154,7 +153,6 @@ export default function Sidebar() {
               >
                 <FaFileInvoice className="h-5 w-5 text-blue-500" />
                 <span className="font-medium">Quotation</span>
-                <Badge variant="secondary" className="ml-auto bg-green-100 text-green-800">8</Badge>
               </a>
             </Link>
             <Link href="/customer-po-upload">
@@ -183,7 +181,6 @@ export default function Sidebar() {
               >
                 <FaShoppingCart className="h-5 w-5 text-green-600" />
                 <span className="font-medium">Sales Order</span>
-                <Badge variant="secondary" className="ml-auto bg-green-100 text-green-800">15</Badge>
               </a>
             </Link>
             <Link href="/delivery-note">

@@ -55,7 +55,7 @@ interface SupplierQuote {
   responseDate?: string;
   validUntil: string;
   totalAmount: string;
-  currency: "AED" | "USD" | "EUR" | "GBP";
+  currency: "BHD" | "AED" | "EUR" | "GBP";
   paymentTerms: string;
   deliveryTerms: string;
   deliveryDate?: string;
@@ -150,7 +150,7 @@ export default function SupplierQuotesPage() {
       responseDate: "2024-01-17",
       validUntil: "2024-02-15",
       totalAmount: "5200.00",
-      currency: "AED",
+  currency: "BHD",
       paymentTerms: "Net 30",
       deliveryTerms: "FOB Destination",
       deliveryDate: "2024-01-25",
@@ -175,7 +175,7 @@ export default function SupplierQuotesPage() {
       responseDate: "2024-01-16",
       validUntil: "2024-02-14",
       totalAmount: "2100.00",
-      currency: "AED",
+  currency: "BHD",
       paymentTerms: "Net 15",
       deliveryTerms: "CIF",
       deliveryDate: "2024-01-22",
@@ -196,7 +196,7 @@ export default function SupplierQuotesPage() {
       requestDate: "2024-01-18",
       validUntil: "2024-02-18",
       totalAmount: "0.00",
-      currency: "USD",
+  currency: "BHD",
       paymentTerms: "Net 45",
       deliveryTerms: "FOB Origin",
       itemCount: 0,
@@ -243,7 +243,7 @@ export default function SupplierQuotesPage() {
         status: "Pending",
         requestDate: new Date().toISOString().split('T')[0],
         totalAmount: "0.00",
-        currency: "AED",
+  currency: "BHD",
         itemCount: 0,
         isPreferredSupplier: false,
         createdAt: new Date().toISOString(),
@@ -476,11 +476,11 @@ export default function SupplierQuotesPage() {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "Low": return "text-white bg-green-500";
-      case "Medium": return "text-white bg-yellow-500";
-      case "High": return "text-white bg-orange-500";
-      case "Urgent": return "text-white bg-red-500";
-      default: return "text-white bg-gray-500";
+      case "Low": return "text-green-700 bg-green-100 border border-green-300";
+      case "Medium": return "text-yellow-700 bg-yellow-100 border border-yellow-300";
+      case "High": return "text-orange-700 bg-orange-100 border border-orange-300";
+      case "Urgent": return "text-red-700 bg-red-100 border border-red-300";
+      default: return "text-gray-700 bg-gray-100 border border-gray-300";
     }
   };
 
@@ -533,9 +533,9 @@ export default function SupplierQuotesPage() {
       key: "priority",
       header: "Priority",
       render: (value: string) => (
-        <Badge className={getPriorityColor(value)}>
+        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getPriorityColor(value)}`}>
           {value}
-        </Badge>
+        </span>
       ),
     },
     {
@@ -683,7 +683,8 @@ export default function SupplierQuotesPage() {
               </Button>
             )}
             <Button 
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 transition flex items-center gap-2" 
+              variant="outline"
+              className="border-indigo-500 text-indigo-600 hover:bg-indigo-50 font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 transition flex items-center gap-2" 
               onClick={() => setShowNewDialog(true)}
               data-testid="button-new-supplier-quote"
             >
@@ -744,7 +745,7 @@ export default function SupplierQuotesPage() {
 
       {/* Filters */}
       <Card className="mb-4 p-4">
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-4">      
           <Filter className="h-5 w-5" />
           <h3 className="text-lg font-semibold">Filters</h3>
         </div>
@@ -806,8 +807,8 @@ export default function SupplierQuotesPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Currencies</SelectItem>
+                <SelectItem value="BHD">BHD</SelectItem>
                 <SelectItem value="AED">AED</SelectItem>
-                <SelectItem value="USD">USD</SelectItem>
                 <SelectItem value="EUR">EUR</SelectItem>
                 <SelectItem value="GBP">GBP</SelectItem>
               </SelectContent>
@@ -863,35 +864,37 @@ export default function SupplierQuotesPage() {
         </div>
       </Card>
 
-      {/* Supplier Quotes Table */}
-      <div>
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <h3 className="text-lg font-semibold">Supplier Quotes</h3>
+      {/* Supplier Quotes Table - moved inside Card for consistent UI */}
+      <Card className="border border-gray-200 shadow-sm bg-white mt-6">
+        <CardHeader className="pb-4">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h3 className="text-lg font-semibold">Supplier Quotes</h3>
+            </div>
+            <div className="flex items-center space-x-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" data-testid="button-export-table">
+                    <FileDown className="h-4 w-4 mr-2" />
+                    Export
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => exportSupplierQuotes('csv')}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Export as CSV
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => exportSupplierQuotes('excel')}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Export as Excel
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" data-testid="button-export-table">
-                  <FileDown className="h-4 w-4 mr-2" />
-                  Export
-                  <ChevronDown className="h-4 w-4 ml-2" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => exportSupplierQuotes('csv')}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Export as CSV
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => exportSupplierQuotes('excel')}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Export as Excel
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-        <div>
+        </CardHeader>
+        <CardContent>
           {error ? (
             <div className="text-center py-8">
               <p className="text-red-600 mb-4">Error loading supplier quotes</p>
@@ -938,8 +941,8 @@ export default function SupplierQuotesPage() {
               )}
             </div>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* New Supplier Quote Dialog */}
       <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>

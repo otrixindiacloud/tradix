@@ -25,19 +25,19 @@ interface LpoFilters {
 }
 
 const statusColors = {
-  Draft: "text-white bg-gray-500",
-  Sent: "text-white bg-gray-400",
-  Confirmed: "text-white bg-green-600",
-  Received: "text-white bg-purple-600",
-  Cancelled: "text-white bg-red-600",
-  Missing: "flex items-center gap-2 text-white bg-red-600 border border-red-600 px-4 h-8 min-w-[100px] justify-center font-medium text-base",
+  Draft: "text-gray-700 bg-gray-100 border border-gray-300",
+  Sent: "text-gray-700 bg-gray-100 border border-gray-300",
+  Confirmed: "text-green-700 bg-green-100 border border-green-300",
+  Received: "text-purple-700 bg-purple-100 border border-purple-300",
+  Cancelled: "text-red-700 bg-red-100 border border-red-300",
+  Missing: "flex items-center gap-2 text-red-700 bg-red-100 border border-red-300 px-4 h-8 min-w-[100px] justify-center font-medium text-base",
 };
 
 const approvalStatusColors = {
-  "Not Required": "text-white bg-gray-500",
-  Pending: "text-white bg-gray-600",
-  Approved: "text-white bg-green-600",
-  Rejected: "text-white bg-red-600",
+  "Not Required": "text-gray-700 bg-gray-100 border border-gray-300",
+  Pending: "text-yellow-700 bg-yellow-100 border border-yellow-300",
+  Approved: "text-green-700 bg-green-100 border border-green-300",
+  Rejected: "text-red-700 bg-red-100 border border-red-300",
 };
 
 export default function SupplierLpoPage() {
@@ -156,22 +156,22 @@ export default function SupplierLpoPage() {
   const getStatusBadge = (status: string) => (
     status === "Missing"
       ? (
-          <Badge className={statusColors.Missing}>
-            <XCircle className="h-4 w-4 mr-1" />
+          <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${statusColors.Missing}`}>
+            <XCircle className="h-4 w-4" />
             Missing
-          </Badge>
+          </span>
         )
       : (
-          <Badge className={statusColors[status as keyof typeof statusColors]}>
+          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusColors[status as keyof typeof statusColors] || "text-gray-700 bg-gray-100 border border-gray-300"}`}>
             {status}
-          </Badge>
+          </span>
         )
   );
 
   const getApprovalStatusBadge = (status: string) => (
-    <Badge className={approvalStatusColors[status as keyof typeof approvalStatusColors] || "underline decoration-gray-500 text-gray-700"}>
+    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${approvalStatusColors[status as keyof typeof approvalStatusColors] || "text-gray-700 bg-gray-100 border border-gray-300"}`}>
       {status}
-    </Badge>
+    </span>
   );
 
   // Handler for saving expected delivery date in EditExpectedDeliveryDialog
@@ -192,23 +192,23 @@ export default function SupplierLpoPage() {
   return (
     <div className="space-y-6 p-6">
       {/* Enhanced Card-style header */}
-      <div className="bg-gradient-to-r from-white via-blue-50 to-purple-50 rounded-2xl shadow-lg border border-gray-200/50 backdrop-blur-sm relative overflow-hidden">
+      <div className="bg-gradient-to-r from-white via-gray-50 to-green-50 rounded-2xl shadow-lg border border-gray-200/50 backdrop-blur-sm relative overflow-hidden">
         {/* Background decoration */}
-        <div className="absolute top-0 right-0 w-64 h-32 bg-gradient-to-bl from-blue-100/30 to-transparent rounded-bl-full"></div>
-        <div className="absolute bottom-0 left-0 w-48 h-24 bg-gradient-to-tr from-purple-100/20 to-transparent rounded-tr-full"></div>
+        <div className="absolute top-0 right-0 w-64 h-32 bg-gradient-to-bl from-green-100/30 to-transparent rounded-bl-full"></div>
+        <div className="absolute bottom-0 left-0 w-48 h-24 bg-gradient-to-tr from-gray-100/20 to-transparent rounded-tr-full"></div>
         
         <div className="relative px-8 py-6 flex items-center justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+              <div className="w-12 h-12 bg-gradient-to-br from-green-600 to-gray-600 rounded-xl flex items-center justify-center shadow-lg">
                 <Package className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent">
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-green-800 to-gray-800 bg-clip-text text-transparent">
                   Supplier LPO Management
                 </h2>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-300">\
                     Step 6
                   </span>
                   <span className="text-gray-600 text-sm">
@@ -224,30 +224,30 @@ export default function SupplierLpoPage() {
           
           <div className="flex gap-4 ml-8">
             <button
-              className="group flex items-center gap-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-green-300 focus:ring-offset-2 transition-all duration-200 transform hover:-translate-y-0.5"
+              className="group flex items-center gap-3 border-2 border-green-600 bg-green-50 hover:bg-green-100 text-green-700 font-semibold px-6 py-3 rounded-xl shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-green-300 focus:ring-offset-2 transition-all duration-200"
               onClick={() => setShowAutoGenerate(true)}
               data-testid="button-auto-generate-lpo"
             >
-              <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center group-hover:bg-white/30 transition-colors">
-                <RefreshCw className="h-4 w-4 group-hover:rotate-180 transition-transform duration-500" />
+              <div className="w-8 h-8 bg-green-100 border border-green-200 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
+                <RefreshCw className="h-4 w-4 text-green-600 group-hover:rotate-180 transition-transform duration-500" />
               </div>
               <div className="text-left">
                 <div className="text-sm font-bold">Auto Generate</div>
-                <div className="text-xs opacity-90">LPOs</div>
+                <div className="text-xs opacity-80">LPOs</div>
               </div>
             </button>
             
             <button
-              className="group flex items-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2 transition-all duration-200 transform hover:-translate-y-0.5"
+              className="group flex items-center gap-3 border-2 border-gray-600 bg-gray-50 hover:bg-gray-100 text-gray-700 font-semibold px-6 py-3 rounded-xl shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 transition-all duration-200"
               onClick={() => setShowCreateLpo(true)}
               data-testid="button-new-supplier-lpo"
             >
-              <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center group-hover:bg-white/30 transition-colors">
-                <Plus className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+              <div className="w-8 h-8 bg-gray-100 border border-gray-200 rounded-lg flex items-center justify-center group-hover:bg-gray-200 transition-colors">
+                <Plus className="h-4 w-4 text-gray-600 group-hover:scale-110 transition-transform duration-200" />
               </div>
               <div className="text-left">
                 <div className="text-sm font-bold">New Supplier</div>
-                <div className="text-xs opacity-90">LPO</div>
+                <div className="text-xs opacity-80">LPO</div>
               </div>
             </button>
           </div>
@@ -290,13 +290,13 @@ export default function SupplierLpoPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-medium flex items-center gap-2">
-              <FileText className="h-6 w-6 text-blue-600" />
+              <FileText className="h-6 w-6 text-gray-600" />
               <span className="font-bold text-lg">Total LPOs</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-3">
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="text-2xl font-bold text-gray-600">
                 {Array.isArray(supplierLpos) ? supplierLpos.length : 0}
               </div>
             </div>
@@ -320,13 +320,13 @@ export default function SupplierLpoPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-medium flex items-center gap-2">
-              <Send className="h-6 w-6 text-blue-600" />
+              <Send className="h-6 w-6 text-gray-600" />
               <span className="font-bold text-lg">Sent to Suppliers</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-3">
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="text-2xl font-bold text-gray-600">
                 {Array.isArray(supplierLpos) ? supplierLpos.filter((lpo: SupplierLpo) => lpo.status === "Sent").length : 0}
               </div>
             </div>
@@ -389,7 +389,12 @@ export default function SupplierLpoPage() {
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Filters</CardTitle>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center">
+                <Filter className="h-4 w-4 text-gray-600" />
+              </div>
+              <CardTitle className="text-base">Filters</CardTitle>
+            </div>
             <div className="flex gap-2">
               <Button
                 variant="outline"
@@ -500,17 +505,17 @@ export default function SupplierLpoPage() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
           ) : (
-            <div>
+            <div className="border border-blue-300 rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>LPO Number</TableHead>
-                    <TableHead>Supplier</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Approval</TableHead>
-                    <TableHead>LPO Date</TableHead>
-                    <TableHead>Expected Delivery</TableHead>
-                    <TableHead>Total Amount</TableHead>
+                  <TableRow className="border-b border-gray-200">
+                    <TableHead className="border-r border-gray-200">LPO Number</TableHead>
+                    <TableHead className="border-r border-gray-200">Supplier</TableHead>
+                    <TableHead className="border-r border-gray-200">Status</TableHead>
+                    <TableHead className="border-r border-gray-200">Approval</TableHead>
+                    <TableHead className="border-r border-gray-200">LPO Date</TableHead>
+                    <TableHead className="border-r border-gray-200">Expected Delivery</TableHead>
+                    <TableHead className="border-r border-gray-200">Total Amount</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -518,22 +523,22 @@ export default function SupplierLpoPage() {
                   {paginatedLpos.map((lpo: SupplierLpo & { supplierName?: string }) => (
                     <TableRow
                       key={lpo.id}
-                      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 border-b border-gray-200"
                       onClick={() => setSelectedLpo(lpo)}
                       data-testid={`row-lpo-${lpo.id}`}
                     >
-                      <TableCell className="font-medium">{lpo.lpoNumber}</TableCell>
-                      <TableCell>
+                      <TableCell className="font-medium border-r border-gray-200">{lpo.lpoNumber}</TableCell>
+                      <TableCell className="border-r border-gray-200">
                         <span className="px-2 py-1 rounded bg-gray-50 text-gray-700 font-semibold border border-gray-200">
                           {lpo.supplierName || "-"}
                         </span>
                       </TableCell>
-                      <TableCell>{getStatusBadge(lpo.status ?? "Missing")}</TableCell>
-                      <TableCell>{getApprovalStatusBadge(lpo.approvalStatus || "Not Required")}</TableCell>
-                      <TableCell>
+                      <TableCell className="border-r border-gray-200">{getStatusBadge(lpo.status ?? "Missing")}</TableCell>
+                      <TableCell className="border-r border-gray-200">{getApprovalStatusBadge(lpo.approvalStatus || "Not Required")}</TableCell>
+                      <TableCell className="border-r border-gray-200">
                         {lpo.lpoDate ? format(new Date(lpo.lpoDate), "MMM dd, yyyy") : "-"}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="border-r border-gray-200">
                         {lpo.expectedDeliveryDate ? (
                           <span className="px-2 py-1 rounded bg-green-50 text-green-700 font-semibold border border-green-200">
                             {format(new Date(lpo.expectedDeliveryDate), "MMM dd, yyyy")}
@@ -542,7 +547,7 @@ export default function SupplierLpoPage() {
                           <span className="px-2 py-1 rounded bg-gray-100 text-gray-500 border border-gray-200">Date is not set</span>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="border-r border-gray-200">
                         {lpo.currency} {Number(lpo.totalAmount || 0).toLocaleString()}
                       </TableCell>
                       <TableCell>
@@ -562,6 +567,8 @@ export default function SupplierLpoPage() {
                           {lpo.status === "Draft" && lpo.approvalStatus === "Approved" && (
                             <Button
                               size="sm"
+                              variant="outline"
+                              className="border-blue-600 text-blue-600 hover:bg-blue-50"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 sendToSupplierMutation.mutate(lpo.id);
@@ -748,7 +755,7 @@ function AutoGenerateLposForm({ onClose }: { onClose: () => void }) {
           onClick={() => generateMutation.mutate()}
           disabled={selectedOrders.length === 0 || generateMutation.isPending}
           data-testid="button-generate"
-          className="bg-red-600 text-white border border-red-600 px-4 h-8 min-w-[100px] justify-center font-medium text-base"
+          className="border border-red-500 text-red-600 bg-red-50 hover:bg-red-100 px-4 h-8 min-w-[100px] justify-center font-medium text-base"
         >
           {generateMutation.isPending ? "Generating..." : "Generate LPOs"}
         </Button>
@@ -930,9 +937,9 @@ function LpoDetailDialog({
 
 function getStatusBadge(status: string) {
   return (
-    <Badge className={statusColors[status as keyof typeof statusColors] || "underline decoration-gray-500 text-gray-700"}>
+    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusColors[status as keyof typeof statusColors] || "text-gray-700 bg-gray-100 border border-gray-300"}`}>
       {status}
-    </Badge>
+    </span>
   );
 }
 
@@ -1124,7 +1131,7 @@ function CreateLpoForm({ onClose, onCreated }: { onClose: () => void; onCreated:
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="BHD">BHD</SelectItem>
-              <SelectItem value="USD">USD</SelectItem>
+              <SelectItem value="BHD">BHD</SelectItem>
               <SelectItem value="EUR">EUR</SelectItem>
               <SelectItem value="QAR">QAR</SelectItem>
               <SelectItem value="AED">AED</SelectItem>
@@ -1372,6 +1379,8 @@ function CreateLpoForm({ onClose, onCreated }: { onClose: () => void; onCreated:
         </Button>
         <Button
           type="submit"
+          variant="outline"
+          className="border-green-600 text-green-600 bg-green-50 hover:bg-green-100"
           disabled={createLpoMutation.isPending || formData.items.length === 0}
         >
           {createLpoMutation.isPending ? "Creating..." : "Create LPO"}
@@ -1416,9 +1425,10 @@ function EditExpectedDeliveryDialog({ lpo, open, onClose, onSave }: {
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={onClose}>Cancel</Button>
             <Button
+              variant="outline"
               onClick={() => { setSaving(true); onSave(date); }}
               disabled={!date || saving}
-              className="bg-green-600 text-white"
+              className="border-green-600 text-green-600 bg-green-50 hover:bg-green-100"
             >
               {saving ? "Saving..." : "Save"}
             </Button>

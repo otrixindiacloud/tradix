@@ -541,7 +541,7 @@ export default function AnalyticsPage() {
                 <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">No Analytics Data Available</h3>
                 <p className="text-gray-600 mb-4">Unable to load dashboard metrics at this time</p>
-                <Button onClick={fetchAnalytics} className="bg-blue-500 hover:bg-blue-600 text-white">
+                <Button onClick={fetchAnalytics} variant="outline" className="border-blue-500 text-blue-600 hover:bg-blue-50">
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Retry Loading
                 </Button>

@@ -186,7 +186,7 @@ export default function WorkflowStepper({
             </div>
             <div className="flex space-x-2">
               <button 
-                className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors flex items-center gap-2"
+                className="border border-green-500 text-green-600 bg-green-50 hover:bg-green-100 px-3 py-1 rounded text-sm transition-colors flex items-center gap-2"
                 data-testid="button-mark-complete"
                 onClick={handleMarkComplete}
               >

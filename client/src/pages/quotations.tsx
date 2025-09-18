@@ -302,9 +302,52 @@ export default function QuotationsPage() {
   const getApprovalStatusColor = (status: string) => {
     switch (status) {
       case "Approved": return "text-green-700";
-      case "Pending": return "text-white";
+      case "Pending": return "text-orange-600";
       case "Rejected": return "text-red-700";
       default: return "text-gray-700";
+    }
+  };
+
+  // Helper functions for badge styling similar to customer management
+  const getStatusBadgeClass = (status: string) => {
+    const normalizedStatus = status.toLowerCase();
+    switch (normalizedStatus) {
+      case 'draft':
+        return "bg-gray-50 text-gray-700 border-gray-200";
+      case 'under review':
+      case 'pending':
+        return "border-orange-500 text-orange-600 hover:bg-orange-50";
+      case 'approved':
+        return "bg-teal-50 text-teal-700 border-teal-200";
+      case 'sent':
+        return "bg-blue-50 text-blue-700 border-blue-200";
+      case 'accepted':
+      case 'completed':
+        return "bg-green-50 text-green-700 border-green-200";
+      case 'rejected':
+      case 'rejected by customer':
+        return "bg-red-50 text-red-700 border-red-200";
+      case 'expired':
+        return "bg-red-50 text-red-700 border-red-200";
+      case 'cancelled':
+        return "bg-gray-50 text-gray-700 border-gray-200";
+      default:
+        return "bg-gray-50 text-gray-700 border-gray-200";
+    }
+  };
+
+  const getApprovalBadgeClass = (status: string) => {
+    const normalizedStatus = status.toLowerCase();
+    switch (normalizedStatus) {
+      case 'pending':
+      case 'not required':
+        return "border-orange-500 text-orange-600 hover:bg-orange-50";
+      case 'approved':
+        return "bg-green-50 text-green-700 border-green-200";
+      case 'rejected':
+        return "bg-red-50 text-red-700 border-red-200";
+      default:
+        return "bg-gray-50 text-gray-700 border-gray-200";
     }
   };
 
@@ -339,7 +382,12 @@ export default function QuotationsPage() {
       key: "status",
       header: "Status",
       render: (value: string) => (
-        <StatusPill status={value.toLowerCase()} />
+        <Badge 
+          variant="outline"
+          className={getStatusBadgeClass(value)}
+        >
+          {value}
+        </Badge>
       ),
     },
     {
@@ -347,12 +395,15 @@ export default function QuotationsPage() {
       header: "Approval",
       render: (value: string, quotation: Quotation) => (
         <div>
-          <Badge className={`mb-1`}>
+          <Badge 
+            variant="outline"
+            className={getApprovalBadgeClass(value)}
+          >
             {value}
           </Badge>
           {quotation.requiredApprovalLevel && (
-            <div className="text-xs text-gray-500">
-              Requires: {quotation.requiredApprovalLevel}
+            <div className="text-xs text-gray-500 mt-1">
+              Req: {quotation.requiredApprovalLevel}
             </div>
           )}
         </div>
@@ -485,7 +536,7 @@ export default function QuotationsPage() {
           </div>
           <div className="flex gap-2">
             <Link href="/quotations/new">
-              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-200 transition flex items-center gap-2" data-testid="button-new-quotation">
+              <Button variant="outline" className="border-emerald-500 text-emerald-600 hover:bg-emerald-50 font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-200 transition flex items-center gap-2" data-testid="button-new-quotation">
                 <Plus className="h-4 w-4" />
                 New Quotation
               </Button>
@@ -595,49 +646,53 @@ export default function QuotationsPage() {
           </div>
           <div className="space-y-2">
               <Label>Date Range</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !dateRange.from && "text-muted-foreground",
-                      dateRange.from && "border-blue-300 bg-blue-50"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateRange.from ? (
-                      dateRange.to ? (
-                        <>
-                          {dateRange.from && format(dateRange.from, "LLL dd, y")} -{" "}
-                          {dateRange.to && format(dateRange.to, "LLL dd, y")}
-                        </>
-                      ) : (
-                        dateRange.from && format(dateRange.from, "LLL dd, y")
-                      )
-                    ) : (
-                      <span>Pick a date range</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start" side="bottom" sideOffset={8}>
-                  <Calendar
-                    initialFocus
-                    mode="range"
-                    defaultMonth={dateRange.from}
-                    selected={dateRange}
-                    onSelect={(range) => handleDateRangeChange(range?.from, range?.to)}
-                    numberOfMonths={2}
-                    disabled={(date) => date > new Date()}
-                    modifiers={{
-                      today: new Date(),
-                    }}
-                    modifiersClassNames={{
-                      today: "bg-blue-100 text-blue-900 font-semibold",
-                    }}
-                  />
-                </PopoverContent>
-              </Popover>
+                {/* Filter Card - permanently visible */}
+                <div className="mb-4">
+                  <div className="shadow-lg rounded-xl bg-white p-6 flex flex-col gap-4">
+                    <h2 className="text-lg font-semibold mb-2">Filters</h2>
+                    <div className="flex flex-wrap gap-4 items-center">
+                      <input
+                        type="text"
+                        placeholder="Search quotes..."
+                        className="input input-bordered w-64"
+                        value={filters.search}
+                        onChange={e => setFilters({ ...filters, search: e.target.value })}
+                      />
+                      <select
+                        className="select select-bordered w-48"
+                        value={filters.status}
+                        onChange={e => setFilters({ ...filters, status: e.target.value })}
+                      >
+                        <option value="">All Statuses</option>
+                        {/* ...other options... */}
+                      </select>
+                      <select
+                        className="select select-bordered w-48"
+                        value={filters.customerType}
+                        onChange={e => setFilters({ ...filters, customerType: e.target.value })}
+                      >
+                        <option value="">All Customer Types</option>
+                        {/* ...other options... */}
+                      </select>
+                      <div className="flex items-center gap-2">
+                        <span>Date From</span>
+                        <input
+                          type="date"
+                          className="input input-bordered"
+                          value={filters.dateFrom}
+                          onChange={e => setFilters({ ...filters, dateFrom: e.target.value })}
+                        />
+                        <span>Date To</span>
+                        <input
+                          type="date"
+                          className="input input-bordered"
+                          value={filters.dateTo}
+                          onChange={e => setFilters({ ...filters, dateTo: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
             </div>
           </div>
         

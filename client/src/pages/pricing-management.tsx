@@ -74,7 +74,7 @@ const volumeTierSchema = z.object({
   maxQuantity: z.number().optional(),
   discountPercentage: z.number().min(0).max(100).optional(),
   specialPrice: z.number().min(0).optional(),
-  currency: z.string().length(3).default("USD"),
+  currency: z.string().length(3).default("BHD"),
 });
 
 const contractPricingSchema = z.object({
@@ -92,7 +92,7 @@ const competitorPricingSchema = z.object({
   competitorName: z.string().min(1, "Competitor name is required"),
   itemId: z.string().min(1, "Item ID is required"),
   price: z.number().min(0, "Price must be positive"),
-  currency: z.string().length(3).default("USD"),
+  currency: z.string().length(3).default("BHD"),
   source: z.string().optional(),
   sourceUrl: z.string().url().optional(),
   notes: z.string().optional(),
@@ -111,7 +111,7 @@ const enhancedPriceCalculationSchema = z.object({
     "contract",
     "volume_tiered"
   ]).optional(),
-  targetCurrency: z.string().length(3).default("USD"),
+  targetCurrency: z.string().length(3).default("BHD"),
 });
 
 export default function EnhancedPricingManagement() {
@@ -130,7 +130,7 @@ export default function EnhancedPricingManagement() {
       maxQuantity: undefined,
       discountPercentage: 0,
       specialPrice: undefined,
-      currency: "USD",
+  currency: "BHD",
     },
   });
 
@@ -154,7 +154,7 @@ export default function EnhancedPricingManagement() {
       competitorName: "",
       itemId: "",
       price: 0,
-      currency: "USD",
+  currency: "BHD",
       source: "",
       sourceUrl: "",
       notes: "",
@@ -168,7 +168,7 @@ export default function EnhancedPricingManagement() {
       customerId: "",
       quantity: 1,
       method: undefined,
-      targetCurrency: "USD",
+  targetCurrency: "BHD",
     },
   });
 
@@ -454,7 +454,7 @@ export default function EnhancedPricingManagement() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="USD">USD</SelectItem>
+                              <SelectItem value="BHD">BHD</SelectItem>
                               <SelectItem value="AED">AED</SelectItem>
                               <SelectItem value="KWD">KWD</SelectItem>
                               <SelectItem value="SAR">SAR</SelectItem>
@@ -1022,7 +1022,7 @@ export default function EnhancedPricingManagement() {
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
-                                    <SelectItem value="USD">USD</SelectItem>
+                                    <SelectItem value="BHD">BHD</SelectItem>
                                     <SelectItem value="AED">AED</SelectItem>
                                     <SelectItem value="KWD">KWD</SelectItem>
                                     <SelectItem value="SAR">SAR</SelectItem>

@@ -252,7 +252,7 @@ const DeliveryManagement = () => {
               </div>
             </div>
           </div>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg" onClick={() => setShowCreateDialog(true)} data-testid="button-create-delivery">
+          <Button variant="outline" className="border-blue-500 text-blue-600 hover:bg-blue-50 font-semibold px-6 py-2 rounded-lg" onClick={() => setShowCreateDialog(true)} data-testid="button-create-delivery">
             <span className="mr-2">+</span> Create Delivery
           </Button>
         </div>

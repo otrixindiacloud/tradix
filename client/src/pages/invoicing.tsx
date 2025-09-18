@@ -23,6 +23,22 @@ export default function Invoicing() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Email invoice mutation
+  const emailInvoice = useMutation({
+    mutationFn: async ({ id, email }: { id: string; email?: string }) => {
+      const response = await apiRequest("POST", `/api/invoices/${id}/send`, { email });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      toast({ title: "Sent", description: "Invoice email dispatched (status set to Sent)." });
+    },
+    onError: (err: any) => {
+      console.error("Send invoice error", err);
+      toast({ title: "Error", description: "Failed to send invoice", variant: "destructive" });
+    },
+  });
+
   const { data: invoices, isLoading, error: invoicesError } = useQuery({
     queryKey: ["/api/invoices"],
     queryFn: async () => {
@@ -379,7 +395,7 @@ export default function Invoicing() {
       header: "Status",
         render: (value: string) => (
           value === "Draft"
-            ? <Badge variant="outline" className="bg-gray-400 text-white border-gray-400">{value}</Badge>
+            ? <Badge variant="outline" className="border-gray-400 text-gray-600 bg-gray-50">{value}</Badge>
             : <Badge variant="outline" className={getStatusColor(value)}>{value}</Badge>
         ),
     },
@@ -439,7 +455,7 @@ export default function Invoicing() {
             <Button
               size="sm"
               variant="outline"
-              className="bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:text-white"
+              className="border-blue-500 text-blue-600 hover:bg-blue-50"
               onClick={(e) => {
                 e.stopPropagation();
                 updateInvoiceStatus.mutate({ id: invoice.id, status: "Sent" });
@@ -477,6 +493,19 @@ export default function Invoicing() {
             className="text-black hover:text-black hover:bg-gray-50"
           >
             <Download className="h-4 w-4 text-black" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={(e) => {
+              e.stopPropagation();
+              const email = invoice.customer?.email;
+              emailInvoice.mutate({ id: invoice.id, email });
+            }}
+            data-testid={`button-email-${invoice.id}`}
+            title="Email Invoice to Customer"
+          >
+            <Send className="h-4 w-4" />
           </Button>
           <Button
             size="sm"
@@ -581,7 +610,8 @@ export default function Invoicing() {
                 {generateProformaInvoiceAlt.isPending ? "Generating..." : "Quick Proforma"}
               </Button>
               <Button
-                className="flex items-center px-4 py-2 bg-green-500 text-white rounded-lg font-medium shadow-sm border border-green-600 hover:bg-green-600 focus:ring-2 focus:ring-green-300 gap-2"
+                variant="outline"
+                className="flex items-center px-4 py-2 border-green-500 text-green-600 hover:bg-green-50 rounded-lg font-medium shadow-sm focus:ring-2 focus:ring-green-300 gap-2"
                 data-testid="badge-ready-for-invoice"
                 onClick={handleReadyForInvoiceClick}
                 style={{ cursor: "pointer" }}
@@ -853,7 +883,7 @@ export default function Invoicing() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Currency:</span>
-                      <span className="font-medium">{selectedInvoice.currency || 'USD'}</span>
+                      <span className="font-medium">{selectedInvoice.currency || 'BHD'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Date:</span>
@@ -1011,6 +1041,15 @@ export default function Invoicing() {
                   >
                     <Download className="h-4 w-4" />
                     <span>Download Comprehensive PDF</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => emailInvoice.mutate({ id: selectedInvoice.id, email: selectedInvoice.customer?.email })}
+                    data-testid="button-email-pdf"
+                    className="flex items-center space-x-2"
+                  >
+                    <Send className="h-4 w-4" />
+                    <span>Email Invoice</span>
                   </Button>
                   <Button
                     onClick={() => setSelectedInvoice(null)}

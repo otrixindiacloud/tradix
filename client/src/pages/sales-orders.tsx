@@ -361,7 +361,7 @@ export default function SalesOrders() {
               }}
               disabled={updateOrderStatus.isPending}
               data-testid={`button-confirm-${order.id}`}
-              className="bg-green-500 hover:bg-green-600 text-white min-w-[80px] h-8 flex items-center justify-center font-medium text-sm border-none px-3 py-1"
+              className="border-green-500 text-green-600 hover:bg-green-50 min-w-[80px] h-8 flex items-center justify-center font-medium text-sm px-3 py-1"
             >
               {updateOrderStatus.isPending ? (
                 <LoadingSpinner size="sm" />
@@ -377,7 +377,8 @@ export default function SalesOrders() {
           {order.status === "Confirmed" && order.customerLpoValidationStatus === "Approved" && (
             <Button
               size="sm"
-              className="bg-orange-500 text-white min-w-[80px] h-8 flex items-center justify-center font-medium text-sm border-none px-3 py-1"
+              variant="outline"
+              className="min-w-[80px] h-8 flex items-center justify-center font-medium text-sm px-3 py-1"
               onClick={(e) => {
                 e.stopPropagation();
                 updateOrderStatus.mutate({ id: order.id, status: "Processing" });
@@ -525,7 +526,8 @@ export default function SalesOrders() {
           </div>
           <div className="flex gap-2">
             <Button
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition flex items-center gap-2"
+              variant="outline"
+              className="border-blue-500 text-blue-600 hover:bg-blue-50 font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition flex items-center gap-2"
               onClick={() => setShowCreateDialog(true)}
               data-testid="button-new-sales-order"
             >
@@ -719,8 +721,8 @@ export default function SalesOrders() {
                 </SelectContent>
               </Select>
               <Button
-                variant="default"
-                className="ml-2 bg-blue-600 hover:bg-blue-700 text-white border border-blue-600 shadow-sm"
+                variant="outline"
+                className="ml-2 border-blue-500 text-blue-600 hover:bg-blue-50 shadow-sm"
                 onClick={() => {
                   setSearchTerm("");
                   setStatusFilter("");
@@ -1020,9 +1022,9 @@ export default function SalesOrders() {
                     <h4 className="font-medium text-gray-900 mb-2">Order Information</h4>
                     <div className="space-y-1 text-sm">
                       <p><span className="font-medium">Order Number:</span> {selectedOrder.orderNumber}</p>
-                      <p><span className="font-medium">Status:</span> {selectedOrder.status}</p>
-                      <p><span className="font-medium">Source Type:</span> {selectedOrder.sourceType}</p>
-                      <p><span className="font-medium">Order Date:</span> {selectedOrder.orderDate ? formatDate(new Date(selectedOrder.orderDate)) : "N/A"}</p>
+                          <span className="inline-block px-3 py-1 rounded-full bg-white text-green-600 text-xs font-semibold shadow-sm border border-green-600" style={{ minWidth: 70 }}>
+                            Approved
+                          </span>
                       {selectedOrder.amendmentReason && (
                         <p><span className="font-medium">Amendment Reason:</span> {selectedOrder.amendmentReason}</p>
                       )}
@@ -1045,13 +1047,19 @@ export default function SalesOrders() {
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <p className="font-medium">Status</p>
-                        <Badge className={
-                          selectedOrder.customerLpoValidationStatus === "Approved" ? "underline decoration-green-500 text-green-700" :
-                          selectedOrder.customerLpoValidationStatus === "Rejected" ? "underline decoration-red-500 text-red-700" :
-                          "bg-white text-white border border-gray-300"
-                        }>
-                          {selectedOrder.customerLpoValidationStatus || "Pending"}
-                        </Badge>
+                            {selectedOrder.customerLpoValidationStatus === "Approved" ? (
+                              <span className="inline-block px-3 py-1 rounded-full bg-white text-green-600 text-xs font-semibold shadow-sm border border-green-600" style={{ minWidth: 70 }}>
+                                Approved
+                              </span>
+                            ) : selectedOrder.customerLpoValidationStatus === "Rejected" ? (
+                              <span className="inline-block px-3 py-1 rounded-full bg-white text-red-600 text-xs font-semibold shadow-sm border border-red-600" style={{ minWidth: 70 }}>
+                                Rejected
+                              </span>
+                            ) : (
+                              <span className="inline-block px-3 py-1 rounded-full bg-white text-gray-600 text-xs font-semibold shadow-sm border border-gray-400" style={{ minWidth: 70 }}>
+                                Pending
+                              </span>
+                            )}
                       </div>
                       <div>
                         <p className="font-medium">Validated By</p>
@@ -1160,7 +1168,9 @@ export default function SalesOrders() {
                           </p>
                         )}
                       </div>
-                      <Badge className="underline decoration-green-500 text-green-700">Current</Badge>
+                      <span className="inline-block px-3 py-1 rounded-full bg-white text-green-600 text-xs font-semibold shadow-sm border border-green-600" style={{ minWidth: 70 }}>
+                        Current
+                      </span>
                     </div>
                   </div>
                   
@@ -1171,7 +1181,9 @@ export default function SalesOrders() {
                           <p className="font-medium">Parent Order</p>
                           <p className="text-sm text-gray-600">Original sales order</p>
                         </div>
-                        <Badge variant="outline">Previous</Badge>
+                        <span className="inline-block px-3 py-1 rounded-full bg-white text-blue-600 text-xs font-semibold shadow-sm border border-blue-600" style={{ minWidth: 70 }}>
+                          Previous
+                        </span>
                       </div>
                     </div>
                   )}
@@ -1182,7 +1194,8 @@ export default function SalesOrders() {
           <DialogFooter>
             <Button
               onClick={() => { setSelectedOrder(null); setShowDetailsDialog(false); }}
-              className="bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-blue-500"
+              variant="outline"
+              className="border-blue-500 text-blue-600 hover:bg-blue-50 focus-visible:ring-blue-500"
               data-testid="button-close-details"
             >
               Close

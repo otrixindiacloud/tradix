@@ -469,7 +469,8 @@ export default function DeliveryNote() {
         </div>
         <Button 
           onClick={() => setShowCreateDialog(true)}
-          className="bg-blue-600 hover:bg-blue-700"
+          variant="outline"
+          className="border-blue-500 text-blue-600 hover:bg-blue-50"
         >
           <Plus className="h-4 w-4 mr-2" />
           Create Delivery Note

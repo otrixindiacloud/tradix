@@ -49,7 +49,6 @@ const inventoryItemSchema = z.object({
   barcode: z.string().optional(),
   weight: z.number().optional(),
   dimensions: z.string().optional(),
-  quantity: z.number().min(0, "Quantity must be zero or greater"),
   isActive: z.boolean().default(true),
 });
 
@@ -106,7 +105,6 @@ function InventoryItemsTab() {
       barcode: "",
       weight: undefined,
       dimensions: "",
-      quantity: 0,
       isActive: true,
     },
   });
@@ -125,11 +123,15 @@ function InventoryItemsTab() {
       if (!showInactiveItems) params.append('isActive', 'true');
       
       const url = `/api/inventory-items${params.toString() ? '?' + params.toString() : ''}`;
-      const response = await fetch(url);
+      console.log("Fetching inventory items from:", url);
+      const response = await fetch(url, { credentials: "include" });
+      console.log("Response status:", response.status);
       if (!response.ok) {
         throw new Error(`Failed to fetch inventory items: ${response.statusText}`);
       }
-      return response.json();
+      const data = await response.json();
+      console.log("Inventory items data:", data);
+      return data;
     },
     enabled: true,
   });
@@ -214,7 +216,6 @@ function InventoryItemsTab() {
       barcode: item.barcode || "",
       weight: item.weight || undefined,
       dimensions: item.dimensions || "",
-      quantity: item.quantity || 0,
       isActive: item.isActive,
     });
   };
@@ -395,28 +396,6 @@ function InventoryItemsTab() {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="quantity"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Initial Quantity</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          min="0"
-                          step="1"
-                          {...field} 
-                          onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 0)}
-                          value={field.value || 0}
-                          data-testid="input-quantity"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -503,9 +482,9 @@ function InventoryItemsTab() {
       {/* Items Grid */}
       {itemsError || suppliersError ? (
         <div className="text-center py-8">
-          {/* <p className="text-red-600 mb-4">
+          <p className="text-red-600 mb-4">
             Error loading data: {itemsError?.message || suppliersError?.message}
-          </p> */}
+          </p>
           <Button onClick={() => {
             queryClient.invalidateQueries({ queryKey: ["/api/inventory-items"] });
             queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
@@ -531,59 +510,64 @@ function InventoryItemsTab() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {(inventoryItems as any[]).map((item: any) => (
-            <Card key={item.id} className="hover:shadow-md transition-shadow" data-testid={`card-item-${item.id}`}>
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-sm font-medium">
-                      {item.supplierName || 'Unknown Supplier'}
-                    </CardTitle>
-                    <CardDescription className="text-xs mt-1">{item.description}</CardDescription>
-                    {item.supplierCode && (
-                      <div className="text-xs text-gray-500 mt-1">
-                        Code: {item.supplierCode}
-                      </div>
-                    )}
-                  </div>
-                  <Badge variant={item.isActive ? "default" : "secondary"}>
-                    {item.isActive ? "Active" : "Inactive"}
-                  </Badge>
+            <Card key={item.id} className="hover:shadow-lg transition-shadow border border-gray-200 bg-white rounded-xl" data-testid={`card-item-${item.id}`}> 
+              <CardHeader className="pb-2 flex flex-row items-center gap-3">
+                {/* Avatar or placeholder image */}
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center border border-gray-200">
+                  <Boxes className="h-7 w-7 text-blue-400" />
                 </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Category:</span>
-                    <span>{item.category}</span>
+                <div className="flex-1 min-w-0">
+                  <CardTitle className="text-base font-semibold text-gray-900 truncate">
+                    {item.description}
+                  </CardTitle>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs text-gray-500 font-mono bg-gray-50 px-2 py-0.5 rounded">{item.supplierCode}</span>
+                    <span className="text-xs text-gray-400">{item.category}</span>
                   </div>
-                  <div className="flex justify-between">
+                </div>
+                <Badge variant={item.isActive ? "default" : "secondary"} className="ml-2">
+                  {item.isActive ? "Active" : "Inactive"}
+                </Badge>
+              </CardHeader>
+              <CardContent className="pt-0 pb-2">
+                <div className="flex flex-col gap-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-600">Supplier:</span>
+                    <span className="font-medium text-gray-900">{item.supplierName || 'Unknown'}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <span className="text-gray-600">Unit:</span>
                     <span>{item.unitOfMeasure}</span>
                   </div>
                   {item.barcode && (
-                    <div className="flex justify-between">
+                    <div className="flex items-center gap-2">
                       <span className="text-gray-600">Barcode:</span>
-                      <span className="font-mono">{item.barcode}</span>
+                      <span className="font-mono text-blue-700">{item.barcode}</span>
                     </div>
                   )}
                   {item.weight && (
-                    <div className="flex justify-between">
+                    <div className="flex items-center gap-2">
                       <span className="text-gray-600">Weight:</span>
                       <span>{item.weight} kg</span>
                     </div>
                   )}
+                  {item.dimensions && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-600">Dimensions:</span>
+                      <span>{item.dimensions}</span>
+                    </div>
+                  )}
                 </div>
-
-                <div className="flex justify-end space-x-2 mt-4">
+                <div className="flex justify-end gap-2 mt-4">
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => handleEdit(item)}
                     data-testid={`button-edit-${item.id}`}
                   >
-                    <Edit className="h-3 w-3" />
+                    <Edit className="h-4 w-4" />
                   </Button>
                   <Button
                     size="sm"
@@ -592,7 +576,7 @@ function InventoryItemsTab() {
                     className="text-red-600 hover:text-red-700"
                     data-testid={`button-delete-${item.id}`}
                   >
-                    <Trash2 className="h-3 w-3" />
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </CardContent>
@@ -732,30 +716,101 @@ function StockLevelsTab() {
                   </div>
 
                   {/* Stock Status Indicator */}
-                  <div className="mt-4">
+                  <div className="mt-4 space-y-3">
                     <div className="flex items-center justify-between text-xs">
-                      <span>Stock Status</span>
+                      <span className="font-medium">Stock Level</span>
                       {isLowStock ? (
                         <span className="text-red-600 flex items-center">
                           <XCircle className="h-3 w-3 mr-1" />
                           Low Stock
                         </span>
-                      ) : (
+                      ) : level.quantityAvailable > level.maxLevel * 0.8 ? (
                         <span className="text-green-600 flex items-center">
                           <CheckCircle className="h-3 w-3 mr-1" />
-                          Good Stock
+                          High Stock
+                        </span>
+                      ) : (
+                        <span className="text-blue-600 flex items-center">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Normal Stock
                         </span>
                       )}
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                      <div
-                        className={`h-2 rounded-full ${
-                          isLowStock ? "bg-red-500" : "bg-green-500"
-                        }`}
-                        style={{
-                          width: `${Math.min((level.quantityAvailable / level.maxLevel) * 100, 100)}%`,
-                        }}
-                      />
+                    
+                    {/* Main Stock Level Bar */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs text-gray-500">
+                        <span>0</span>
+                        <span>{level.maxLevel}</span>
+                      </div>
+                      <div className="relative w-full bg-gray-200 rounded-full h-3">
+                        {/* Background markers for reorder level */}
+                        <div 
+                          className="absolute top-0 bottom-0 w-0.5 bg-orange-400 z-10"
+                          style={{ left: `${(level.reorderLevel / level.maxLevel) * 100}%` }}
+                          title={`Reorder Level: ${level.reorderLevel}`}
+                        />
+                        
+                        {/* Available stock bar */}
+                        <div
+                          className={`h-3 rounded-full transition-all duration-300 ${
+                            isLowStock 
+                              ? "bg-gradient-to-r from-red-500 to-red-600" 
+                              : level.quantityAvailable > level.maxLevel * 0.8
+                                ? "bg-gradient-to-r from-green-500 to-green-600"
+                                : "bg-gradient-to-r from-blue-500 to-blue-600"
+                          }`}
+                          style={{
+                            width: `${Math.min((level.quantityAvailable / level.maxLevel) * 100, 100)}%`,
+                          }}
+                        />
+                        
+                        {/* Reserved stock overlay */}
+                        {level.quantityReserved > 0 && (
+                          <div
+                            className="absolute top-0 h-3 bg-orange-300 opacity-60 rounded-full"
+                            style={{
+                              left: `${Math.max(0, ((level.quantityAvailable - level.quantityReserved) / level.maxLevel) * 100)}%`,
+                              width: `${Math.min((level.quantityReserved / level.maxLevel) * 100, 100)}%`,
+                            }}
+                            title={`Reserved: ${level.quantityReserved}`}
+                          />
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Stock Composition Mini Chart */}
+                    <div className="grid grid-cols-3 gap-1 text-xs">
+                      <div className="text-center">
+                        <div className="h-1 bg-blue-500 rounded mb-1"></div>
+                        <span className="text-gray-600">Available</span>
+                        <div className="font-medium">{level.quantityAvailable}</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="h-1 bg-orange-300 rounded mb-1"></div>
+                        <span className="text-gray-600">Reserved</span>
+                        <div className="font-medium">{level.quantityReserved}</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="h-1 bg-gray-300 rounded mb-1"></div>
+                        <span className="text-gray-600">Total</span>
+                        <div className="font-medium">{level.quantityOnHand}</div>
+                      </div>
+                    </div>
+                    
+                    {/* Stock Status Summary */}
+                    <div className="pt-2 border-t border-gray-100">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-gray-500">Fill Rate:</span>
+                        <span className="font-medium">
+                          {Math.round((level.quantityAvailable / level.maxLevel) * 100)}%
+                        </span>
+                      </div>
+                      {isLowStock && (
+                        <div className="mt-1 text-xs text-red-600">
+                          Reorder needed: {level.reorderLevel - level.quantityAvailable} units
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -783,6 +838,34 @@ function StockLevelsTab() {
 function GoodsReceiptsTab() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showViewDialog, setShowViewDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [selectedReceipt, setSelectedReceipt] = useState<any | null>(null);
+  const [editingReceipt, setEditingReceipt] = useState<any | null>(null);
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [formData, setFormData] = useState({
+    receiptNumber: "",
+    receiptDate: "",
+    receivedBy: "",
+    status: "Draft",
+    notes: "",
+  });
+  const [editFormData, setEditFormData] = useState({
+    receiptNumber: "",
+    receiptDate: "",
+    receivedBy: "",
+    status: "Draft",
+    notes: "",
+    expectedDeliveryDate: "",
+    actualDeliveryDate: "",
+    totalItems: 0,
+    totalQuantityExpected: 0,
+    totalQuantityReceived: 0,
+    discrepancyFlag: false,
+  });
+
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: goodsReceipts = [], isLoading } = useQuery({
     queryKey: ["/api/goods-receipt-headers", { status: statusFilter }],
@@ -811,6 +894,242 @@ function GoodsReceiptsTab() {
         return <Badge variant="outline">{status}</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
+  // State for selected Supplier LPO ID
+  const [selectedLpoId, setSelectedLpoId] = useState("");
+  const [editSelectedLpoId, setEditSelectedLpoId] = useState("");
+  // Fetch supplier LPOs for dropdown
+  const { data: supplierLpos = [] } = useQuery({
+    queryKey: ["/api/supplier-lpos"],
+    queryFn: async () => {
+      const response = await fetch("/api/supplier-lpos");
+      if (!response.ok) return [];
+      return response.json();
+    },
+    enabled: showCreateDialog || showEditDialog,
+  });
+
+  // Create goods receipt mutation
+  const createGoodsReceiptMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest("POST", "/api/goods-receipt-headers", data);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create goods receipt");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/goods-receipt-headers"] });
+      setShowCreateDialog(false);
+      setSelectedLpoId("");
+      setReceiptFile(null);
+      setFormData({
+        receiptNumber: "",
+        receiptDate: "",
+        receivedBy: "",
+        status: "Draft",
+        notes: "",
+      });
+      toast({
+        title: "Success",
+        description: "Goods receipt created successfully",
+      });
+    },
+    onError: (error: any) => {
+      console.error("Error creating goods receipt:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create goods receipt",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update goods receipt mutation
+  const updateGoodsReceiptMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const response = await apiRequest("PUT", `/api/goods-receipt-headers/${id}`, data);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update goods receipt");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/goods-receipt-headers"] });
+      setShowEditDialog(false);
+      setEditingReceipt(null);
+      setEditSelectedLpoId("");
+      setEditFormData({
+        receiptNumber: "",
+        receiptDate: "",
+        receivedBy: "",
+        status: "Draft",
+        notes: "",
+        expectedDeliveryDate: "",
+        actualDeliveryDate: "",
+        totalItems: 0,
+        totalQuantityExpected: 0,
+        totalQuantityReceived: 0,
+        discrepancyFlag: false,
+      });
+      toast({
+        title: "Success",
+        description: "Goods receipt updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      console.error("Error updating goods receipt:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update goods receipt",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCreateReceipt = async () => {
+    if (!formData.receiptNumber || !selectedLpoId || !formData.receiptDate || !formData.receivedBy) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Get the selected LPO to extract supplier information
+      const selectedLpo = supplierLpos.find((lpo: any) => lpo.id === selectedLpoId);
+      if (!selectedLpo) {
+        toast({
+          title: "Error",
+          description: "Selected supplier LPO not found",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log("Selected LPO:", selectedLpo);
+      console.log("Form Data:", formData);
+
+      const submitData = {
+        receiptNumber: formData.receiptNumber,
+        supplierLpoId: selectedLpoId,
+        supplierId: selectedLpo.supplierId || selectedLpo.supplier?.id,
+        receiptDate: formData.receiptDate,
+        receivedBy: formData.receivedBy,
+        status: formData.status,
+        notes: formData.notes || null,
+      };
+
+      console.log("Submit Data:", submitData);
+
+      // TODO: Handle file upload separately if needed
+      if (receiptFile) {
+        console.log("File upload not yet implemented:", receiptFile.name);
+      }
+
+      createGoodsReceiptMutation.mutate(submitData);
+    } catch (error) {
+      console.error("Error preparing goods receipt data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to prepare goods receipt data",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setReceiptFile(file);
+    }
+  };
+
+  const handleViewReceipt = (receipt: any) => {
+    setSelectedReceipt(receipt);
+    setShowViewDialog(true);
+  };
+
+  const handleEditReceipt = (receipt: any) => {
+    setEditingReceipt(receipt);
+    setEditFormData({
+      receiptNumber: receipt.receiptNumber,
+      receiptDate: receipt.receiptDate,
+      receivedBy: receipt.receivedBy,
+      status: receipt.status,
+      notes: receipt.notes || "",
+      expectedDeliveryDate: receipt.expectedDeliveryDate || "",
+      actualDeliveryDate: receipt.actualDeliveryDate || "",
+      totalItems: typeof receipt.totalItems !== "undefined" ? receipt.totalItems : 0,
+      totalQuantityExpected: typeof receipt.totalQuantityExpected !== "undefined" ? receipt.totalQuantityExpected : 0,
+      totalQuantityReceived: typeof receipt.totalQuantityReceived !== "undefined" ? receipt.totalQuantityReceived : 0,
+      discrepancyFlag: typeof receipt.discrepancyFlag !== "undefined" ? receipt.discrepancyFlag : false,
+    });
+    setEditSelectedLpoId(receipt.supplierLpoId || "");
+    setShowEditDialog(true);
+  };
+
+  const handleUpdateReceipt = async () => {
+    if (!editFormData.receiptNumber || !editSelectedLpoId || !editFormData.receiptDate || !editFormData.receivedBy) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!editingReceipt) {
+      toast({
+        title: "Error",
+        description: "No receipt selected for editing",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Get the selected LPO to extract supplier information
+      const selectedLpo = supplierLpos.find((lpo: any) => lpo.id === editSelectedLpoId);
+      if (!selectedLpo) {
+        toast({
+          title: "Error",
+          description: "Selected supplier LPO not found",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const updateData = {
+        receiptNumber: editFormData.receiptNumber,
+        supplierLpoId: editSelectedLpoId,
+        supplierId: selectedLpo.supplierId || selectedLpo.supplier?.id,
+        receiptDate: editFormData.receiptDate,
+        receivedBy: editFormData.receivedBy,
+        status: editFormData.status,
+        notes: editFormData.notes || null,
+        expectedDeliveryDate: editFormData.expectedDeliveryDate || editingReceipt.expectedDeliveryDate || null,
+        actualDeliveryDate: editFormData.actualDeliveryDate || editingReceipt.actualDeliveryDate || null,
+        totalItems: typeof editFormData.totalItems !== 'undefined' ? editFormData.totalItems : (editingReceipt.totalItems || 0),
+        totalQuantityExpected: typeof editFormData.totalQuantityExpected !== 'undefined' ? editFormData.totalQuantityExpected : (editingReceipt.totalQuantityExpected || 0),
+        totalQuantityReceived: typeof editFormData.totalQuantityReceived !== 'undefined' ? editFormData.totalQuantityReceived : (editingReceipt.totalQuantityReceived || 0),
+        discrepancyFlag: typeof editFormData.discrepancyFlag !== 'undefined' ? editFormData.discrepancyFlag : (editingReceipt.discrepancyFlag || false),
+      };
+
+      updateGoodsReceiptMutation.mutate({ id: editingReceipt.id, data: updateData });
+    } catch (error) {
+      console.error("Error preparing goods receipt update data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to prepare goods receipt update data",
+        variant: "destructive",
+      });
     }
   };
 
@@ -845,26 +1164,398 @@ function GoodsReceiptsTab() {
           </DialogHeader>
           {/* TODO: Add form fields for goods receipt creation */}
           <div className="space-y-4 mt-4">
-            <Input placeholder="Receipt Number" />
-            <Input placeholder="Supplier LPO ID" />
-            <Input type="date" placeholder="Receipt Date" />
-            <Input placeholder="Received By" />
-            <Select defaultValue="Draft">
-              <SelectTrigger>
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Draft">Draft</SelectItem>
-                <SelectItem value="Completed">Completed</SelectItem>
-                <SelectItem value="Partially Received">Partially Received</SelectItem>
-              </SelectContent>
-            </Select>
-            <Textarea placeholder="Notes (optional)" />
+            <div>
+              <Label htmlFor="receiptNumber">Receipt Number *</Label>
+              <Input
+                id="receiptNumber"
+                placeholder="Enter receipt number"
+                value={formData.receiptNumber}
+                onChange={(e) => setFormData({ ...formData, receiptNumber: e.target.value })}
+                data-testid="input-receipt-number"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="supplierLpo">Supplier LPO *</Label>
+              {/* Supplier LPO Dropdown */}
+              <Select value={selectedLpoId} onValueChange={setSelectedLpoId}>
+                <SelectTrigger data-testid="select-supplier-lpo">
+                  <SelectValue placeholder="Select Supplier LPO" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.isArray(supplierLpos) && supplierLpos.map((lpo: any) => (
+                    <SelectItem key={lpo.id} value={lpo.id}>
+                      {lpo.lpoNumber} - {lpo.supplier?.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="receiptDate">Receipt Date *</Label>
+              <Input
+                id="receiptDate"
+                type="date"
+                value={formData.receiptDate}
+                onChange={(e) => setFormData({ ...formData, receiptDate: e.target.value })}
+                data-testid="input-receipt-date"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="receivedBy">Received By *</Label>
+              <Input
+                id="receivedBy"
+                placeholder="Enter name of person who received"
+                value={formData.receivedBy}
+                onChange={(e) => setFormData({ ...formData, receivedBy: e.target.value })}
+                data-testid="input-received-by"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="status">Status</Label>
+              <Select 
+                value={formData.status} 
+                onValueChange={(value) => setFormData({ ...formData, status: value })}
+              >
+                <SelectTrigger data-testid="select-status">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Draft">Draft</SelectItem>
+                  <SelectItem value="Completed">Completed</SelectItem>
+                  <SelectItem value="Partially Received">Partially Received</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="receiptFile">Receipt Document (Optional)</Label>
+              <Input
+                id="receiptFile"
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                onChange={handleFileChange}
+                data-testid="input-receipt-file"
+                className="cursor-pointer"
+              />
+              {receiptFile && (
+                <div className="text-sm text-gray-600 mt-1">
+                  Selected: {receiptFile.name}
+                </div>
+              )}
+            </div>
+            
+            <div>
+              <Label htmlFor="notes">Notes (Optional)</Label>
+              <Textarea
+                id="notes"
+                placeholder="Additional notes about the receipt"
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                data-testid="textarea-notes"
+              />
+            </div>
+            
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
-              <Button>Create Receipt</Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowCreateDialog(false)}
+                data-testid="button-cancel"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleCreateReceipt}
+                disabled={createGoodsReceiptMutation.isPending}
+                data-testid="button-create-receipt"
+              >
+                {createGoodsReceiptMutation.isPending ? "Creating..." : "Create Receipt"}
+              </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Goods Receipt Dialog */}
+      <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Goods Receipt Details</DialogTitle>
+            <DialogDescription>
+              {selectedReceipt ? `Receipt #${selectedReceipt.receiptNumber}` : "Loading..."}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedReceipt && (
+            <div className="space-y-6">
+              {/* Header Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Receipt Number</Label>
+                    <div className="mt-1 text-sm">{selectedReceipt.receiptNumber}</div>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Receipt Date</Label>
+                    <div className="mt-1 text-sm">
+                      {new Date(selectedReceipt.receiptDate).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Received By</Label>
+                    <div className="mt-1 text-sm">{selectedReceipt.receivedBy}</div>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Status</Label>
+                    <div className="mt-1">{getStatusBadge(selectedReceipt.status)}</div>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Supplier LPO ID</Label>
+                    <div className="mt-1 text-sm">{selectedReceipt.supplierLpoId || "N/A"}</div>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Supplier ID</Label>
+                    <div className="mt-1 text-sm">{selectedReceipt.supplierId || "N/A"}</div>
+                  </div>
+                  {selectedReceipt.expectedDeliveryDate && (
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700">Expected Delivery Date</Label>
+                      <div className="mt-1 text-sm">
+                        {new Date(selectedReceipt.expectedDeliveryDate).toLocaleDateString()}
+                      </div>
+                    </div>
+                  )}
+                  {selectedReceipt.actualDeliveryDate && (
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700">Actual Delivery Date</Label>
+                      <div className="mt-1 text-sm">
+                        {new Date(selectedReceipt.actualDeliveryDate).toLocaleDateString()}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Quantity Summary */}
+              {(selectedReceipt.totalItems || selectedReceipt.totalQuantityExpected || selectedReceipt.totalQuantityReceived) && (
+                <div className="border rounded-lg p-4 bg-gray-50">
+                  <h3 className="font-medium mb-3">Quantity Summary</h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    {selectedReceipt.totalItems !== undefined && (
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700">Total Items</Label>
+                        <div className="mt-1 text-lg font-semibold">{selectedReceipt.totalItems}</div>
+                      </div>
+                    )}
+                    {selectedReceipt.totalQuantityExpected !== undefined && (
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700">Expected Quantity</Label>
+                        <div className="mt-1 text-lg font-semibold">{selectedReceipt.totalQuantityExpected}</div>
+                      </div>
+                    )}
+                    {selectedReceipt.totalQuantityReceived !== undefined && (
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700">Received Quantity</Label>
+                        <div className="mt-1 text-lg font-semibold text-green-600">{selectedReceipt.totalQuantityReceived}</div>
+                      </div>
+                    )}
+                  </div>
+                  {selectedReceipt.discrepancyFlag && (
+                    <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                      <div className="flex items-center text-yellow-800">
+                        <AlertTriangle className="h-4 w-4 mr-2" />
+                        <span className="text-sm font-medium">Discrepancy Detected</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Notes */}
+              {selectedReceipt.notes && (
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Notes</Label>
+                  <div className="mt-1 p-3 bg-gray-50 rounded border text-sm">
+                    {selectedReceipt.notes}
+                  </div>
+                </div>
+              )}
+
+              {/* Timestamps */}
+              <div className="border-t pt-4">
+                <div className="grid grid-cols-2 gap-4 text-xs text-gray-500">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Created At</Label>
+                    <div className="mt-1">
+                      {selectedReceipt.createdAt ? new Date(selectedReceipt.createdAt).toLocaleString() : "N/A"}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Updated At</Label>
+                    <div className="mt-1">
+                      {selectedReceipt.updatedAt ? new Date(selectedReceipt.updatedAt).toLocaleString() : "N/A"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowViewDialog(false)}
+                  data-testid="button-close-view"
+                >
+                  Close
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    setShowViewDialog(false);
+                    handleEditReceipt(selectedReceipt);
+                  }}
+                  data-testid="button-edit-receipt"
+                >
+                  <Edit className="h-4 w-4 mr-1" />
+                  Edit
+                </Button>
+                
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Goods Receipt Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Goods Receipt</DialogTitle>
+            <DialogDescription>
+              {editingReceipt ? `Edit receipt #${editingReceipt.receiptNumber}` : "Loading..."}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {editingReceipt && (
+            <div className="space-y-4 mt-4">
+              <div>
+                <Label htmlFor="editReceiptNumber">Receipt Number *</Label>
+                <Input
+                  id="editReceiptNumber"
+                  placeholder="Enter receipt number"
+                  value={editFormData.receiptNumber}
+                  onChange={(e) => setEditFormData({ ...editFormData, receiptNumber: e.target.value })}
+                  data-testid="input-edit-receipt-number"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="editSupplierLpo">Supplier LPO *</Label>
+                <Select value={editSelectedLpoId} onValueChange={setEditSelectedLpoId}>
+                  <SelectTrigger data-testid="select-edit-supplier-lpo">
+                    <SelectValue placeholder="Select Supplier LPO" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.isArray(supplierLpos) && supplierLpos.map((lpo: any) => (
+                      <SelectItem key={lpo.id} value={lpo.id}>
+                        {lpo.lpoNumber} - {lpo.supplier?.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="editReceiptDate">Receipt Date *</Label>
+                <Input
+                  id="editReceiptDate"
+                  type="date"
+                  value={editFormData.receiptDate}
+                  onChange={(e) => setEditFormData({ ...editFormData, receiptDate: e.target.value })}
+                  data-testid="input-edit-receipt-date"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="editReceivedBy">Received By *</Label>
+                <Input
+                  id="editReceivedBy"
+                  placeholder="Enter name of person who received"
+                  value={editFormData.receivedBy}
+                  onChange={(e) => setEditFormData({ ...editFormData, receivedBy: e.target.value })}
+                  data-testid="input-edit-received-by"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="editStatus">Status</Label>
+                <Select 
+                  value={editFormData.status} 
+                  onValueChange={(value) => setEditFormData({ ...editFormData, status: value })}
+                >
+                  <SelectTrigger data-testid="select-edit-status">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Draft">Draft</SelectItem>
+                    <SelectItem value="Completed">Completed</SelectItem>
+                    <SelectItem value="Partially Received">Partially Received</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="editNotes">Notes (Optional)</Label>
+                <Textarea
+                  id="editNotes"
+                  placeholder="Additional notes about the receipt"
+                  value={editFormData.notes}
+                  onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
+                  data-testid="textarea-edit-notes"
+                />
+              </div>
+              
+              <div className="flex justify-end gap-2 pt-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowEditDialog(false);
+                    setEditingReceipt(null);
+                    setEditSelectedLpoId("");
+                    setEditFormData({
+                      receiptNumber: "",
+                      receiptDate: "",
+                      receivedBy: "",
+                      status: "Draft",
+                      notes: "",
+                      expectedDeliveryDate: "",
+                      actualDeliveryDate: "",
+                      totalItems: 0,
+                      totalQuantityExpected: 0,
+                      totalQuantityReceived: 0,
+                      discrepancyFlag: false,
+                    });
+                  }}
+                  data-testid="button-cancel-edit"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleUpdateReceipt}
+                  disabled={updateGoodsReceiptMutation.isPending}
+                  data-testid="button-update-receipt"
+                >
+                  {updateGoodsReceiptMutation.isPending ? "Updating..." : "Update Receipt"}
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -901,14 +1592,19 @@ function GoodsReceiptsTab() {
                     </div>
                   </div>
                   <div className="flex space-x-2">
-                    <Button size="sm" variant="outline" data-testid={`button-view-receipt-${receipt.id}`}>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => handleViewReceipt(receipt)}
+                      data-testid={`button-view-receipt-${receipt.id}`}
+                    >
                       <FileText className="h-4 w-4 mr-1" />
                       View
                     </Button>
-                    <Button size="sm" variant="outline" data-testid={`button-scan-receipt-${receipt.id}`}>
+                    {/* <Button size="sm" variant="outline" data-testid={`button-scan-receipt-${receipt.id}`}>
                       <ScanLine className="h-4 w-4 mr-1" />
                       Scan Items
-                    </Button>
+                    </Button> */}
                   </div>
                 </div>
               </CardContent>
@@ -968,6 +1664,69 @@ function SupplierReturnsTab() {
     }
   };
 
+  // State for create dialog and form
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [formData, setFormData] = useState({
+    returnNumber: "",
+    supplierId: "",
+    returnDate: "",
+    reason: "",
+    status: "Draft",
+    totalAmount: 0,
+    notes: "",
+  });
+
+  // Fetch suppliers for dropdown
+  const { data: suppliers = [] } = useQuery({
+    queryKey: ["/api/suppliers"],
+    queryFn: async () => {
+      const response = await fetch("/api/suppliers");
+      if (!response.ok) return [];
+      return response.json();
+    },
+    enabled: showCreateDialog,
+  });
+
+  // Mutation for creating supplier return
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const createSupplierReturnMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest("POST", "/api/supplier-returns", data);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create supplier return");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/supplier-returns"] });
+      setShowCreateDialog(false);
+      setFormData({
+        returnNumber: "",
+        supplierId: "",
+        returnDate: "",
+        reason: "",
+        status: "Draft",
+        totalAmount: 0,
+        notes: "",
+      });
+      toast({ title: "Success", description: "Supplier return created successfully" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Handler for submit
+  const handleCreateReturn = () => {
+    if (!formData.returnNumber || !formData.supplierId || !formData.returnDate || !formData.reason || formData.totalAmount <= 0) {
+      toast({ title: "Error", description: "Please fill in all required fields and total amount must be positive", variant: "destructive" });
+      return;
+    }
+    createSupplierReturnMutation.mutate(formData);
+  };
+
   return (
     <div className="space-y-6" data-testid="supplier-returns-tab">
       {/* Filters */}
@@ -985,13 +1744,122 @@ function SupplierReturnsTab() {
           </SelectContent>
         </Select>
 
-        <Button data-testid="button-create-return">
+        <Button data-testid="button-create-return" onClick={() => setShowCreateDialog(true)}>
           <Plus className="h-4 w-4 mr-2" />
           New Supplier Return
         </Button>
       </div>
 
-      {/* Supplier Returns List */}
+      {/* Create Supplier Return Dialog */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Create New Supplier Return</DialogTitle>
+            <DialogDescription>Enter details for the new supplier return.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <Label htmlFor="returnNumber">Return Number *</Label>
+              <Input
+                id="returnNumber"
+                placeholder="Enter return number"
+                value={formData.returnNumber}
+                onChange={(e) => setFormData({ ...formData, returnNumber: e.target.value })}
+                data-testid="input-return-number"
+              />
+            </div>
+            <div>
+              <Label htmlFor="supplier">Supplier *</Label>
+              <Select value={formData.supplierId} onValueChange={(value) => setFormData({ ...formData, supplierId: value })}>
+                <SelectTrigger data-testid="select-supplier">
+                  <SelectValue placeholder="Select Supplier" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.isArray(suppliers) && suppliers.map((supplier: any) => (
+                    <SelectItem key={supplier.id} value={supplier.id}>
+                      {supplier.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="returnDate">Return Date *</Label>
+              <Input
+                id="returnDate"
+                type="date"
+                value={formData.returnDate}
+                onChange={(e) => setFormData({ ...formData, returnDate: e.target.value })}
+                data-testid="input-return-date"
+              />
+            </div>
+            <div>
+              <Label htmlFor="reason">Return Reason *</Label>
+              <Input
+                id="reason"
+                placeholder="Enter reason for return"
+                value={formData.reason}
+                onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                data-testid="input-return-reason"
+              />
+            </div>
+            <div>
+              <Label htmlFor="status">Status</Label>
+              <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+                <SelectTrigger data-testid="select-return-status">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Draft">Draft</SelectItem>
+                  <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectItem value="Approved">Approved</SelectItem>
+                  <SelectItem value="Completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="totalAmount">Total Amount *</Label>
+              <Input
+                id="totalAmount"
+                type="number"
+                min={0}
+                step={0.01}
+                value={formData.totalAmount}
+                onChange={(e) => setFormData({ ...formData, totalAmount: parseFloat(e.target.value) })}
+                data-testid="input-total-amount"
+              />
+            </div>
+            <div>
+              <Label htmlFor="notes">Notes (Optional)</Label>
+              <Textarea
+                id="notes"
+                placeholder="Additional notes about the return"
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                data-testid="textarea-return-notes"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowCreateDialog(false)}
+                data-testid="button-cancel-create-return"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleCreateReturn}
+                disabled={createSupplierReturnMutation.isPending}
+                data-testid="button-create-return"
+              >
+                {createSupplierReturnMutation.isPending ? "Creating..." : "Create Return"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ...existing code for Supplier Returns List... */}
       {isLoading ? (
         <div className="space-y-4">
           {[...Array(5)].map((_, i) => (
@@ -1049,7 +1917,7 @@ function SupplierReturnsTab() {
             <p className="text-gray-600 text-center mb-4">
               Supplier returns will appear here when you need to return items to suppliers.
             </p>
-            <Button data-testid="button-create-first-return">
+            <Button data-testid="button-create-first-return" onClick={() => setShowCreateDialog(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Create First Return
             </Button>

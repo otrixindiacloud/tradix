@@ -31,12 +31,13 @@ export enum PricingMethod {
 
 // Currency conversion rates (in production, this would come from external API)
 export const CURRENCY_RATES = {
-  USD: 1.0,
-  AED: 3.67,
-  KWD: 0.31,
-  SAR: 3.75,
-  EUR: 0.85,
-  GBP: 0.73
+  BHD: 1.0, // Treat Bahraini Dinar as base for internal conversions now
+  USD: 2.65, // Approx rate: 1 BHD ≈ 2.65 USD (inverse of 0.376)
+  AED: 9.95, // 1 BHD ≈ 9.95 AED
+  KWD: 0.81, // 1 BHD ≈ 0.81 KWD
+  SAR: 9.94, // 1 BHD ≈ 9.94 SAR
+  EUR: 0.93, // 1 BHD ≈ 0.93 EUR (approx)
+  GBP: 0.79  // 1 BHD ≈ 0.79 GBP (approx)
 };
 
 // Volume pricing tiers interface

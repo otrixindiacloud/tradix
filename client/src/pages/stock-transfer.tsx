@@ -103,14 +103,14 @@ export default function StockTransferPage() {
 
   // Fetch items for dropdown
   const { data: items = [] } = useQuery({
-    queryKey: ["items"],
+    queryKey: ["inventory-items"],
     queryFn: async () => {
       try {
-        const response = await apiRequest("GET", "/api/items");
+        const response = await apiRequest("GET", "/api/inventory-items");
         const data = await response.json();
         return Array.isArray(data) ? data : [];
       } catch (error) {
-        console.error("Failed to fetch items:", error);
+        console.error("Failed to fetch inventory items:", error);
         return [];
       }
     },
@@ -331,7 +331,7 @@ export default function StockTransferPage() {
           </div>
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
-              <Button className="bg-purple-600 hover:bg-purple-700 shadow-md hover:shadow-lg transition-all duration-200 px-6 py-2.5 text-white font-medium rounded-lg">
+              <Button variant="outline" className="border-purple-500 text-purple-600 hover:bg-purple-50 shadow-md hover:shadow-lg transition-all duration-200 px-6 py-2.5 font-medium rounded-lg">
                 <Plus className="h-4 w-4 mr-2" />
                 New Transfer
               </Button>
@@ -356,6 +356,81 @@ export default function StockTransferPage() {
                             <Input placeholder="Enter transfer number" {...field} />
                           </FormControl>
                           <FormMessage />
+        {/* Statistics Cards */}
+        {stats && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Transfers</CardTitle>
+                <Activity className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.total}</div>
+                <p className="text-xs text-muted-foreground">All transfers</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Draft</CardTitle>
+                <FileText className="h-4 w-4 text-gray-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-gray-600">{stats.draft}</div>
+                <p className="text-xs text-muted-foreground">Being prepared</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Pending</CardTitle>
+                <Clock className="h-4 w-4 text-yellow-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
+                <p className="text-xs text-muted-foreground">Awaiting approval</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Approved</CardTitle>
+                <CheckCircle className="h-4 w-4 text-blue-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-blue-600">{stats.approved}</div>
+                <p className="text-xs text-muted-foreground">Ready to transfer</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">In Transit</CardTitle>
+                <Truck className="h-4 w-4 text-purple-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-purple-600">{stats.inTransit}</div>
+                <p className="text-xs text-muted-foreground">Being moved</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Completed</CardTitle>
+                <CheckCircle className="h-4 w-4 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
+                <p className="text-xs text-muted-foreground">Successfully transferred</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Cancelled</CardTitle>
+                <XCircle className="h-4 w-4 text-red-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">{stats.cancelled}</div>
+                <p className="text-xs text-muted-foreground">Cancelled transfers</p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
                         </FormItem>
                       )}
                     />
@@ -372,11 +447,21 @@ export default function StockTransferPage() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {items.map((item: any) => (
-                                <SelectItem key={item.id} value={item.id}>
-                                  {item.name || item.description || item.itemCode}
-                                </SelectItem>
-                              ))}
+                              {items.length === 0 ? (
+                                <div className="px-4 py-2 text-gray-500 text-sm">No items available</div>
+                              ) : (
+                                items.map((item: any) => (
+                                  <SelectItem key={item.id} value={item.id}>
+                                    {item.name
+                                      ? item.name
+                                      : item.description
+                                        ? item.description
+                                        : item.itemCode
+                                          ? item.itemCode
+                                          : `Item-${item.id}`}
+                                  </SelectItem>
+                                ))
+                              )}
                             </SelectContent>
                           </Select>
                           <FormMessage />

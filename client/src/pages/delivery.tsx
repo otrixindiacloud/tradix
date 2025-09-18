@@ -25,6 +25,9 @@ export default function Delivery() {
     deliveryNotes: "",
     deliveryDocument: null as File | null,
   });
+  // Inline filter controls
+  const [filterStatus, setFilterStatus] = useState<string>("");
+  const [filterCustomer, setFilterCustomer] = useState<string>("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -166,9 +169,11 @@ export default function Delivery() {
   const allDeliveryData = [...allDeliveriesWithOrders, ...ordersReadyForDelivery];
   
   const filteredDeliveryData = allDeliveryData?.filter((item: any) =>
-    item.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.status?.toLowerCase().includes(searchTerm.toLowerCase())
+    (item.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.status?.toLowerCase().includes(searchTerm.toLowerCase())) &&
+    (filterStatus ? item.status?.toLowerCase() === filterStatus.toLowerCase() : true) &&
+    (filterCustomer ? item.customer?.name?.toLowerCase().includes(filterCustomer.toLowerCase()) : true)
   ) || [];
   // Pagination logic
   const totalPages = Math.ceil(filteredDeliveryData.length / pageSize);
@@ -214,7 +219,7 @@ export default function Delivery() {
         let colorClass = "";
         switch (status?.toLowerCase()) {
           case "pending":
-            colorClass = "text-white border-blue-600 bg-blue-600";
+            colorClass = "border-blue-500 text-blue-600 bg-blue-50";
             break;
           case "in transit":
           case "intransit":
@@ -468,7 +473,7 @@ export default function Delivery() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Delivery Management</CardTitle>
-            <div className="flex items-center space-x-2">
+            <div className="flex flex-wrap items-center gap-4">
               <div className="relative">
                 <Input
                   type="text"
@@ -480,8 +485,37 @@ export default function Delivery() {
                 />
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               </div>
-              <Button variant="outline" size="icon" data-testid="button-filter">
-                <Filter className="h-4 w-4" />
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">Status:</label>
+                <select
+                  className="border rounded px-2 py-1 text-sm"
+                  value={filterStatus}
+                  onChange={e => setFilterStatus(e.target.value)}
+                  data-testid="select-filter-status"
+                >
+                  <option value="">All</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Partial">Partial</option>
+                  <option value="Complete">Complete</option>
+                  <option value="Ready for Delivery">Ready for Delivery</option>
+                  <option value="Failed">Failed</option>
+                  <option value="Cancelled">Cancelled</option>
+                  <option value="Returned">Returned</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">Customer:</label>
+                <Input
+                  type="text"
+                  placeholder="Customer name..."
+                  value={filterCustomer}
+                  onChange={e => setFilterCustomer(e.target.value)}
+                  className="w-40"
+                  data-testid="input-filter-customer"
+                />
+              </div>
+              <Button variant="outline" size="sm" onClick={() => { setFilterStatus(""); setFilterCustomer(""); }}>
+                Clear Filters
               </Button>
             </div>
           </div>
@@ -862,7 +896,7 @@ export default function Delivery() {
                 <div className="flex gap-2">
                   {selectedDeliveryForDetails.isPendingDelivery && (
                     <Button
-                      variant="default"
+                      variant="outline"
                       onClick={() => {
                         setSelectedOrder(selectedDeliveryForDetails.order);
                         setDeliveryData({
@@ -872,7 +906,7 @@ export default function Delivery() {
                         });
                         setSelectedDeliveryForDetails(null);
                       }}
-                      className="bg-orange-600 hover:bg-orange-700"
+                      className="border-orange-500 text-orange-600 hover:bg-orange-50"
                     >
                       <Truck className="h-4 w-4 mr-2" />
                       Create Delivery
@@ -880,7 +914,7 @@ export default function Delivery() {
                   )}
                   {!selectedDeliveryForDetails.isPendingDelivery && selectedDeliveryForDetails.status === "Pending" && (
                     <Button
-                      variant="default"
+                      variant="outline"
                       onClick={() => {
                         updateDeliveryStatus.mutate({ 
                           id: selectedDeliveryForDetails.id, 
@@ -888,7 +922,7 @@ export default function Delivery() {
                         });
                         setSelectedDeliveryForDetails(null);
                       }}
-                      className="bg-green-600 hover:bg-green-700"
+                      className="border-green-500 text-green-600 hover:bg-green-50"
                     >
                       <CheckCircle className="h-4 w-4 mr-2" />
                       Mark as Complete
@@ -908,6 +942,7 @@ export default function Delivery() {
       </Dialog>
 
       {/* Order Selection Dialog for Header Create Delivery Button */}
+      {/* Filter Dialog */}
       <Dialog open={showOrderSelectionDialog} onOpenChange={setShowOrderSelectionDialog}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>

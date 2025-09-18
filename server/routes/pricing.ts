@@ -19,7 +19,7 @@ const calculatePriceSchema = z.object({
     "contract",
     "volume_tiered"
   ]).optional(),
-  targetCurrency: z.string().length(3, "Currency must be 3 characters").default("USD")
+  targetCurrency: z.string().length(3, "Currency must be 3 characters").default("BHD")
 });
 
 const batchCalculatePricesSchema = z.object({
@@ -28,7 +28,7 @@ const batchCalculatePricesSchema = z.object({
     quantity: z.number().min(1).default(1)
   })),
   customerId: z.string().uuid("Invalid customer ID"),
-  targetCurrency: z.string().length(3).default("USD")
+  targetCurrency: z.string().length(3).default("BHD")
 });
 
 const volumeTierSchema = z.object({
@@ -39,7 +39,7 @@ const volumeTierSchema = z.object({
   maxQuantity: z.number().optional(),
   discountPercentage: z.number().min(0).max(100).optional(),
   specialPrice: z.number().min(0).optional(),
-  currency: z.string().length(3).default("USD"),
+  currency: z.string().length(3).default("BHD"),
   effectiveFrom: z.string().datetime().optional(),
   effectiveTo: z.string().datetime().optional()
 });
@@ -52,7 +52,7 @@ const contractPricingSchema = z.object({
   contractPrice: z.number().min(0, "Contract price must be positive"),
   minimumQuantity: z.number().min(0).optional(),
   maximumQuantity: z.number().min(0).optional(),
-  currency: z.string().length(3).default("USD"),
+  currency: z.string().length(3).default("BHD"),
   contractStartDate: z.string().datetime(),
   contractEndDate: z.string().datetime(),
   priceProtectionClause: z.string().optional(),
@@ -67,7 +67,7 @@ const competitorPricingSchema = z.object({
   itemId: z.string().uuid("Invalid item ID"),
   competitorSku: z.string().optional(),
   price: z.number().min(0, "Price must be positive"),
-  currency: z.string().length(3).default("USD"),
+  currency: z.string().length(3).default("BHD"),
   source: z.string().optional(),
   sourceUrl: z.string().url().optional(),
   notes: z.string().optional(),

@@ -41,11 +41,14 @@ export default function AttachmentManager({
       });
 
       if (!response.ok) {
-        throw new Error('Upload failed');
+        const errorData = await response.text();
+        console.error('Upload response error:', errorData);
+        throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
       }
 
       const result = await response.json();
-      return result.files;
+      console.log('Upload successful:', result);
+      return result.files || result;
     } catch (error) {
       console.error('Upload error:', error);
       throw error;
@@ -66,16 +69,18 @@ export default function AttachmentManager({
 
     setUploading(true);
     try {
+      console.log('Starting upload for files:', acceptedFiles.map(f => f.name));
       const uploadedFiles = await uploadFiles(acceptedFiles);
+      console.log('Upload response:', uploadedFiles);
       
-      const newAttachments = uploadedFiles.map((file: any) => ({
-        id: file.id,
-        name: file.name,
+      const newAttachments = (Array.isArray(uploadedFiles) ? uploadedFiles : [uploadedFiles]).map((file: any) => ({
+        id: file.id || file.filename?.split('.')[0] || Date.now().toString(),
+        name: file.name || file.originalname,
         filename: file.filename,
         size: file.size,
-        type: file.mimetype,
-        url: file.path, // Server-provided download path
-        uploadedAt: file.uploadedAt,
+        type: file.mimetype || file.type,
+        url: file.path || `/api/files/download/${file.filename}`,
+        uploadedAt: file.uploadedAt || new Date().toISOString(),
       }));
 
       const updatedAttachments = [...attachments, ...newAttachments];
@@ -85,10 +90,11 @@ export default function AttachmentManager({
         title: "Files uploaded",
         description: `${acceptedFiles.length} file(s) uploaded successfully`,
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Upload failed:', error);
       toast({
         title: "Upload failed",
-        description: "Failed to upload files. Please try again.",
+        description: error.message || "Failed to upload files. Please try again.",
         variant: "destructive",
       });
     } finally {

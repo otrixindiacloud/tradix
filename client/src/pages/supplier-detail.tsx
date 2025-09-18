@@ -332,15 +332,17 @@ export default function SupplierDetail() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
+          <button 
             onClick={() => navigate("/suppliers")}
-            className="flex items-center gap-2"
+            className="group flex items-center gap-3 bg-white hover:bg-gray-50 text-gray-900 font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2 transition-all duration-200 transform hover:-translate-y-0.5 border border-gray-200"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Suppliers
-          </Button>
+            <div className="rounded-lg flex items-center justify-center transition-colors">
+              <ArrowLeft className="h-4 w-4 text-blue-600 group-hover:scale-110 transition-transform duration-200" />
+            </div>
+            <div className="text-left">
+              <div className="text-sm font-bold">Back to Suppliers</div>
+            </div>
+          </button>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">{supplier.name}</h1>
             <p className="text-muted-foreground">

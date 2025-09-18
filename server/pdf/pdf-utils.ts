@@ -26,7 +26,7 @@ export interface QuotationPdfContext {
 }
 
 // Currency formatting centralised
-export function fmtCurrency(amount: number | string | null | undefined, currency = 'USD') {
+export function fmtCurrency(amount: number | string | null | undefined, currency = 'BHD') {
   const n = amount == null ? 0 : (typeof amount === 'string' ? parseFloat(amount) : amount);
   if (Number.isNaN(n)) return `${currency} 0.00`;
   return `${currency} ${n.toFixed(2)}`;
@@ -70,10 +70,11 @@ export function buildEnhancedInvoicePdf(ctx: InvoicePdfContext): Buffer {
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
-  // Main header - centered "TAX INVOICE"
+  // Main header - dynamic between Proforma and Tax Invoice
   doc.setFontSize(16).setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
-  doc.text('TAX INVOICE', pageWidth / 2, 20, { align: 'center' });
+  const isProforma = String((invoice as any).invoiceType || '').toLowerCase() === 'proforma';
+  doc.text(isProforma ? 'PROFORMA INVOICE' : 'TAX INVOICE', pageWidth / 2, 20, { align: 'center' });
   
   // Top right corner - Invoice details
   const invoiceDetailsY = 30;
@@ -98,7 +99,7 @@ export function buildEnhancedInvoicePdf(ctx: InvoicePdfContext): Buffer {
     (invoice as any).deliveryId ? String((invoice as any).deliveryId).slice(0,8) : '',
     (invoice as any).paymentTerms || '',
     fmtDate((invoice as any).dueDate),
-    (invoice as any).currency || 'USD',
+    (invoice as any).currency || 'BHD',
     (invoice as any).exchangeRate || '1.0000'
   ]];
   autoTable(doc, {
@@ -106,7 +107,7 @@ export function buildEnhancedInvoicePdf(ctx: InvoicePdfContext): Buffer {
     head: coreHead,
     body: coreBody,
     styles: { fontSize: 7, cellPadding: 2 },
-    headStyles: { fillColor: [230,230,230], textColor: 0, fontStyle: 'bold' },
+    headStyles: { fillColor: [255,255,255], textColor: 0, fontStyle: 'bold' },
     margin: { left: 20, right: 20 },
     didParseCell: (data:any) => { if (data.section==='head') data.cell.styles.halign='center'; }
   });
@@ -148,7 +149,7 @@ export function buildEnhancedInvoicePdf(ctx: InvoicePdfContext): Buffer {
     doc.text(line, pageWidth / 2 + 20, custDetailsY + idx * 5);
   });
 
-  // Items table with VAT structure
+  // Enhanced Items table with comprehensive tabular structure
   const tableStartY = custDetailsY + 35;
   const currency = (invoice as any).currency || 'BHD';
   
@@ -160,34 +161,61 @@ export function buildEnhancedInvoicePdf(ctx: InvoicePdfContext): Buffer {
     const netAmount = (rate * qty) - discountAmount;
     const vatRate = Number(it.taxRate) || 10; // Default 10% VAT
     const vatAmount = (netAmount * vatRate) / 100;
+    const lineTotal = netAmount + vatAmount;
+    
+    // Enhanced description with item details
+    let enhancedDesc = it.description || 'Item Description';
+    if (it.supplierCode) enhancedDesc += `\nSupplier Code: ${it.supplierCode}`;
+    if (it.barcode) enhancedDesc += `\nBarcode: ${it.barcode}`;
+    if ((it as any).item?.category) enhancedDesc += `\nCategory: ${(it as any).item.category}`;
     
     return [
       (i + 1).toString(),
-      it.description || 'INTRUDER 261865R3 SP311 BLACK',
+      enhancedDesc,
       `${qty} PCS`,
-      rate.toFixed(3),
-      discountRate > 0 ? discountRate.toFixed(3) : '0.000',
-      netAmount.toFixed(2),
-      `${vatRate}%`
+      `${currency} ${rate.toFixed(3)}`,
+      discountRate > 0 ? `${discountRate.toFixed(1)}%` : '0%',
+      `${currency} ${discountAmount.toFixed(2)}`,
+      `${currency} ${netAmount.toFixed(2)}`,
+      `${vatRate}%`,
+      `${currency} ${vatAmount.toFixed(2)}`,
+      `${currency} ${lineTotal.toFixed(2)}`
     ];
   });
 
   autoTable(doc, {
     startY: tableStartY,
-    head: [['Sl. No', 'Description of Goods', 'Quantity', 'Rate', 'Disc. %', 'Amount (BD)', 'VAT %']],
+    head: [['Sl.', 'Description & Item Details', 'Qty', 'Unit Rate', 'Disc. %', 'Disc. Amt', 'Net Amount', 'VAT %', 'VAT Amt', 'Line Total']],
     body: rows,
-    styles: { fontSize: 8, cellPadding: 2, halign: 'center' },
-    headStyles: { fillColor: [220, 220, 220], textColor: 0, fontStyle: 'bold' },
-    columnStyles: {
-      0: { cellWidth: 15, halign: 'center' },
-      1: { cellWidth: 80, halign: 'left' },
-      2: { cellWidth: 20, halign: 'center' },
-      3: { cellWidth: 20, halign: 'right' },
-      4: { cellWidth: 15, halign: 'right' },
-      5: { cellWidth: 25, halign: 'right' },
-      6: { cellWidth: 15, halign: 'center' }
+    styles: { 
+      fontSize: 7, 
+      cellPadding: 2, 
+      lineColor: [0, 0, 0],
+      lineWidth: 0.1,
+      valign: 'middle'
     },
-    margin: { left: 20, right: 20 }
+    headStyles: { 
+      fillColor: [255, 255, 255], // White background
+      textColor: [0, 0, 0], // Black text
+      fontStyle: 'bold',
+      halign: 'center'
+    },
+    columnStyles: {
+      0: { cellWidth: 12, halign: 'center' },
+      1: { cellWidth: 60, halign: 'left' },
+      2: { cellWidth: 15, halign: 'center' },
+      3: { cellWidth: 20, halign: 'right' },
+      4: { cellWidth: 15, halign: 'center' },
+      5: { cellWidth: 18, halign: 'right' },
+      6: { cellWidth: 20, halign: 'right' },
+      7: { cellWidth: 12, halign: 'center' },
+      8: { cellWidth: 18, halign: 'right' },
+      9: { cellWidth: 20, halign: 'right', fontStyle: 'bold' }
+    },
+    alternateRowStyles: {
+      fillColor: [255, 255, 255]
+    },
+    margin: { left: 15, right: 15 }
   });
 
   const afterItemsTable = (doc as any).lastAutoTable?.finalY || tableStartY + 40;
@@ -205,7 +233,7 @@ export function buildEnhancedInvoicePdf(ctx: InvoicePdfContext): Buffer {
   const discountAmountBase = Number((invoice as any).discountAmountBase) || 0;
   const taxAmountBase = Number((invoice as any).taxAmountBase) || 0;
   const totalAmountBase = Number((invoice as any).totalAmountBase) || 0;
-  const baseCurrency = (invoice as any).baseCurrency || (invoice as any).currency || 'USD';
+  const baseCurrency = (invoice as any).baseCurrency || (invoice as any).currency || 'BHD';
 
   // Financial summary table (Invoice Currency)
   const finStartY = afterItemsTable + 5;
@@ -239,7 +267,7 @@ export function buildEnhancedInvoicePdf(ctx: InvoicePdfContext): Buffer {
         ['Total (Base)', totalAmountBase.toFixed(2)]
       ],
       styles: { fontSize: 8, cellPadding: 2 },
-      headStyles: { fillColor: [220,220,220], textColor:0, fontStyle:'bold' },
+      headStyles: { fillColor: [255,255,255], textColor:0, fontStyle:'bold' },
       columnStyles: { 0: { cellWidth: 60 }, 1: { cellWidth: 30, halign:'right' } },
       margin: { left: 90 }
     });
@@ -344,7 +372,7 @@ export function buildEnhancedInvoicePdf(ctx: InvoicePdfContext): Buffer {
 
   // Footer
   const footerY = pageHeight - 20;
-  doc.setFontSize(7).setTextColor(100);
+  doc.setFontSize(7).setTextColor(0);
   doc.text('Generated by GT ERP', 20, footerY);
   doc.text(new Date().toLocaleDateString(), pageWidth - 20, footerY, { align: 'right' });
 
@@ -378,10 +406,10 @@ export function generateQuotationPdf(ctx: QuotationPdfContext): PdfGenerateResul
       (i+1).toString(),
       it.description || '',
       it.quantity.toString(),
-      fmtCurrency(it.unitPrice, (quotation as any).currency || 'USD'),
-      fmtCurrency(it.lineTotal, (quotation as any).currency || 'USD')
+      fmtCurrency(it.unitPrice, (quotation as any).currency || 'BHD'),
+      fmtCurrency(it.lineTotal, (quotation as any).currency || 'BHD')
     ]);
-    autoTable(doc, { startY: 70, head: [['#','Description','Qty','Unit','Total']], body: rows, styles:{fontSize:8}, headStyles:{fillColor:[212,175,55], textColor:255}});
+    autoTable(doc, { startY: 70, head: [['#','Description','Qty','Unit','Total']], body: rows, styles:{fontSize:8}, headStyles:{fillColor:[255,255,255], textColor:0}});
     const buffer = Buffer.from(doc.output('arraybuffer'));
     return { buffer, byteLength: buffer.length, fileName: `quotation-${(quotation as any).quotationNumber || quotation.quoteNumber}.pdf`, contentType: 'application/pdf' };
   }
@@ -412,7 +440,7 @@ export function generateQuotationPdf(ctx: QuotationPdfContext): PdfGenerateResul
       validUntil || leadTime
     ]],
     styles: { fontSize: 7, cellPadding: 2 },
-    headStyles: { fillColor: [230,230,230], textColor:0, fontStyle:'bold' },
+    headStyles: { fillColor: [255,255,255], textColor:0, fontStyle:'bold' },
     margin: { left: 15, right: 15 }
   });
 
@@ -439,8 +467,8 @@ export function generateQuotationPdf(ctx: QuotationPdfContext): PdfGenerateResul
   });
 
   const afterAddress = (doc as any).lastAutoTable.finalY + 5;
-  // Items table with columns similar to image: Sl, Item Description, Qty/UOM, Unit Price, Discount %, Net Total, VAT %, Amount
-  const currency = (quotation as any).currency || 'USD';
+  // Enhanced Items table with comprehensive columns for professional quotation
+  const currency = (quotation as any).currency || 'BHD';
   const itemRows = items.map((it,i)=> {
     const qty = Number(it.quantity)||0;
     const unit = Number(it.unitPrice)||0;
@@ -451,32 +479,59 @@ export function generateQuotationPdf(ctx: QuotationPdfContext): PdfGenerateResul
     const vatPerc = Number((quotation as any).taxRate) || 0; // may not exist; fallback 0
     const vatAmt = net * vatPerc/100;
     const lineTotal = net + vatAmt;
+    
+    // Enhanced description with specifications
+    let enhancedDesc = it.description || 'Product Description';
+    if ((it as any).supplierCode) enhancedDesc += `\nCode: ${(it as any).supplierCode}`;
+    if ((it as any).barcode) enhancedDesc += `\nBarcode: ${(it as any).barcode}`;
+    if ((it as any).item?.category) enhancedDesc += `\nCategory: ${(it as any).item.category}`;
+    if ((it as any).specifications) enhancedDesc += `\nSpecs: ${(it as any).specifications}`;
+    
     return [
       (i+1).toString(),
-      it.description || '',
+      enhancedDesc,
       `${qty} PCS`,
-      unit.toFixed(3),
-      discPerc?discPerc.toFixed(2):'0.00',
-      net.toFixed(2),
-      vatPerc?vatPerc.toFixed(2)+'%':'0%',
-      lineTotal.toFixed(2)
+      `${currency} ${unit.toFixed(3)}`,
+      discPerc?`${discPerc.toFixed(1)}%`:'0%',
+      `${currency} ${discAmt.toFixed(2)}`,
+      `${currency} ${net.toFixed(2)}`,
+      vatPerc?`${vatPerc.toFixed(1)}%`:'0%',
+      `${currency} ${vatAmt.toFixed(2)}`,
+      `${currency} ${lineTotal.toFixed(2)}`
     ];
   });
+  
   autoTable(doc, {
     startY: afterAddress,
-    head: [[ 'Sl.', 'Item Description', 'Qty', 'Rate', 'Disc.%', 'Net Total', 'VAT %', 'Amount' ]],
+    head: [[ 'Sl.', 'Item Description & Specifications', 'Qty', 'Unit Rate', 'Disc.%', 'Disc. Amt', 'Net Total', 'VAT %', 'VAT Amt', 'Line Total' ]],
     body: itemRows,
-    styles: { fontSize: 7, cellPadding: 2, valign:'middle' },
-    headStyles: { fillColor: [230,230,230], textColor:0, fontStyle:'bold' },
+    styles: { 
+      fontSize: 7, 
+      cellPadding: 2, 
+      valign:'middle',
+      lineColor: [0, 0, 0],
+      lineWidth: 0.1
+    },
+    headStyles: { 
+      fillColor: [255, 255, 255], // White background
+      textColor: [0, 0, 0], // Black text
+      fontStyle:'bold',
+      halign: 'center'
+    },
     columnStyles: {
-      0: { cellWidth: 10, halign:'center' },
-      1: { cellWidth: 70 },
+      0: { cellWidth: 12, halign:'center' },
+      1: { cellWidth: 55, halign: 'left' },
       2: { cellWidth: 15, halign:'center' },
-      3: { cellWidth: 18, halign:'right' },
-      4: { cellWidth: 16, halign:'right' },
-      5: { cellWidth: 22, halign:'right' },
-      6: { cellWidth: 16, halign:'center' },
-      7: { cellWidth: 22, halign:'right' }
+      3: { cellWidth: 20, halign:'right' },
+      4: { cellWidth: 15, halign:'center' },
+      5: { cellWidth: 18, halign:'right' },
+      6: { cellWidth: 20, halign:'right' },
+      7: { cellWidth: 12, halign:'center' },
+      8: { cellWidth: 18, halign:'right' },
+      9: { cellWidth: 20, halign:'right', fontStyle: 'bold' }
+    },
+    alternateRowStyles: {
+      fillColor: [255, 255, 255]
     },
     margin: { left: 15, right: 15 }
   });

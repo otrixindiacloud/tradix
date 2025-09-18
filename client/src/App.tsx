@@ -53,6 +53,7 @@ import SupplierQuotes from "@/pages/supplier-quotes";
 import SupplierQuoteDetail from "@/pages/supplier-quote-detail";
 import ShipmentTracking from "@/pages/shipment-tracking";
 import PurchaseInvoices from "@/pages/purchase-invoices";
+import PurchaseInvoiceDetail from "@/pages/purchase-invoice-detail";
 import MaterialRequestsPage from "@/pages/material-requests";
 import ReceiptsPage from "@/pages/receipts";
 import StockIssuesPage from "@/pages/stock-issues";
@@ -120,6 +121,7 @@ function ProtectedRoutes() {
           <Route path="/supplier-quotes/:id" component={SupplierQuoteDetail} />
           <Route path="/shipment-tracking" component={ShipmentTracking} />
           <Route path="/purchase-invoices" component={PurchaseInvoices} />
+          <Route path="/purchase-invoices/:id" component={PurchaseInvoiceDetail} />
           <Route component={NotFound} />
         </Switch>
       </ErrorBoundary>

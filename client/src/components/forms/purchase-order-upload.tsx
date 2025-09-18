@@ -27,7 +27,7 @@ const purchaseOrderSchema = z.object({
   poDate: z.string().min(1, "PO date is required"),
   customerReference: z.string().optional(),
   totalPoAmount: z.string().min(1, "PO amount is required"),
-  currency: z.string().default("USD"),
+  currency: z.string().default("BHD"),
   paymentTerms: z.string().optional(),
   deliveryTerms: z.string().optional(),
   specialInstructions: z.string().optional(),

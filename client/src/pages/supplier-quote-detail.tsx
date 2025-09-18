@@ -35,7 +35,7 @@ interface SupplierQuote {
   requisitionId?: string;
   requisitionNumber?: string;
   priority: "Low" | "Medium" | "High" | "Urgent";
-  status: "Draft" | "Sent" | "Received" | "Under Review" | "Approved" | "Rejected" | "Expired";
+  status: "Pending" | "Draft" | "Sent" | "Received" | "Under Review" | "Approved" | "Rejected" | "Accepted" | "Expired";
   requestDate: string;
   responseDate?: string;
   validUntil: string;
@@ -96,12 +96,12 @@ export default function SupplierQuoteDetailPage() {
 
   const quoteId = params.id;
 
-  // Mock data for development
+  // Mock data for development - matching IDs from supplier-quotes.tsx
   const mockQuotes: { [key: string]: SupplierQuote } = {
-    "sq-2024-001": {
-      id: "sq-2024-001",
+    "sq-001": {
+      id: "sq-001",
       quoteNumber: "SQ-2024-001",
-      supplierId: "supplier-001",
+      supplierId: "sup-001",
       supplierName: "Tech Solutions LLC",
       requisitionId: "req-001",
       requisitionNumber: "REQ-2024-001",
@@ -111,9 +111,9 @@ export default function SupplierQuoteDetailPage() {
       responseDate: "2024-01-17",
       validUntil: "2024-02-15",
       totalAmount: "5200.00",
-      currency: "AED",
-      paymentTerms: "30 days",
-      deliveryTerms: "FOB Dubai, 10-15 working days",
+      currency: "BHD",
+      paymentTerms: "Net 30",
+      deliveryTerms: "FOB Destination",
       notes: "Special discount for bulk order. Installation service included.",
       score: 8.5,
       rank: 2,
@@ -121,10 +121,10 @@ export default function SupplierQuoteDetailPage() {
       createdAt: "2024-01-15T10:00:00Z",
       updatedAt: "2024-01-17T14:30:00Z"
     },
-    "sq-2024-002": {
-      id: "sq-2024-002",
+    "sq-002": {
+      id: "sq-002",
       quoteNumber: "SQ-2024-002",
-      supplierId: "supplier-002",
+      supplierId: "sup-002",
       supplierName: "Office Supplies Co",
       requisitionId: "req-002",
       requisitionNumber: "REQ-2024-002",
@@ -134,22 +134,44 @@ export default function SupplierQuoteDetailPage() {
       responseDate: "2024-01-16",
       validUntil: "2024-02-14",
       totalAmount: "2100.00",
-      currency: "AED",
-      paymentTerms: "15 days",
-      deliveryTerms: "Free delivery within Dubai",
+      currency: "BHD",
+      paymentTerms: "Net 15",
+      deliveryTerms: "CIF",
       score: 9.2,
       rank: 1,
       itemCount: 5,
       createdAt: "2024-01-14T09:30:00Z",
       updatedAt: "2024-01-16T11:20:00Z"
+    },
+    "sq-003": {
+      id: "sq-003",
+      quoteNumber: "SQ-2024-003",
+      supplierId: "sup-003",
+      supplierName: "Industrial Equipment Ltd",
+      requisitionId: "req-003",
+      requisitionNumber: "REQ-2024-003",
+      priority: "Urgent",
+      status: "Pending",
+      requestDate: "2024-01-18",
+      responseDate: undefined,
+      validUntil: "2024-02-18",
+      totalAmount: "0.00",
+      currency: "BHD",
+      paymentTerms: "Net 45",
+      deliveryTerms: "EXW",
+      score: undefined,
+      rank: undefined,
+      itemCount: 0,
+      createdAt: "2024-01-18T08:00:00Z",
+      updatedAt: "2024-01-18T08:00:00Z"
     }
   };
 
   const mockItems: { [key: string]: SupplierQuoteItem[] } = {
-    "sq-2024-001": [
+    "sq-001": [
       {
         id: "item-001",
-        quoteId: "sq-2024-001",
+        quoteId: "sq-001",
         itemDescription: "Dell PowerEdge R750 Server",
         quantity: 2,
         unitPrice: "2400.00",
@@ -161,7 +183,7 @@ export default function SupplierQuoteDetailPage() {
       },
       {
         id: "item-002",
-        quoteId: "sq-2024-001",
+        quoteId: "sq-001",
         itemDescription: "Network Switch 48-port",
         quantity: 1,
         unitPrice: "400.00",
@@ -172,10 +194,10 @@ export default function SupplierQuoteDetailPage() {
         warranty: "2 years"
       }
     ],
-    "sq-2024-002": [
+    "sq-002": [
       {
         id: "item-003",
-        quoteId: "sq-2024-002",
+        quoteId: "sq-002",
         itemDescription: "Office Desk - Executive",
         quantity: 3,
         unitPrice: "280.00",
@@ -187,7 +209,7 @@ export default function SupplierQuoteDetailPage() {
       },
       {
         id: "item-004",
-        quoteId: "sq-2024-002",
+        quoteId: "sq-002",
         itemDescription: "Ergonomic Office Chair",
         quantity: 3,
         unitPrice: "220.00",
@@ -196,13 +218,58 @@ export default function SupplierQuoteDetailPage() {
         specifications: "Mesh back, adjustable height",
         leadTime: "2-3 working days",
         warranty: "2 years"
+      },
+      {
+        id: "item-005",
+        quoteId: "sq-002",
+        itemDescription: "Monitor Stand - Adjustable",
+        quantity: 3,
+        unitPrice: "85.00",
+        totalPrice: "255.00",
+        unitOfMeasure: "Units",
+        specifications: "Height adjustable, 13-27 inch monitors",
+        leadTime: "2-3 working days",
+        warranty: "1 year"
+      },
+      {
+        id: "item-006",
+        quoteId: "sq-002",
+        itemDescription: "Desk Lamp - LED",
+        quantity: 3,
+        unitPrice: "45.00",
+        totalPrice: "135.00",
+        unitOfMeasure: "Units",
+        specifications: "USB charging port, adjustable brightness",
+        leadTime: "1-2 working days",
+        warranty: "2 years"
+      },
+      {
+        id: "item-007",
+        quoteId: "sq-002",
+        itemDescription: "Cable Management Tray",
+        quantity: 3,
+        unitPrice: "25.00",
+        totalPrice: "75.00",
+        unitOfMeasure: "Units",
+        specifications: "Under-desk mounting, mesh design",
+        leadTime: "1-2 working days",
+        warranty: "1 year"
       }
-    ]
+    ],
+    "sq-003": []
   };
 
   // Use mock data instead of API calls
   const quote = mockQuotes[quoteId || ""] || null;
   const items = mockItems[quoteId || ""] || [];
+
+  // Debug logging for development
+  console.log("Debug - Quote ID from URL:", quoteId);
+  console.log("Debug - Available quote IDs:", Object.keys(mockQuotes));
+  console.log("Debug - Found quote:", quote ? "Yes" : "No");
+  if (quote) {
+    console.log("Debug - Quote details:", quote.quoteNumber, quote.supplierName);
+  }
 
   const handleDelete = () => {
     toast({
@@ -229,11 +296,11 @@ export default function SupplierQuoteDetailPage() {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "Urgent": return "bg-red-100 text-red-700 border-red-200";
-      case "High": return "bg-orange-100 text-orange-700 border-orange-200";
-      case "Medium": return "bg-yellow-100 text-yellow-700 border-yellow-200";
-      case "Low": return "bg-green-100 text-green-700 border-green-200";
-      default: return "bg-gray-100 text-gray-700 border-gray-200";
+      case "Urgent": return "bg-red-500 text-white border-red-600";
+      case "High": return "bg-orange-500 text-white border-orange-600";
+      case "Medium": return "bg-yellow-500 text-white border-yellow-600";
+      case "Low": return "bg-green-500 text-white border-green-600";
+      default: return "bg-gray-500 text-white border-gray-600";
     }
   };
 
@@ -249,13 +316,13 @@ export default function SupplierQuoteDetailPage() {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900">Supplier Quote Not Found</h2>
           <p className="text-gray-600 mt-2">The supplier quote you're looking for doesn't exist.</p>
-          <Button 
-            onClick={() => navigate("/supplier-quotes")} 
-            className="mt-4"
+          <button 
+            onClick={() => navigate("/supplier-quotes")}
+            className="group flex items-center gap-3 bg-white hover:bg-gray-50 text-gray-900 font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2 transition-all duration-200 transform hover:-translate-y-0.5 border border-gray-200 mt-4"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Supplier Quotes
-          </Button>
+            <ArrowLeft className="h-4 w-4 text-blue-600 group-hover:scale-110 transition-transform duration-200" />
+            <div className="text-sm font-bold">Back to Supplier Quotes</div>
+          </button>
         </div>
       </div>
     );
@@ -266,13 +333,13 @@ export default function SupplierQuoteDetailPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Button 
-            variant="ghost" 
+          <button 
             onClick={() => navigate("/supplier-quotes")}
+            className="group flex items-center gap-3 bg-white hover:bg-gray-50 text-gray-900 font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2 transition-all duration-200 transform hover:-translate-y-0.5 border border-gray-200"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Supplier Quotes
-          </Button>
+            <ArrowLeft className="h-4 w-4 text-blue-600 group-hover:scale-110 transition-transform duration-200" />
+            <div className="text-sm font-bold">Back to Supplier Quotes</div>
+          </button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
               {quote.quoteNumber}
@@ -291,9 +358,9 @@ export default function SupplierQuoteDetailPage() {
           {quote.status === "Under Review" && (
             <>
               <Button 
-                variant="default"
+                variant="outline"
                 onClick={handleApprove}
-                className="bg-green-600 hover:bg-green-700"
+                className="border-green-500 text-green-600 hover:bg-green-50"
               >
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Approve
@@ -334,7 +401,7 @@ export default function SupplierQuoteDetailPage() {
                 <FileText className="h-4 w-4 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-600">Status</p>
+                <p className="text-sm font-bold text-black">Status</p>
                 <StatusPill status={quote.status} />
               </div>
             </div>
@@ -348,7 +415,7 @@ export default function SupplierQuoteDetailPage() {
                 <AlertTriangle className="h-4 w-4 text-yellow-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-600">Priority</p>
+                <p className="text-sm font-bold text-black">Priority</p>
                 <Badge className={getPriorityColor(quote.priority)}>
                   {quote.priority}
                 </Badge>
@@ -364,7 +431,7 @@ export default function SupplierQuoteDetailPage() {
                 <DollarSign className="h-4 w-4 text-green-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-600">Total Amount</p>
+                <p className="text-sm font-bold text-black">Total Amount</p>
                 <p className="font-semibold">{quote.currency} {quote.totalAmount}</p>
               </div>
             </div>
@@ -378,7 +445,7 @@ export default function SupplierQuoteDetailPage() {
                 <Star className="h-4 w-4 text-purple-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-600">Score</p>
+                <p className="text-sm font-bold text-black">Score</p>
                 <p className={`font-semibold ${getScoreColor(quote.score || 0)}`}>
                   {quote.score}/10
                 </p>
@@ -394,7 +461,7 @@ export default function SupplierQuoteDetailPage() {
                 <TrendingUp className="h-4 w-4 text-indigo-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-600">Rank</p>
+                <p className="text-sm font-bold text-black">Rank</p>
                 <p className="font-semibold">#{quote.rank}</p>
               </div>
             </div>
@@ -619,7 +686,7 @@ export default function SupplierQuoteDetailPage() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700"
+              className="border-red-500 text-red-600 hover:bg-red-50 bg-transparent"
             >
               Delete
             </AlertDialogAction>

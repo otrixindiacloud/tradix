@@ -112,7 +112,9 @@ export default function CustomerManagementPage() {
         ...filters
       });
 
-      const response = await fetch(`/api/customers?${params}`);
+      const response = await fetch(`/api/customers?${params}`, {
+        credentials: 'include'
+      });
       const data = await response.json();
       
       setCustomers(data.customers);
@@ -131,7 +133,9 @@ export default function CustomerManagementPage() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch("/api/customers/stats");
+      const response = await fetch("/api/customers/stats", {
+        credentials: 'include'
+      });
       const data = await response.json();
       setStats(data);
     } catch (error) {
@@ -164,6 +168,7 @@ export default function CustomerManagementPage() {
         headers: {
           "Content-Type": "application/json"
         },
+        credentials: 'include',
         body: JSON.stringify({
           ...formData,
           creditLimit: formData.creditLimit ? parseFloat(formData.creditLimit) : null
@@ -201,6 +206,7 @@ export default function CustomerManagementPage() {
         headers: {
           "Content-Type": "application/json"
         },
+        credentials: 'include',
         body: JSON.stringify({
           ...formData,
           creditLimit: formData.creditLimit ? parseFloat(formData.creditLimit) : null
@@ -233,7 +239,8 @@ export default function CustomerManagementPage() {
   const handleDeleteCustomer = async (customerId: string) => {
     try {
       const response = await fetch(`/api/customers/${customerId}`, {
-        method: "DELETE"
+        method: "DELETE",
+        credentials: 'include'
       });
 
       if (response.ok) {

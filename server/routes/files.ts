@@ -51,28 +51,24 @@ const upload = multer({
 
 export function registerFileRoutes(app: Express) {
   // File upload endpoint - support both single and multiple files
-  app.post("/api/files/upload", (req, res, next) => {
-    // Try single file first, then multiple files
-    upload.single('file')(req, res, (err) => {
-      if (err && err.message === "Unexpected field") {
-        // Try with multiple files
-        upload.array('files', 10)(req, res, next);
-      } else {
-        next(err);
-      }
-    });
-  }, async (req, res) => {
+  app.post("/api/files/upload", upload.array('files', 10), async (req, res) => {
     try {
+      console.log('File upload request received');
+      console.log('Content-Type:', req.headers['content-type']);
+      console.log('req.files:', req.files);
+      
       let files: any[] = [];
       
-      // Handle single file upload
-      if (req.file) {
-        files = [req.file];
-      }
       // Handle multiple files upload
-      else if (req.files && Array.isArray(req.files)) {
+      if (req.files && Array.isArray(req.files)) {
         files = req.files;
       }
+      // Handle single file upload as array
+      else if (req.file) {
+        files = [req.file];
+      }
+      
+      console.log('Files processed:', files.length);
       
       if (files.length === 0) {
         return res.status(400).json({ message: "No files uploaded" });
@@ -88,13 +84,15 @@ export function registerFileRoutes(app: Express) {
         uploadedAt: new Date().toISOString(),
       }));
 
+      console.log('Responding with uploaded files:', uploadedFiles);
+
       res.json({
         message: "Files uploaded successfully",
         files: uploadedFiles,
       });
     } catch (error) {
       console.error("Error uploading files:", error);
-      res.status(500).json({ message: "Failed to upload files" });
+      res.status(500).json({ message: "Failed to upload files", error: (error as Error).message });
     }
   });
 

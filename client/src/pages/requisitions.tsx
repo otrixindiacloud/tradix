@@ -574,7 +574,8 @@ export default function RequisitionsPage() {
           </div>
           <div className="flex gap-2">
             <Button 
-              className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-200 transition flex items-center gap-2" 
+              variant="outline"
+              className="border-purple-500 text-purple-600 hover:bg-purple-50 font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-200 transition flex items-center gap-2" 
               onClick={() => setShowNewDialog(true)}
               data-testid="button-new-requisition"
             >
@@ -752,82 +753,85 @@ export default function RequisitionsPage() {
       </Card>
 
       {/* Requisitions Table */}
-      <div>
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <h3 className="text-lg font-semibold">Requisitions</h3>
-          </div>
-          <div className="flex items-center space-x-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" data-testid="button-export-table">
-                  <FileDown className="h-4 w-4 mr-2" />
-                  Export
-                  <ChevronDown className="h-4 w-4 ml-2" />
+        {/* Requisitions Table - moved inside Card for consistent UI */}
+        <Card className="border border-gray-200 shadow-sm bg-white mt-6">
+          <CardHeader className="pb-4">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h3 className="text-lg font-semibold">Requisitions</h3>
+              </div>
+              <div className="flex items-center space-x-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" data-testid="button-export-table">
+                      <FileDown className="h-4 w-4 mr-2" />
+                      Export
+                      <ChevronDown className="h-4 w-4 ml-2" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => exportRequisitions('csv')}>
+                      <FileText className="h-4 w-4 mr-2" />
+                      Export as CSV
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => exportRequisitions('excel')}>
+                      <FileText className="h-4 w-4 mr-2" />
+                      Export as Excel
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {error ? (
+              <div className="text-center py-8">
+                <p className="text-red-600 mb-4">Error loading requisitions</p>
+                <Button onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/requisitions"] })}>
+                  Retry
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => exportRequisitions('csv')}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Export as CSV
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => exportRequisitions('excel')}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Export as Excel
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-        <div>
-          {error ? (
-            <div className="text-center py-8">
-              <p className="text-red-600 mb-4">Error loading requisitions</p>
-              <Button onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/requisitions"] })}>
-                Retry
-              </Button>
-            </div>
-          ) : (
-            <div>
-              <DataTable
-                data={paginatedRequisitions || []}
-                columns={columns}
-                isLoading={isLoading}
-                emptyMessage="No requisitions found. Create your first requisition to get started."
-                onRowClick={(requisition: any) => {
-                  navigate(`/requisitions/${requisition.id}`);
-                }}
-              />
-              {/* Pagination Controls */}
-              {requisitions.length > pageSize && (
-                <div className="flex justify-center items-center gap-2 mt-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(currentPage - 1)}
-                    data-testid="button-prev-page"
-                  >
-                    Previous
-                  </Button>
-                  <span className="mx-2 text-sm">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage(currentPage + 1)}
-                    data-testid="button-next-page"
-                  >
-                    Next
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+              </div>
+            ) : (
+              <div>
+                <DataTable
+                  data={paginatedRequisitions || []}
+                  columns={columns}
+                  isLoading={isLoading}
+                  emptyMessage="No requisitions found. Create your first requisition to get started."
+                  onRowClick={(requisition: any) => {
+                    navigate(`/requisitions/${requisition.id}`);
+                  }}
+                />
+                {/* Pagination Controls */}
+                {requisitions.length > pageSize && (
+                  <div className="flex justify-center items-center gap-2 mt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                      data-testid="button-prev-page"
+                    >
+                      Previous
+                    </Button>
+                    <span className="mx-2 text-sm">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                      data-testid="button-next-page"
+                    >
+                      Next
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
       {/* New Requisition Dialog */}
       <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>

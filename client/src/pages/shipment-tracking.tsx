@@ -627,7 +627,7 @@ export default function ShipmentTrackingPage() {
   return (
     <div className="space-y-6">
       {/* Card-style header with enhanced design */}
-      <div className="bg-gradient-to-r from-green-50 via-green-50 to-emerald-50 rounded-2xl shadow-lg border border-green-200 p-8">
+      <div className="rounded-2xl shadow-lg border border-gray-200 p-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
             <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-green-500 via-green-600 to-emerald-600 flex items-center justify-center shadow-xl">
@@ -638,8 +638,8 @@ export default function ShipmentTrackingPage() {
                 <h2 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-green-700 to-emerald-700 bg-clip-text text-transparent">
                   Shipment Tracking
                 </h2>
-                <div className="flex items-center gap-1 text-sm text-green-600 bg-green-100 px-3 py-1 rounded-full">
-                  <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+                <div className="flex items-center gap-1 text-sm text-blue-600 bg-white border border-blue-200 px-3 py-1 rounded-full">
+                  <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse"></div>
                   <span className="font-semibold">Live Tracking</span>
                 </div>
               </div>
@@ -673,66 +673,66 @@ export default function ShipmentTrackingPage() {
 
       {/* Enhanced Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 my-8">
-        <Card className="relative overflow-hidden bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-orange-200 rounded-full -mr-10 -mt-10 opacity-50"></div>
+        <Card className="relative overflow-hidden border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-gray-100 rounded-full -mr-10 -mt-10 opacity-30"></div>
           <div className="flex flex-row items-start gap-4 p-6 relative z-10">
             <div className="rounded-xl bg-orange-500 p-3 shadow-lg">
               <Clock className="h-6 w-6 text-white" />
             </div>
             <div className="flex-1">
-              <div className="text-sm font-semibold text-orange-700 mb-1">Pending</div>
-              <div className="text-3xl font-bold text-orange-900 mb-1">
+              <div className="text-sm font-semibold text-gray-700 mb-1">Pending</div>
+              <div className="text-3xl font-bold text-gray-900 mb-1">
                 {shipments?.filter((s: Shipment) => s.status === "Pending").length || 0}
               </div>
-              <div className="text-xs text-orange-600">Awaiting pickup</div>
+              <div className="text-xs text-gray-600">Awaiting pickup</div>
             </div>
           </div>
         </Card>
         
-        <Card className="relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-blue-200 rounded-full -mr-10 -mt-10 opacity-50"></div>
+        <Card className="relative overflow-hidden border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-gray-100 rounded-full -mr-10 -mt-10 opacity-30"></div>
           <div className="flex flex-row items-start gap-4 p-6 relative z-10">
             <div className="rounded-xl bg-blue-500 p-3 shadow-lg">
               <Truck className="h-6 w-6 text-white" />
             </div>
             <div className="flex-1">
-              <div className="text-sm font-semibold text-blue-700 mb-1">In Transit</div>
-              <div className="text-3xl font-bold text-blue-900 mb-1">
+              <div className="text-sm font-semibold text-gray-700 mb-1">In Transit</div>
+              <div className="text-3xl font-bold text-gray-900 mb-1">
                 {shipments?.filter((s: Shipment) => s.status === "In Transit").length || 0}
               </div>
-              <div className="text-xs text-blue-600">On the way</div>
+              <div className="text-xs text-gray-600">On the way</div>
             </div>
           </div>
         </Card>
         
-        <Card className="relative overflow-hidden bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-yellow-200 rounded-full -mr-10 -mt-10 opacity-50"></div>
+        <Card className="relative overflow-hidden border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-gray-100 rounded-full -mr-10 -mt-10 opacity-30"></div>
           <div className="flex flex-row items-start gap-4 p-6 relative z-10">
             <div className="rounded-xl bg-yellow-500 p-3 shadow-lg">
               <Navigation className="h-6 w-6 text-white" />
             </div>
             <div className="flex-1">
-              <div className="text-sm font-semibold text-yellow-700 mb-1">Out for Delivery</div>
-              <div className="text-3xl font-bold text-yellow-900 mb-1">
+              <div className="text-sm font-semibold text-gray-700 mb-1">Out for Delivery</div>
+              <div className="text-3xl font-bold text-gray-900 mb-1">
                 {shipments?.filter((s: Shipment) => s.status === "Out for Delivery").length || 0}
               </div>
-              <div className="text-xs text-yellow-600">Final mile</div>
+              <div className="text-xs text-gray-600">Final mile</div>
             </div>
           </div>
         </Card>
         
-        <Card className="relative overflow-hidden bg-gradient-to-br from-green-50 to-green-100 border-green-200 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-green-200 rounded-full -mr-10 -mt-10 opacity-50"></div>
+        <Card className="relative overflow-hidden border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-gray-100 rounded-full -mr-10 -mt-10 opacity-30"></div>
           <div className="flex flex-row items-start gap-4 p-6 relative z-10">
             <div className="rounded-xl bg-green-500 p-3 shadow-lg">
               <CheckCircle className="h-6 w-6 text-white" />
             </div>
             <div className="flex-1">
-              <div className="text-sm font-semibold text-green-700 mb-1">Delivered</div>
-              <div className="text-3xl font-bold text-green-900 mb-1">
+              <div className="text-sm font-semibold text-gray-700 mb-1">Delivered</div>
+              <div className="text-3xl font-bold text-gray-900 mb-1">
                 {shipments?.filter((s: Shipment) => s.status === "Delivered").length || 0}
               </div>
-              <div className="text-xs text-green-600">Completed</div>
+              <div className="text-xs text-gray-600">Completed</div>
             </div>
           </div>
         </Card>
@@ -741,8 +741,8 @@ export default function ShipmentTrackingPage() {
       {/* Enhanced Filters Section */}
       <Card className="p-6 shadow-lg border-gray-200 bg-white">
         <div className="flex items-center gap-3 mb-6">
-          <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-            <Filter className="h-5 w-5 text-white" />
+          <div className="flex items-center justify-center">
+            <Filter className="h-5 w-5 text-gray-600" />
           </div>
           <h3 className="text-xl font-bold text-gray-800">Filter Shipments</h3>
         </div>
@@ -767,14 +767,14 @@ export default function ShipmentTrackingPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="Pending">🟠 Pending</SelectItem>
-                <SelectItem value="Picked Up">📦 Picked Up</SelectItem>
-                <SelectItem value="In Transit">🚛 In Transit</SelectItem>
-                <SelectItem value="Out for Delivery">🚚 Out for Delivery</SelectItem>
-                <SelectItem value="Delivered">✅ Delivered</SelectItem>
-                <SelectItem value="Delayed">⏰ Delayed</SelectItem>
-                <SelectItem value="Cancelled">❌ Cancelled</SelectItem>
-                <SelectItem value="Lost">⚠️ Lost</SelectItem>
+                <SelectItem value="Pending">Pending</SelectItem>
+                <SelectItem value="Picked Up">Picked Up</SelectItem>
+                <SelectItem value="In Transit">In Transit</SelectItem>
+                <SelectItem value="Out for Delivery">Out for Delivery</SelectItem>
+                <SelectItem value="Delivered">Delivered</SelectItem>
+                <SelectItem value="Delayed">Delayed</SelectItem>
+                <SelectItem value="Cancelled">Cancelled</SelectItem>
+                <SelectItem value="Lost">Lost</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -788,10 +788,10 @@ export default function ShipmentTrackingPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Priorities</SelectItem>
-                <SelectItem value="Low">🟢 Low</SelectItem>
-                <SelectItem value="Medium">🟡 Medium</SelectItem>
-                <SelectItem value="High">🟠 High</SelectItem>
-                <SelectItem value="Urgent">🔴 Urgent</SelectItem>
+                <SelectItem value="Low">Low</SelectItem>
+                <SelectItem value="Medium">Medium</SelectItem>
+                <SelectItem value="High">High</SelectItem>
+                <SelectItem value="Urgent">Urgent</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -805,10 +805,10 @@ export default function ShipmentTrackingPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Services</SelectItem>
-                <SelectItem value="Economy">🐌 Economy</SelectItem>
-                <SelectItem value="Standard">📦 Standard</SelectItem>
-                <SelectItem value="Express">⚡ Express</SelectItem>
-                <SelectItem value="Overnight">🌙 Overnight</SelectItem>
+                <SelectItem value="Economy">Economy</SelectItem>
+                <SelectItem value="Standard">Standard</SelectItem>
+                <SelectItem value="Express">Express</SelectItem>
+                <SelectItem value="Overnight">Overnight</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -1014,10 +1014,10 @@ export default function ShipmentTrackingPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Economy">🐌 Economy</SelectItem>
-                      <SelectItem value="Standard">📦 Standard</SelectItem>
-                      <SelectItem value="Express">⚡ Express</SelectItem>
-                      <SelectItem value="Overnight">🌙 Overnight</SelectItem>
+                      <SelectItem value="Economy">Economy</SelectItem>
+                      <SelectItem value="Standard">Standard</SelectItem>
+                      <SelectItem value="Express">Express</SelectItem>
+                      <SelectItem value="Overnight">Overnight</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1032,10 +1032,10 @@ export default function ShipmentTrackingPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Low">🟢 Low</SelectItem>
-                      <SelectItem value="Medium">🟡 Medium</SelectItem>
-                      <SelectItem value="High">🟠 High</SelectItem>
-                      <SelectItem value="Urgent">🔴 Urgent</SelectItem>
+                      <SelectItem value="Low">Low</SelectItem>
+                      <SelectItem value="Medium">Medium</SelectItem>
+                      <SelectItem value="High">High</SelectItem>
+                      <SelectItem value="Urgent">Urgent</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

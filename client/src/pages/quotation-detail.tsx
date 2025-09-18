@@ -249,7 +249,7 @@ export default function QuotationDetailPage() {
   const getApprovalStatusBadgeClass = (status: string) => {
     switch (status) {
       case "Approved": return "bg-green-100 text-green-800";
-      case "Pending": return "bg-white text-white border border-gray-300";
+      case "Pending": return "bg-orange-500 text-white border border-orange-500";
       case "Rejected": return "bg-red-100 text-red-800";
       default: return "bg-gray-100 text-gray-800";
     }
@@ -415,7 +415,8 @@ export default function QuotationDetailPage() {
             onClick={() => updateStatusMutation.mutate("Sent")}
             disabled={updateStatusMutation.isPending}
             data-testid="button-send"
-            className="bg-gray-700 text-white hover:bg-gray-800"
+            variant="outline"
+            className="border-gray-500 text-gray-600 hover:bg-gray-50"
           >
             <Send className="h-4 w-4 mr-2" />
             Send to Customer
@@ -433,7 +434,8 @@ export default function QuotationDetailPage() {
               onClick={() => updateStatusMutation.mutate("Accepted")}
               disabled={updateStatusMutation.isPending}
               data-testid="button-accept"
-              className="bg-green-700 text-white hover:bg-green-800"
+              variant="outline"
+              className="border-green-500 text-green-600 hover:bg-green-50"
             >
               <Check className="h-4 w-4 mr-2" />
               Mark Accepted

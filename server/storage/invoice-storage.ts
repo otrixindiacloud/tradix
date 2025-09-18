@@ -116,9 +116,9 @@ export class InvoiceStorage extends BaseStorage {
       deliveryId,
       customerId: so?.customerId || deliveryRec.customerId,
       status: 'Draft',
-      currency: so?.currency || 'USD',
+      currency: so?.currency || 'BHD',
       exchangeRate: so?.exchangeRate || '1.0000',
-      baseCurrency: so?.baseCurrency || 'USD',
+      baseCurrency: so?.baseCurrency || 'BHD',
       subtotal: subtotal,
       taxRate: '0',
       taxAmount: 0,
@@ -156,17 +156,23 @@ export class InvoiceStorage extends BaseStorage {
   }
 
   async generateProformaInvoice(salesOrderId: string, userId?: string) {
-    // Lightweight: create empty proforma referencing SO
+    // Get sales order to extract customer ID
+    const salesOrder = await this.db.select().from(salesOrders).where(eq(salesOrders.id, salesOrderId)).limit(1);
+    if (!salesOrder.length) {
+      throw new Error('Sales order not found');
+    }
+
+    // Create proforma invoice referencing SO with proper customer ID
     const invoiceNumber = this.generateNumber('PFINV');
     const record: any = {
       invoiceNumber,
       invoiceType: 'Proforma',
       salesOrderId,
-      customerId: null,
+      customerId: salesOrder[0].customerId,
       status: 'Draft',
-      currency: 'USD',
-      exchangeRate: '1.0000',
-      baseCurrency: 'USD',
+      currency: salesOrder[0].currency || 'BHD',
+      exchangeRate: salesOrder[0].exchangeRate || '1.0000',
+      baseCurrency: salesOrder[0].baseCurrency || 'BHD',
       subtotal: 0,
       taxRate: '0',
       taxAmount: 0,
@@ -196,10 +202,14 @@ export class InvoiceStorage extends BaseStorage {
     }
   }
 
-  async sendInvoice(invoiceId: string, userId: string) {
+  async sendInvoice(invoiceId: string, email?: string, userId?: string) {
+    // Mark as sent; in a real implementation, trigger email sending here using provided email or customer email on record
     const updated = await this.updateInvoice(invoiceId, { status: 'Sent' } as any);
-    // Audit could be hooked here
-    return updated;
+    return {
+      message: 'Invoice marked as sent',
+      invoice: updated,
+      email: email || null,
+    };
   }
 
   async markInvoicePaid(invoiceId: string, paidAmount: number, paymentMethod?: string, paymentReference?: string, userId?: string) {

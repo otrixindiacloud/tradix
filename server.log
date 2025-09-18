@@ -5,53 +5,240 @@
 DATABASE_URL from env: SET
 NODE_ENV: development
 [STORAGE] Using modular database storage
-[dotenv@17.2.1] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+[dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
 ✅ Pricing routes registered
+7:15:47 AM [express] serving on port 5000 (storage=load-error)
 [STORAGE] ModularStorage initialized successfully
-2:22:02 PM [express] serving on port 5000 (storage=load-error)
-2:22:22 PM [express] GET /api/delivery-notes 200 in 1922ms :: [{"id":"1831e4e5-58b4-490f-a74a-139580…
-2:23:29 PM [express] GET /api/auth/me 200 in 814ms :: {"user":{"id":"8bcd3a5f-10fc-4491-9258-a62b5bf…
-getEnquiries called with: { limit: 100, offset: 0, filters: undefined }
-Executing query...
-getEnquiries called with: { limit: 5, offset: 0, filters: undefined }
-Executing query...
-2:23:29 PM [express] GET /api/sales-orders 304 in 254ms :: [{"id":"f75a33c4-16d2-47c5-90c1-39cf14450…
-Query result: 5 enquiries found
-2:23:29 PM [express] GET /api/enquiries 304 in 292ms :: [{"id":"3d276e59-7be0-4418-9fe7-ec3a0ea99b54…
-2:23:29 PM [express] GET /api/quotations 304 in 303ms :: [{"id":"c6d3ae67-5cad-464c-80cd-ff4940890dd…
-Query result: 93 enquiries found
-2:23:30 PM [express] GET /api/dashboard/stats 304 in 865ms :: {"activeEnquiries":91,"pendingQuotes":…
-2:23:35 PM [express] GET /api/suppliers 200 in 285ms :: [{"id":"a78ed93d-aa32-4df5-97e3-fde7628c3769…
-getStockMovements: Using stub implementation - should be moved to InventoryStorage
-2:23:38 PM [express] GET /api/stock-movements 200 in 1ms :: []
-2:23:38 PM [express] GET /api/items 200 in 307ms :: [{"id":"c19058e1-fb1c-4cfc-b5be-00ff1f9f891d","s…
-2:23:54 PM [vite] hmr update /src/pages/physical-stock.tsx, /src/index.css?v=Baf2ErHPy40LTRFT5EuCv
-2:24:04 PM [express] GET /api/auth/me 304 in 807ms :: {"user":{"id":"8bcd3a5f-10fc-4491-9258-a62b5bf…
-2:24:04 PM [express] GET /api/items 304 in 303ms :: [{"id":"c19058e1-fb1c-4cfc-b5be-00ff1f9f891d","s…
-2:24:05 PM [express] GET /api/physical-stock 200 in 737ms
-Error fetching sales order: error: invalid input syntax for type uuid: "available-for-delivery"
+Error generating proforma invoice: error: null value in column "customer_id" of relation "invoices" violates not-null constraint
     at file:///workspaces/tradix/node_modules/@neondatabase/serverless/index.mjs:1345:74
     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
     at async NeonPreparedQuery.execute (/workspaces/tradix/node_modules/src/neon-serverless/session.ts:102:18)
-    at async SalesOrderStorage.getSalesOrder (/workspaces/tradix/server/storage/sales-order-storage.ts:52:20)
-    at async <anonymous> (/workspaces/tradix/server/routes/sales-orders.ts:43:26) {
-  length: 154,
+    at async InvoiceStorage.generateProformaInvoice (/workspaces/tradix/server/storage/invoice-storage.ts:188:24)
+    at async <anonymous> (/workspaces/tradix/server/routes/invoice.ts:224:23) {
+  length: 582,
   severity: 'ERROR',
-  code: '22P02',
-  detail: undefined,
+  code: '23502',
+  detail: 'Failing row contains (bdb2d95b-efc9-4cb4-9030-c53e0060ef47, PFINV-748087XE2C, Proforma, 8c68dc3f-e440-4f26-8828-4e39e5191127, null, null, 2025-09-18 07:15:48.496576, null, Draft, BHD, 1.0000, BHD, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, null, null, null, null, t, null, null, null, null, null, null, null, null, null, 2025-09-18 07:15:48.087, 2025-09-18 07:15:48.087).',
   hint: undefined,
   position: undefined,
   internalPosition: undefined,
   internalQuery: undefined,
-  where: "unnamed portal parameter $1 = '...'",
-  schema: undefined,
-  table: undefined,
-  column: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'invoices',
+  column: 'customer_id',
   dataType: undefined,
   constraint: undefined,
-  file: 'uuid.c',
-  line: '133',
-  routine: 'string_to_uuid'
+  file: 'execMain.c',
+  line: '2021',
+  routine: 'ExecConstraints'
 }
-2:24:07 PM [express] GET /api/sales-orders/available-for-delivery 500 in 263ms :: {"message":"Failed…
-2:24:07 PM [express] GET /api/auth/me 304 in 835ms :: {"user":{"id":"8bcd3a5f-10fc-4491-9258-a62b5bf…
+7:15:48 AM [express] POST /api/invoices/generate-proforma 500 in 295ms :: {"message":"Failed to gene…
+7:16:10 AM [express] GET /api/auth/me 304 in 840ms :: {"user":{"id":"8bcd3a5f-10fc-4491-9258-a62b5bf…
+getEnquiries called with: { limit: 100, offset: 0, filters: undefined }
+Executing query...
+getEnquiries called with: { limit: 5, offset: 0, filters: undefined }
+Executing query...
+7:16:10 AM [express] GET /api/quotations 304 in 278ms :: [{"id":"fd3a5cb1-2681-4986-85bb-de6abe14684…
+Query result: 5 enquiries found
+7:16:10 AM [express] GET /api/enquiries 304 in 281ms :: [{"id":"eb805639-89fb-4e52-9863-7e07ab62bf5a…
+7:16:10 AM [express] GET /api/sales-orders 304 in 281ms :: [{"id":"8c68dc3f-e440-4f26-8828-4e39e5191…
+Query result: 95 enquiries found
+7:16:11 AM [express] GET /api/dashboard/stats 304 in 846ms :: {"activeEnquiries":93,"pendingQuotes":…
+Error generating proforma invoice: error: null value in column "customer_id" of relation "invoices" violates not-null constraint
+    at file:///workspaces/tradix/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async NeonPreparedQuery.execute (/workspaces/tradix/node_modules/src/neon-serverless/session.ts:102:18)
+    at async InvoiceStorage.generateProformaInvoice (/workspaces/tradix/server/storage/invoice-storage.ts:188:24)
+    at async <anonymous> (/workspaces/tradix/server/routes/invoice.ts:224:23) {
+  length: 582,
+  severity: 'ERROR',
+  code: '23502',
+  detail: 'Failing row contains (46dad8e1-c132-45ac-a973-343858ea429c, PFINV-781942UKHJ, Proforma, 8c68dc3f-e440-4f26-8828-4e39e5191127, null, null, 2025-09-18 07:16:22.348924, null, Draft, BHD, 1.0000, BHD, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, null, null, null, null, t, null, null, null, null, null, null, null, null, null, 2025-09-18 07:16:21.942, 2025-09-18 07:16:21.942).',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'invoices',
+  column: 'customer_id',
+  dataType: undefined,
+  constraint: undefined,
+  file: 'execMain.c',
+  line: '2021',
+  routine: 'ExecConstraints'
+}
+7:16:22 AM [express] POST /api/invoices/generate-proforma 500 in 285ms :: {"message":"Failed to gene…
+7:16:32 AM [express] GET /api/invoices 200 in 1629ms :: [{"id":"5268ce17-469f-48d4-a678-c4fdb7c0f2ae…
+7:16:49 AM [express] GET /api/invoices 200 in 296ms :: [{"id":"5268ce17-469f-48d4-a678-c4fdb7c0f2ae"…
+7:16:50 AM [vite] hmr update /src/pages/requisition-detail.tsx, /src/index.css?v=N2gA4n2dChTAMcAHYtr2R
+7:16:52 AM [vite] hmr update /src/pages/requisition-detail.tsx, /src/index.css?v=N2gA4n2dChTAMcAHYtr2R
+7:17:02 AM [vite] hmr update /src/pages/requisition-detail.tsx, /src/index.css?v=N2gA4n2dChTAMcAHYtr2R
+7:17:03 AM [vite] hmr update /src/pages/requisition-detail.tsx, /src/index.css?v=N2gA4n2dChTAMcAHYtr2R
+7:17:22 AM [vite] hmr update /src/pages/requisition-detail.tsx, /src/index.css?v=N2gA4n2dChTAMcAHYtr2R
+7:17:24 AM [vite] hmr update /src/pages/requisition-detail.tsx, /src/index.css?v=N2gA4n2dChTAMcAHYtr2R
+7:17:29 AM [vite] hmr update /src/pages/requisition-detail.tsx, /src/index.css?v=N2gA4n2dChTAMcAHYtr2R
+7:17:34 AM [express] GET /api/auth/me 304 in 802ms :: {"user":{"id":"8bcd3a5f-10fc-4491-9258-a62b5bf…
+Error fetching inventory items: TypeError: Cannot convert undefined or null to object
+    at Function.entries (<anonymous>)
+    at orderSelectedFields (/workspaces/tradix/node_modules/src/utils.ts:77:16)
+    at <anonymous> (/workspaces/tradix/node_modules/src/utils.ts:88:19)
+    at Array.reduce (<anonymous>)
+    at orderSelectedFields (/workspaces/tradix/node_modules/src/utils.ts:77:32)
+    at <anonymous> (/workspaces/tradix/node_modules/src/pg-core/query-builders/select.ts:979:23)
+    at Object.startActiveSpan (/workspaces/tradix/node_modules/src/tracing.ts:27:11)
+    at PgSelectBase._prepare (/workspaces/tradix/node_modules/src/pg-core/query-builders/select.ts:978:17)
+    at <anonymous> (/workspaces/tradix/node_modules/src/pg-core/query-builders/select.ts:1009:16)
+    at Object.startActiveSpan (/workspaces/tradix/node_modules/src/tracing.ts:27:11)
+    at PgSelectBase.execute (/workspaces/tradix/node_modules/src/pg-core/query-builders/select.ts:1008:17)
+    at PgSelectBase.then (/workspaces/tradix/node_modules/src/query-promise.ts:31:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+7:17:34 AM [express] GET /api/inventory-items 500 in 5ms :: {"message":"Failed to fetch inventory it…
+7:17:35 AM [express] GET /api/suppliers 304 in 232ms :: [{"id":"a78ed93d-aa32-4df5-97e3-fde7628c3769…
+7:17:35 AM [vite] hmr update /src/pages/inventory-management.tsx, /src/index.css?v=N2gA4n2dChTAMcAHYtr2R
+Error fetching inventory levels: Error: Method 'getInventoryLevels' not yet implemented in modular storage. Please implement it in the appropriate storage module.
+    at Proxy.<anonymous> (/workspaces/tradix/server/storage/modular-storage-clean.ts:81:17)
+    at <anonymous> (/workspaces/tradix/server/routes/inventory.ts:179:36)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+    at next (/workspaces/tradix/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/workspaces/tradix/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+    at /workspaces/tradix/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
+    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
+    at <anonymous> (/workspaces/tradix/server/index.ts:46:3)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
+    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
+    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
+    at resolveUserId (/workspaces/tradix/server/middleware/user-resolution.ts:27:3)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
+    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
+    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
+    at urlencodedParser (/workspaces/tradix/node_modules/body-parser/lib/types/urlencoded.js:94:7)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
+    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
+    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
+    at jsonParser (/workspaces/tradix/node_modules/body-parser/lib/types/json.js:113:7)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
+    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
+    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
+    at expressInit (/workspaces/tradix/node_modules/express/lib/middleware/init.js:40:5)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
+    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
+    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
+    at query (/workspaces/tradix/node_modules/express/lib/middleware/query.js:45:5)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
+    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
+    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/workspaces/tradix/node_modules/express/lib/router/index.js:175:3)
+    at Function.handle (/workspaces/tradix/node_modules/express/lib/application.js:181:10)
+    at Server.app (/workspaces/tradix/node_modules/express/lib/express.js:39:9)
+    at Server.emit (node:events:518:28)
+    at parserOnIncoming (node:_http_server:1155:12)
+7:17:36 AM [express] GET /api/inventory-levels 500 in 3ms :: {"message":"Failed to fetch inventory l…
+7:17:37 AM [express] GET /api/goods-receipt-headers 304 in 232ms :: [{"id":"bd6e0f98-7723-4b20-a9da-…
+7:17:39 AM [express] GET /api/supplier-lpos 304 in 477ms :: [{"id":"d02d8e7e-1597-4382-b057-be9a2c95…
+7:17:47 AM [vite] hmr update /src/pages/inventory-management.tsx, /src/index.css?v=N2gA4n2dChTAMcAHYtr2R
+Error generating proforma invoice: error: null value in column "customer_id" of relation "invoices" violates not-null constraint
+    at file:///workspaces/tradix/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async NeonPreparedQuery.execute (/workspaces/tradix/node_modules/src/neon-serverless/session.ts:102:18)
+    at async InvoiceStorage.generateProformaInvoice (/workspaces/tradix/server/storage/invoice-storage.ts:188:24)
+    at async <anonymous> (/workspaces/tradix/server/routes/invoice.ts:224:23) {
+  length: 582,
+  severity: 'ERROR',
+  code: '23502',
+  detail: 'Failing row contains (8b4517cb-b0d1-48a6-8fee-f7c0c5466fe1, PFINV-8740823RD7, Proforma, 8c68dc3f-e440-4f26-8828-4e39e5191127, null, null, 2025-09-18 07:17:54.444228, null, Draft, BHD, 1.0000, BHD, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, null, null, null, null, t, null, null, null, null, null, null, null, null, null, 2025-09-18 07:17:54.082, 2025-09-18 07:17:54.082).',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'invoices',
+  column: 'customer_id',
+  dataType: undefined,
+  constraint: undefined,
+  file: 'execMain.c',
+  line: '2021',
+  routine: 'ExecConstraints'
+}
+7:17:54 AM [express] POST /api/invoices/generate-proforma 500 in 233ms :: {"message":"Failed to gene…
+7:17:57 AM [vite] hmr update /src/pages/inventory-management.tsx, /src/index.css?v=N2gA4n2dChTAMcAHYtr2R
+7:17:58 AM [express] GET /api/auth/me 304 in 855ms :: {"user":{"id":"8bcd3a5f-10fc-4491-9258-a62b5bf…
+Error fetching supplier returns: Error: Method 'getSupplierReturns' not yet implemented in modular storage. Please implement it in the appropriate storage module.
+    at Proxy.<anonymous> (/workspaces/tradix/server/storage/modular-storage-clean.ts:81:17)
+    at <anonymous> (/workspaces/tradix/server/routes/goods-receipt.ts:336:37)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+    at next (/workspaces/tradix/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/workspaces/tradix/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+    at /workspaces/tradix/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
+    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
+    at <anonymous> (/workspaces/tradix/server/index.ts:46:3)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
+    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
+    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
+    at resolveUserId (/workspaces/tradix/server/middleware/user-resolution.ts:27:3)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
+    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
+    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
+    at urlencodedParser (/workspaces/tradix/node_modules/body-parser/lib/types/urlencoded.js:94:7)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
+    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
+    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
+    at jsonParser (/workspaces/tradix/node_modules/body-parser/lib/types/json.js:113:7)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
+    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
+    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
+    at expressInit (/workspaces/tradix/node_modules/express/lib/middleware/init.js:40:5)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
+    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
+    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
+    at query (/workspaces/tradix/node_modules/express/lib/middleware/query.js:45:5)
+    at Layer.handle [as handle_request] (/workspaces/tradix/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/workspaces/tradix/node_modules/express/lib/router/index.js:328:13)
+    at /workspaces/tradix/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/workspaces/tradix/node_modules/express/lib/router/index.js:346:12)
+    at next (/workspaces/tradix/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/workspaces/tradix/node_modules/express/lib/router/index.js:175:3)
+    at Function.handle (/workspaces/tradix/node_modules/express/lib/application.js:181:10)
+    at Server.app (/workspaces/tradix/node_modules/express/lib/express.js:39:9)
+    at Server.emit (node:events:518:28)
+    at parserOnIncoming (node:_http_server:1155:12)
+7:17:58 AM [express] GET /api/supplier-returns 500 in 2ms :: {"message":"Failed to fetch supplier re…
+7:18:02 AM [express] GET /api/auth/me 304 in 861ms :: {"user":{"id":"8bcd3a5f-10fc-4491-9258-a62b5bf…
+getEnquiries called with: { limit: 5, offset: 0, filters: undefined }
+Executing query...
+getEnquiries called with: { limit: 100, offset: 0, filters: undefined }
+Executing query...
+Query result: 5 enquiries found
+7:18:02 AM [express] GET /api/enquiries 304 in 236ms :: [{"id":"eb805639-89fb-4e52-9863-7e07ab62bf5a…
+7:18:02 AM [express] GET /api/sales-orders 304 in 231ms :: [{"id":"8c68dc3f-e440-4f26-8828-4e39e5191…
+7:18:02 AM [express] GET /api/quotations 304 in 275ms :: [{"id":"fd3a5cb1-2681-4986-85bb-de6abe14684…
+Query result: 95 enquiries found
+7:18:03 AM [express] GET /api/dashboard/stats 304 in 837ms :: {"activeEnquiries":93,"pendingQuotes":…

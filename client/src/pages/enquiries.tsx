@@ -86,7 +86,30 @@ export default function Enquiries() {
 
   const deleteEnquiry = useMutation({
     mutationFn: async (id: string) => {
-      await apiRequest("DELETE", `/api/enquiries/${id}`);
+      try {
+        const response = await fetch(`/api/enquiries/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
+        }
+        
+        // Check if response has content
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          return response.json();
+        } else {
+          return { success: true };
+        }
+      } catch (error: any) {
+        console.error('Delete enquiry error:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/enquiries"] });
@@ -96,12 +119,14 @@ export default function Enquiries() {
       });
       setDeletingEnquiry(null);
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error('Delete enquiry mutation error:', error);
       toast({
         title: "Error",
-        description: "Failed to delete enquiry",
+        description: error.message || "Failed to delete enquiry. Please try again.",
         variant: "destructive",
       });
+      setDeletingEnquiry(null);
     },
   });
 
@@ -111,6 +136,14 @@ export default function Enquiries() {
   };
 
   const handleDelete = (enquiry: any) => {
+    if (!enquiry || !enquiry.id) {
+      toast({
+        title: "Error",
+        description: "Invalid enquiry selected for deletion",
+        variant: "destructive",
+      });
+      return;
+    }
     setDeletingEnquiry(enquiry);
   };
 
@@ -161,6 +194,37 @@ export default function Enquiries() {
   const totalPages = Math.ceil(enrichedEnquiries.length / pageSize);
   const paginatedEnquiries = enrichedEnquiries.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
+  // Helper functions for badge styling similar to customer management
+  const getSourceBadgeClass = (source: string) => {
+    switch (source) {
+      case 'Email':
+        return "bg-blue-50 text-blue-700 border-blue-200";
+      case 'Walk-in':
+        return "bg-orange-50 text-orange-700 border-orange-200";
+      case 'Web Form':
+        return "bg-purple-50 text-purple-700 border-purple-200";
+      case 'Phone':
+        return "bg-green-50 text-green-700 border-green-200";
+      default:
+        return "bg-gray-50 text-gray-700 border-gray-200";
+    }
+  };
+
+  const getStatusBadgeClass = (status: string) => {
+    switch (status) {
+      case 'New':
+        return "bg-blue-50 text-blue-700 border-blue-200";
+      case 'In Progress':
+        return "bg-transparent text-orange-700 border-orange-300 border-2";
+      case 'Quoted':
+        return "bg-green-50 text-green-700 border-green-200";
+      case 'Closed':
+        return "bg-gray-50 text-gray-700 border-gray-200";
+      default:
+        return "bg-gray-50 text-gray-700 border-gray-200";
+    }
+  };
+
   const columns: Column<any>[] = [
     {
       key: "select",
@@ -195,30 +259,24 @@ export default function Enquiries() {
       key: "source",
       header: "Source",
       render: (value: string) => (
-        value === "Email"
-          ? <Badge variant="outline" className="bg-blue-600 text-white border-blue-600">{value}</Badge>
-          : value === "Walk-in"
-            ? <Badge variant="outline" className="bg-orange-500 text-white border-orange-500">{value}</Badge>
-            : value === "Web Form"
-              ? <Badge variant="outline" className="bg-purple-600 text-white border-purple-600">{value}</Badge>
-              : value === "Phone"
-                ? <Badge variant="outline" className="bg-green-600 text-white border-green-600">{value}</Badge>
-                : <Badge variant="outline">{value}</Badge>
+        <Badge 
+          variant="outline"
+          className={getSourceBadgeClass(value)}
+        >
+          {value}
+        </Badge>
       ),
     },
     {
       key: "status",
       header: "Status",
       render: (value: string) => (
-        value === "Quoted"
-          ? <Badge variant="outline" className="bg-green-600 text-white border-green-600">{value}</Badge>
-          : value === "New"
-            ? <Badge variant="outline" className="bg-blue-600 text-white border-blue-600">{value}</Badge>
-            : value === "In Progress"
-              ? <Badge variant="outline" className="bg-yellow-400 text-white border-yellow-400">{value}</Badge>
-              : value === "Closed"
-                ? <Badge variant="outline" className="bg-gray-500 text-white border-gray-500">{value}</Badge>
-                : <Badge variant="outline" className={getStatusColor(value)}>{value}</Badge>
+        <Badge 
+          variant="outline"
+          className={getStatusBadgeClass(value)}
+        >
+          {value}
+        </Badge>
       ),
     },
     {
@@ -264,6 +322,7 @@ export default function Enquiries() {
             size="sm"
             onClick={(e) => {
               e.stopPropagation();
+              console.log('Delete button clicked for enquiry:', enquiry);
               handleDelete(enquiry);
             }}
             data-testid={`button-delete-${enquiry.id}`}
@@ -524,10 +583,15 @@ export default function Enquiries() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => deletingEnquiry && deleteEnquiry.mutate(deletingEnquiry.id)}
+              onClick={() => {
+                if (deletingEnquiry && deletingEnquiry.id) {
+                  deleteEnquiry.mutate(deletingEnquiry.id);
+                }
+              }}
+              disabled={deleteEnquiry.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {deleteEnquiry.isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

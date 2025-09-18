@@ -79,7 +79,7 @@ export class SupplierLpoStorage extends BaseStorage {
       subtotal: data.subtotal,
       taxAmount: data.taxAmount,
       totalAmount: data.totalAmount,
-      currency: data.currency || 'USD',
+  currency: data.currency || 'BHD',
       requiresApproval: data.requiresApproval || false,
       approvalStatus: data.approvalStatus || (data.requiresApproval ? 'Pending' : 'Not Required'),
       createdBy: (data as any).createdBy || null, // Allow null for createdBy
@@ -123,7 +123,7 @@ export class SupplierLpoStorage extends BaseStorage {
         pendingQuantity: soi.quantity, // initial pending equals ordered
         unitCost: soi.unitPrice as any || '0',
         totalCost: soi.totalPrice as any || '0',
-        currency: 'USD',
+  currency: 'BHD',
         lineNumber: idx + 1,
         deliveryStatus: 'Pending'
       }));

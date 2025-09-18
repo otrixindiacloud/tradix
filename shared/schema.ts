@@ -324,7 +324,7 @@ export const supplierLpos = pgTable("supplier_lpos", {
   subtotal: decimal("subtotal", { precision: 12, scale: 2 }),
   taxAmount: decimal("tax_amount", { precision: 12, scale: 2 }),
   totalAmount: decimal("total_amount", { precision: 12, scale: 2 }),
-  currency: varchar("currency", { length: 10 }).default("USD"),
+  currency: varchar("currency", { length: 10 }).default("BHD"),
   // Supplier details snapshot
   supplierContactPerson: varchar("supplier_contact_person", { length: 255 }),
   supplierEmail: varchar("supplier_email", { length: 255 }),
@@ -480,9 +480,9 @@ export const invoices = pgTable("invoices", {
   dueDate: timestamp("due_date"),
   status: invoiceStatusEnum("status").default("Draft"),
   // Multi-currency support
-  currency: varchar("currency", { length: 10 }).default("USD"),
+  currency: varchar("currency", { length: 10 }).default("BHD"),
   exchangeRate: decimal("exchange_rate", { precision: 10, scale: 4 }).default("1.0000"),
-  baseCurrency: varchar("base_currency", { length: 10 }).default("USD"),
+  baseCurrency: varchar("base_currency", { length: 10 }).default("BHD"),
   // Financial details in invoice currency
   subtotal: decimal("subtotal", { precision: 12, scale: 2 }),
   taxRate: decimal("tax_rate", { precision: 5, scale: 2 }).default("0"),
@@ -588,7 +588,7 @@ export const creditNotes = pgTable("credit_notes", {
   reason: text("reason").notNull(),
   status: varchar("status", { length: 50 }).default("Draft"), // "Draft", "Issued", "Applied", "Cancelled"
   // Multi-currency support
-  currency: varchar("currency", { length: 10 }).default("USD"),
+  currency: varchar("currency", { length: 10 }).default("BHD"),
   exchangeRate: decimal("exchange_rate", { precision: 10, scale: 4 }).default("1.0000"),
   subtotal: decimal("subtotal", { precision: 12, scale: 2 }),
   taxAmount: decimal("tax_amount", { precision: 12, scale: 2 }),
@@ -665,7 +665,7 @@ export const purchaseOrders = pgTable("purchase_orders", {
   validatedBy: uuid("validated_by").references(() => users.id),
   validatedAt: timestamp("validated_at"),
   totalPoAmount: decimal("total_po_amount", { precision: 12, scale: 2 }),
-  currency: varchar("currency", { length: 10 }).default("USD").notNull(),
+  currency: varchar("currency", { length: 10 }).default("BHD").notNull(),
   paymentTerms: varchar("payment_terms", { length: 255 }),
   deliveryTerms: varchar("delivery_terms", { length: 255 }),
   specialInstructions: text("special_instructions"),
@@ -1471,7 +1471,7 @@ export const itemPricing = pgTable("item_pricing", {
   wholesaleMarkupPercentage: decimal("wholesale_markup_percentage", { precision: 5, scale: 2 }),
   isManualOverride: boolean("is_manual_override").default(false),
   overrideReason: text("override_reason"),
-  currency: varchar("currency", { length: 3 }).default("USD"),
+  currency: varchar("currency", { length: 3 }).default("BHD"),
   effectiveFrom: timestamp("effective_from").defaultNow(),
   effectiveTo: timestamp("effective_to"),
   isActive: boolean("is_active").default(true),
@@ -1523,7 +1523,7 @@ export const priceLists = pgTable("price_lists", {
   type: varchar("type", { length: 50 }).notNull(), // "retail", "wholesale", "custom"
   customerId: uuid("customer_id"), // for customer-specific price lists
   categoryId: uuid("category_id"), // for category-specific price lists
-  currency: varchar("currency", { length: 3 }).default("USD"),
+  currency: varchar("currency", { length: 3 }).default("BHD"),
   validFrom: timestamp("valid_from").defaultNow(),
   validTo: timestamp("valid_to"),
   generatedAt: timestamp("generated_at"),

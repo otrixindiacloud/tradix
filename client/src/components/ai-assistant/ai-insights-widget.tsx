@@ -108,7 +108,7 @@ export default function AIInsightsWidget({ page, data, className }: AIInsightsWi
             variant="ghost" 
             size="sm" 
             onClick={() => openAssistant()}
-            className="bg-blue-600 text-white hover:bg-blue-700 hover:text-white"
+            className="border border-blue-500 text-blue-600 bg-blue-50 hover:bg-blue-100"
           >
             <RiRobot2Line className="h-4 w-4 mr-1" />
             Ask AI

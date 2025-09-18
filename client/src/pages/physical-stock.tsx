@@ -72,9 +72,9 @@ export default function PhysicalStockPage() {
 
   // Fetch items for dropdown
   const { data: items = [] } = useQuery({
-    queryKey: ["items"],
+    queryKey: ["inventory-items"],
     queryFn: async () => {
-      const response = await apiRequest("GET", "/api/items");
+      const response = await apiRequest("GET", "/api/inventory-items");
       const data = await response.json();
       return Array.isArray(data) ? data : [];
     },
@@ -252,7 +252,7 @@ export default function PhysicalStockPage() {
           </div>
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
-              <Button className="bg-green-600 hover:bg-green-700 shadow-md hover:shadow-lg transition-all duration-200 px-6 py-2.5 text-white font-medium rounded-lg">
+              <Button variant="outline" className="border-green-500 text-green-600 hover:bg-green-50 shadow-md hover:shadow-lg transition-all duration-200 px-6 py-2.5 font-medium rounded-lg">
                 <Plus className="h-4 w-4 mr-2" />
                 New Count
               </Button>

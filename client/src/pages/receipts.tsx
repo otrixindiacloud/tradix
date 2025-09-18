@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -13,12 +13,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { 
+import {
   Package,
-  Plus, 
-  Search, 
+  Plus,
+  Search,
   Filter,
-  Edit, 
+  Edit,
   Eye,
   CheckCircle,
   Clock,
@@ -51,27 +51,109 @@ const goodsReceiptSchema = z.object({
 type GoodsReceiptForm = z.infer<typeof goodsReceiptSchema>;
 
 // Status badge colors
-const getStatusColor = (status: string) => {
+
+
+const getStatusIcon = (status: string) => {
   switch (status) {
     case "Pending":
-      return "bg-yellow-100 text-yellow-800 border-yellow-300";
+      return <Clock className="h-4 w-4 text-yellow-600" />;
     case "Partial":
-      return "bg-blue-100 text-blue-800 border-blue-300";
+      return <Truck className="h-4 w-4 text-blue-600" />;
     case "Complete":
-      return "bg-green-100 text-green-800 border-green-300";
+      return <CheckCircle className="h-4 w-4 text-green-600" />;
     case "Discrepancy":
-      return "bg-red-100 text-red-800 border-red-300";
+      return <AlertTriangle className="h-4 w-4 text-red-600" />;
+    case "Draft":
+      return <Clock className="h-4 w-4 text-gray-600" />;
+    case "Pending Approval":
+      return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
+    case "Approved":
+      return <CheckCircle className="h-4 w-4 text-green-600" />;
+    case "Paid":
+      return <CheckCircle className="h-4 w-4 text-green-600" />;
+    case "Partially Paid":
+      return <Clock className="h-4 w-4 text-blue-600" />;
+    case "Overdue":
+      return <XCircle className="h-4 w-4 text-red-600" />;
+    case "Disputed":
+      return <AlertTriangle className="h-4 w-4 text-red-600" />;
+    case "Cancelled":
+      return <XCircle className="h-4 w-4 text-gray-600" />;
     default:
-      return "bg-gray-100 text-gray-800 border-gray-300";
+      return <Clock className="h-4 w-4 text-gray-600" />;
   }
 };
 
+const getStatusBadge = (status: string) => {
+  let colorClass = "text-gray-600 border-gray-300 bg-gray-50";
+  let icon = getStatusIcon(status);
+  switch (status) {
+    case "Pending":
+      colorClass = "text-yellow-600 border-yellow-300 bg-yellow-50";
+      icon = <Clock className="h-4 w-4 text-yellow-600" />;
+      break;
+    case "Partial":
+      colorClass = "text-blue-600 border-blue-300 bg-blue-50";
+      icon = <Truck className="h-4 w-4 text-blue-600" />;
+      break;
+    case "Completed":
+      colorClass = "text-green-600 border-green-300 bg-green-50";
+      icon = <CheckCircle className="h-4 w-4 text-green-600" />;
+      break;
+    case "Discrepancy":
+      colorClass = "text-red-600 border-red-300 bg-red-50";
+      icon = <AlertTriangle className="h-4 w-4 text-red-600" />;
+      break;
+    case "Draft":
+      colorClass = "text-yellow-600 border-yellow-300 bg-yellow-50";
+      icon = <Clock className="h-4 w-4 text-yellow-600" />;
+      break;
+    default:
+      colorClass = "text-gray-600 border-gray-300 bg-gray-50";
+      icon = <Clock className="h-4 w-4 text-gray-600" />;
+  }
+  return (
+    <Badge variant="outline" className={`${colorClass} flex items-center  gap-1 px-3 py-1 font-semibold`}>
+      {icon}
+      <span className="ml-0 ">{status}</span>
+    </Badge>
+  );
+};
+
 export default function ReceiptsPage() {
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  // Fetch supplier LPOs for dropdown
+  const { data: supplierLpos = [] } = useQuery({
+    queryKey: ["supplier-lpos"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/supplier-lpos");
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: showCreateDialog,
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<any | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editForm, setEditForm] = useState<any | null>(null);
+
+  // Sync form values with editForm when opening the edit dialog
+  React.useEffect(() => {
+    if (showEditDialog && editForm) {
+      form.setValue("receiptNumber", editForm.receiptNumber || "");
+      form.setValue("supplierLpoId", editForm.supplierLpoId || "");
+      form.setValue("receiptDate", editForm.receiptDate || "");
+      form.setValue("receivedBy", editForm.receivedBy || "");
+      form.setValue("status", editForm.status || "Pending");
+      form.setValue("notes", editForm.notes || "");
+    }
+    // Reset form when dialog closes
+    if (!showEditDialog) {
+      form.reset();
+    }
+  }, [showEditDialog, editForm]);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -120,6 +202,28 @@ export default function ReceiptsPage() {
       toast({
         title: "Error",
         description: error.message || "Failed to create goods receipt",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update goods receipt mutation
+  const updateReceiptMutation = useMutation({
+    mutationFn: async (data: GoodsReceiptForm & { id: string }) => {
+      return await apiRequest("PUT", `/api/goods-receipts/${data.id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["goods-receipts"] });
+      setShowEditDialog(false);
+      toast({
+        title: "Success",
+        description: "Goods receipt updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update goods receipt",
         variant: "destructive",
       });
     },
@@ -185,11 +289,7 @@ export default function ReceiptsPage() {
     {
       key: "status",
       header: "Status",
-      render: (value: string) => (
-        <Badge className={`border ${getStatusColor(value)}`}>
-          {value}
-        </Badge>
-      ),
+      render: (value: string) => getStatusBadge(value),
     },
     {
       key: "receiptDate",
@@ -220,10 +320,15 @@ export default function ReceiptsPage() {
             variant="outline"
             size="sm"
             onClick={() => {
-              toast({
-                title: "Info",
-                description: "Edit functionality will be implemented soon",
-              });
+              setEditForm(receipt);
+              setShowEditDialog(true);
+              // Set form values for editing
+              form.setValue("receiptNumber", receipt.receiptNumber || "");
+              form.setValue("supplierLpoId", receipt.supplierLpoId || "");
+              form.setValue("receiptDate", receipt.receiptDate || "");
+              form.setValue("receivedBy", receipt.receivedBy || "");
+              form.setValue("status", receipt.status || "Pending");
+              form.setValue("notes", receipt.notes || "");
             }}
           >
             <Edit className="h-4 w-4" />
@@ -259,7 +364,7 @@ export default function ReceiptsPage() {
           </div>
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
-              <Button className="bg-green-600 hover:bg-green-700 shadow-md hover:shadow-lg transition-all duration-200 px-6 py-2.5 text-white font-medium rounded-lg">
+              <Button variant="outline" className="border-green-500 text-green-600 hover:bg-green-50 shadow-md hover:shadow-lg transition-all duration-200 px-6 py-2.5 font-medium rounded-lg">
                 <Plus className="h-4 w-4 mr-2" />
                 New Receipt
               </Button>
@@ -293,9 +398,20 @@ export default function ReceiptsPage() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Supplier LPO</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter supplier LPO ID" {...field} />
-                          </FormControl>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select Supplier LPO" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {supplierLpos.map((lpo: any) => (
+                                <SelectItem key={lpo.id} value={lpo.id}>
+                                  {lpo.lpoNumber}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -383,8 +499,148 @@ export default function ReceiptsPage() {
                   </div>
                 </form>
               </Form>
-            </DialogContent>
-          </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Receipt Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Inventory Receipt</DialogTitle>
+            <DialogDescription>
+              Update details for receipt #{form.getValues("receiptNumber")}
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit((data) => {
+                if (editForm && editForm.id) {
+                  updateReceiptMutation.mutate({ ...data, id: editForm.id }, {
+                    onSuccess: () => {
+                      setShowEditDialog(false);
+                      setEditForm(null);
+                      form.reset();
+                    }
+                  });
+                }
+              })}
+              className="space-y-4"
+            >
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="receiptNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Receipt Number</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="supplierLpoId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Supplier LPO</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select Supplier LPO" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {supplierLpos.map((lpo: any) => (
+                            <SelectItem key={lpo.id} value={lpo.id}>
+                              {lpo.lpoNumber}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="receiptDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Receipt Date</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="receivedBy"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Received By</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Pending">Pending</SelectItem>
+                        <SelectItem value="Partial">Partial</SelectItem>
+                        <SelectItem value="Complete">Complete</SelectItem>
+                        <SelectItem value="Discrepancy">Discrepancy</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notes</FormLabel>
+                    <FormControl>
+                      <Textarea rows={3} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex justify-end gap-3 pt-4">
+                <Button type="button" variant="outline" onClick={() => setShowEditDialog(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updateReceiptMutation.isPending}>
+                  {updateReceiptMutation.isPending ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
         </div>
       </div>
 
@@ -517,9 +773,7 @@ export default function ReceiptsPage() {
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Status</Label>
-                    <Badge className={`border ${getStatusColor(selectedReceipt.status || "Pending")}`}>
-                      {selectedReceipt.status || "Pending"}
-                    </Badge>
+                    {getStatusBadge(selectedReceipt.status || "Pending")}
                   </div>
                 </div>
                 <div className="space-y-4">
