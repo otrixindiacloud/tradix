@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, RefreshCw, Search, User, Mail, Phone, MapPin, CreditCard, TrendingUp, Eye, Users, ShoppingCart, Store } from "lucide-react";
+import { Plus, Edit, Trash2, RefreshCw, Search, User, Mail, Phone, MapPin, CreditCard, TrendingUp, Eye, Users, ShoppingCart, Store, Filter, X } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -62,6 +62,15 @@ const PAYMENT_TERMS = [
 ];
 
 export default function CustomerManagementPage() {
+  // Clear all filters to default
+  const clearFilters = () => {
+    setFilters({
+      customerType: "all",
+      classification: "all",
+      isActive: "all",
+      search: ""
+    });
+  };
   const [location, navigate] = useLocation();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [stats, setStats] = useState<CustomerStats | null>(null);
@@ -73,6 +82,7 @@ export default function CustomerManagementPage() {
     pages: 0
   });
 
+
   // Filters
   const [filters, setFilters] = useState({
     customerType: "all",
@@ -80,6 +90,15 @@ export default function CustomerManagementPage() {
     isActive: "all",
     search: ""
   });
+  // Filter visibility toggle
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Returns true if any filter is active (not default values)
+  const hasActiveFilters =
+    filters.customerType !== "all" ||
+    filters.classification !== "all" ||
+    filters.isActive !== "all" ||
+    (filters.search && filters.search.trim() !== "");
 
   // Dialog states
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -336,37 +355,38 @@ export default function CustomerManagementPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
-            <Users className="h-8 w-8 text-white" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                Customer Management
-              </h1>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
+              <Users className="h-8 w-8 text-white" />
             </div>
-            <p className="text-muted-foreground text-lg">
-              Manage customer master data and information
-            </p>
-            <div className="flex items-center gap-4 mt-2">
-              <div className="flex items-center gap-1 text-sm text-blue-600">
-                <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                <span className="font-medium">Active System</span>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                  Customer Management
+                </h1>
               </div>
-              <div className="text-sm text-muted-foreground">
-                Last updated: {new Date().toLocaleDateString()}
+              <p className="text-muted-foreground text-lg">
+                Manage customer master data and information
+              </p>
+              <div className="flex items-center gap-4 mt-2">
+                <div className="flex items-center gap-1 text-sm text-blue-600">
+                  <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                  <span className="font-medium">Active System</span>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Last updated: {new Date().toLocaleDateString()}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={() => fetchCustomers()} variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <div className="flex gap-2">
+            {/* <Button onClick={() => fetchCustomers()} variant="outline" size="sm">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button> */}
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
@@ -501,85 +521,90 @@ export default function CustomerManagementPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
       </div>
 
       {/* Statistics Cards */}
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-semibold text-blue-700 dark:text-blue-300">Total Customers</CardTitle>
-              <div className="h-12 w-12 rounded-full bg-blue-500/20 flex items-center justify-center">
-                <Users className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+          <Card className="relative overflow-hidden bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-blue-100/50"></div>
+            <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-medium text-gray-700">Total Customers</CardTitle>
+              <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                <Users className="h-5 w-5 text-blue-600" />
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-blue-800 dark:text-blue-200 mb-1">
+            <CardContent className="relative">
+              <div className="text-2xl font-bold text-gray-900 mb-1">
                 {stats.totalCustomers.toLocaleString()}
               </div>
-              <div className="text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                <div className="h-2 w-2 rounded-full bg-green-500"></div>
+              <div className="text-sm text-gray-600 flex items-center gap-1">
+                <div className="h-1.5 w-1.5 rounded-full bg-green-500"></div>
                 {stats.activeCustomers} active customers
               </div>
             </CardContent>
           </Card>
 
-          <Card className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-semibold text-green-700 dark:text-green-300">Retail Customers</CardTitle>
-              <div className="h-12 w-12 rounded-full bg-green-500/20 flex items-center justify-center">
-                <ShoppingCart className="h-8 w-8 text-green-600 dark:text-green-400" />
+          <Card className="relative overflow-hidden bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 to-green-100/50"></div>
+            <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-medium text-gray-700">Retail Customers</CardTitle>
+              <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
+                <ShoppingCart className="h-5 w-5 text-green-600" />
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-green-800 dark:text-green-200 mb-1">
+            <CardContent className="relative">
+              <div className="text-2xl font-bold text-gray-900 mb-1">
                 {stats.retailCustomers.toLocaleString()}
               </div>
-              <div className="text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
+              <div className="text-sm text-gray-600 flex items-center gap-2">
                 <div className="flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3" />
+                  <TrendingUp className="h-3 w-3 text-green-600" />
                   {((stats.retailCustomers / stats.totalCustomers) * 100).toFixed(1)}%
                 </div>
-                <span className="text-green-500">of total</span>
+                <span className="text-gray-500">of total</span>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-semibold text-purple-700 dark:text-purple-300">Wholesale Customers</CardTitle>
-              <div className="h-12 w-12 rounded-full bg-purple-500/20 flex items-center justify-center">
-                <Store className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+          <Card className="relative overflow-hidden bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-purple-100/50"></div>
+            <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-medium text-gray-700">Wholesale Customers</CardTitle>
+              <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                <Store className="h-5 w-5 text-purple-600" />
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-purple-800 dark:text-purple-200 mb-1">
+            <CardContent className="relative">
+              <div className="text-2xl font-bold text-gray-900 mb-1">
                 {stats.wholesaleCustomers.toLocaleString()}
               </div>
-              <div className="text-sm text-purple-600 dark:text-purple-400 flex items-center gap-2">
+              <div className="text-sm text-gray-600 flex items-center gap-2">
                 <div className="flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3" />
+                  <TrendingUp className="h-3 w-3 text-purple-600" />
                   {((stats.wholesaleCustomers / stats.totalCustomers) * 100).toFixed(1)}%
                 </div>
-                <span className="text-purple-500">of total</span>
+                <span className="text-gray-500">of total</span>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-semibold text-orange-700 dark:text-orange-300">Total Credit Limit</CardTitle>
-              <div className="h-12 w-12 rounded-full bg-orange-500/20 flex items-center justify-center">
-                <CreditCard className="h-8 w-8 text-orange-600 dark:text-orange-400" />
+          <Card className="relative overflow-hidden bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-50/50 to-orange-100/50"></div>
+            <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-medium text-gray-700">Total Credit Limit</CardTitle>
+              <div className="h-10 w-10 rounded-lg bg-orange-100 flex items-center justify-center">
+                <CreditCard className="h-5 w-5 text-orange-600" />
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-orange-800 dark:text-orange-200 mb-1">
+            <CardContent className="relative">
+              <div className="text-2xl font-bold text-gray-900 mb-1">
                 {formatCurrencyCompact(stats.totalCreditLimit)}
               </div>
-              <div className="text-sm text-orange-600 dark:text-orange-400 flex items-center gap-1">
-                <span className="text-orange-500">Avg:</span>
+              <div className="text-sm text-gray-600 flex items-center gap-1">
+                <span className="text-gray-500">Avg:</span>
                 {formatCurrencyCompact(stats.averageCreditLimit)}
               </div>
             </CardContent>
@@ -589,74 +614,103 @@ export default function CustomerManagementPage() {
 
       {/* Filters */}
       <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="customerType">Customer Type</Label>
-              <Select value={filters.customerType} onValueChange={(value) => handleFilterChange("customerType", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All types</SelectItem>
-                  {CUSTOMER_TYPES.map(type => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="classification">Classification</Label>
-              <Select value={filters.classification} onValueChange={(value) => handleFilterChange("classification", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All classifications" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All classifications</SelectItem>
-                  {CUSTOMER_CLASSIFICATIONS.map(classification => (
-                    <SelectItem key={classification.value} value={classification.value}>
-                      {classification.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="isActive">Status</Label>
-              <Select value={filters.isActive} onValueChange={(value) => handleFilterChange("isActive", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All statuses</SelectItem>
-                  <SelectItem value="true">Active</SelectItem>
-                  <SelectItem value="false">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="search">Search</Label>
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="search"
-                  placeholder="Search customers..."
-                  value={filters.search}
-                  onChange={(e) => handleFilterChange("search", e.target.value)}
-                  className="pl-8"
-                />
-              </div>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Search & Filter</CardTitle>
+            <div className="flex items-center gap-2">
+              {hasActiveFilters && (
+                <Badge variant="secondary" className="gap-1">
+                  Filtered
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-4 w-4 p-0 hover:bg-transparent"
+                    onClick={clearFilters}
+                    data-testid="button-clear-filters"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFilters(!showFilters)}
+                data-testid="button-toggle-filters"
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                {showFilters ? "Hide" : "Show"} Filters
+              </Button>
             </div>
           </div>
-        </CardContent>
+        </CardHeader>
+        {showFilters && (
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="search">Search</Label>
+                <div className="relative">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="search"
+                    placeholder="Search customers..."
+                    value={filters.search}
+                    onChange={(e) => handleFilterChange("search", e.target.value)}
+                    className="pl-8"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="classification">Classification</Label>
+                <Select value={filters.classification} onValueChange={(value) => handleFilterChange("classification", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All classifications" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All classifications</SelectItem>
+                    {CUSTOMER_CLASSIFICATIONS.map(classification => (
+                      <SelectItem key={classification.value} value={classification.value}>
+                        {classification.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="isActive">Status</Label>
+                <Select value={filters.isActive} onValueChange={(value) => handleFilterChange("isActive", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All statuses</SelectItem>
+                    <SelectItem value="true">Active</SelectItem>
+                    <SelectItem value="false">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="customerType">Customer Type</Label>
+                <Select value={filters.customerType} onValueChange={(value) => handleFilterChange("customerType", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All types</SelectItem>
+                    {CUSTOMER_TYPES.map(type => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        )}
       </Card>
 
       {/* Customers Table */}

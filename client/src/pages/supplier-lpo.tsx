@@ -192,23 +192,23 @@ export default function SupplierLpoPage() {
   return (
     <div className="space-y-6 p-6">
       {/* Enhanced Card-style header */}
-      <div className="bg-gradient-to-r from-white via-gray-50 to-green-50 rounded-2xl shadow-lg border border-gray-200/50 backdrop-blur-sm relative overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-200/50 backdrop-blur-sm relative overflow-hidden">
         {/* Background decoration */}
-        <div className="absolute top-0 right-0 w-64 h-32 bg-gradient-to-bl from-green-100/30 to-transparent rounded-bl-full"></div>
+        <div className="absolute top-0 right-0 w-64 h-32 bg-gradient-to-bl from-indigo-100/30 to-transparent rounded-bl-full"></div>
         <div className="absolute bottom-0 left-0 w-48 h-24 bg-gradient-to-tr from-gray-100/20 to-transparent rounded-tr-full"></div>
         
         <div className="relative px-8 py-6 flex items-center justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-600 to-gray-600 rounded-xl flex items-center justify-center shadow-lg">
+              <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
                 <Package className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-green-800 to-gray-800 bg-clip-text text-transparent">
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-indigo-500 via-indigo-600 to-indigo-700 bg-clip-text text-transparent">
                   Supplier LPO Management
                 </h2>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-300">\
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-300">
                     Step 6
                   </span>
                   <span className="text-gray-600 text-sm">
@@ -238,12 +238,12 @@ export default function SupplierLpoPage() {
             </button>
             
             <button
-              className="group flex items-center gap-3 border-2 border-gray-600 bg-gray-50 hover:bg-gray-100 text-gray-700 font-semibold px-6 py-3 rounded-xl shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 transition-all duration-200"
+              className="group flex items-center gap-3 border-2 border-blue-500 bg-blue-50 hover:bg-blue-100 text-blue-600 font-semibold px-6 py-3 rounded-xl shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 transition-all duration-200"
               onClick={() => setShowCreateLpo(true)}
               data-testid="button-new-supplier-lpo"
             >
-              <div className="w-8 h-8 bg-gray-100 border border-gray-200 rounded-lg flex items-center justify-center group-hover:bg-gray-200 transition-colors">
-                <Plus className="h-4 w-4 text-gray-600 group-hover:scale-110 transition-transform duration-200" />
+              <div className="w-8 h-8 bg-blue-100 border border-blue-200 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                <Plus className="h-4 w-4 text-blue-600 group-hover:scale-110 transition-transform duration-200" />
               </div>
               <div className="text-left">
                 <div className="text-sm font-bold">New Supplier</div>
@@ -399,10 +399,11 @@ export default function SupplierLpoPage() {
               <Button
                 variant="outline"
                 size="sm"
+                className="border-blue-500 text-blue-600 hover:bg-blue-50 shadow-sm flex items-center gap-1 px-2 py-0 h-6 min-h-0 text-xs"
                 onClick={() => setShowFilters(!showFilters)}
                 data-testid="button-toggle-filters"
               >
-                <Filter className="w-4 h-4 mr-2" />
+                <Filter className="w-3 h-3 mr-1" />
                 {showFilters ? "Hide" : "Show"} Filters
               </Button>
               {Object.keys(filters).length > 0 && (

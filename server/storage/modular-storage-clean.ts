@@ -884,22 +884,15 @@ export class ModularStorage extends BaseStorage {
     limit?: number;
     offset?: number;
   }) {
-    console.warn('getStockMovements: Using stub implementation - should be moved to InventoryStorage');
-    return [] as any[];
+    return this.inventoryStorage.getStockMovements(filters);
   }
 
   async getStockMovement(id: string) {
-    console.warn('getStockMovement: Using stub implementation - should be moved to InventoryStorage');
-    return undefined;
+    return this.inventoryStorage.getStockMovement(id);
   }
 
   async createStockMovement(movement: any) {
-    console.warn('createStockMovement: Using stub implementation - should be moved to InventoryStorage');
-    return {
-      id: 'movement-' + Date.now(),
-      ...movement,
-      createdAt: new Date().toISOString(),
-    };
+    return this.inventoryStorage.createStockMovement(movement);
   }
 
   async getCustomerStats() {

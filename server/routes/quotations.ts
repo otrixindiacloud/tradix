@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { storage } from "../storage";
 import { insertQuotationSchema, insertQuotationItemSchema } from "@shared/schema";
 import { validateUserIdOrDefault } from "@shared/utils/uuid";
@@ -58,7 +58,18 @@ export function registerQuotationRoutes(app: Express) {
     }
   });
 
-  app.put("/api/quotations/:id", async (req, res) => {
+  // Middleware to check admin role
+  function requireAdminRole(req: Request, res: Response, next: NextFunction) {
+    // Accept role from header or session (for demo, use x-user-role header)
+    const role = req.header('x-user-role') || ((req as any).user && (req as any).user.role);
+    if (role === 'admin') {
+      return next();
+    }
+    return res.status(403).json({ message: 'Forbidden: Admin role required for approval' });
+  }
+
+  // Restrict approval actions to admin only
+  app.put("/api/quotations/:id", requireAdminRole, async (req, res) => {
     try {
       const quotationData = insertQuotationSchema.partial().parse(req.body);
       const quotation = await storage.updateQuotation(req.params.id, quotationData);

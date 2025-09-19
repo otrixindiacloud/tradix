@@ -40,6 +40,7 @@ export default function SalesOrders() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [customerFilter, setCustomerFilter] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<SalesOrderWithRelations | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showAmendDialog, setShowAmendDialog] = useState(false);
@@ -501,12 +502,12 @@ export default function SalesOrders() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
+            <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg">
               <ClipboardList className="h-8 w-8 text-white" />
             </div>
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">
                   Sales Orders
                 </h2>
               </div>
@@ -514,8 +515,8 @@ export default function SalesOrders() {
                 Step 5: Manage sales orders with auto-creation, barcode enforcement, version control, and LPO validation
               </p>
               <div className="flex items-center gap-4 mt-2">
-                <div className="flex items-center gap-1 text-sm text-blue-600">
-                  <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                <div className="flex items-center gap-1 text-sm text-green-600">
+                  <div className="h-2 w-2 rounded-full bg-green-500"></div>
                   <span className="font-medium">Order Processing</span>
                 </div>
                 <div className="text-sm text-muted-foreground">
@@ -670,11 +671,40 @@ export default function SalesOrders() {
         </Card>
       </div>
 
-      {/* Sales Orders Table */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>All Sales Orders</CardTitle>
+      {/* Filter Card Section */}
+      <Card className="mb-6 shadow-lg">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Filter Sales Orders</CardTitle>
+          <div className="flex items-center gap-2">
+            {/* Filtered Button aligned left of show/hide */}
+            {(searchTerm || (statusFilter && statusFilter !== "all") || (customerFilter && customerFilter !== "all")) && (
+              <Button
+                variant="ghost"
+                className="px-2 py-0 h-6 min-h-0 border border-gray-200 text-gray-700 bg-gray-50 rounded-lg flex items-center gap-1 font-semibold shadow-none text-xs"
+                onClick={() => {
+                  setSearchTerm("");
+                  setStatusFilter("");
+                  setCustomerFilter("");
+                }}
+                data-testid="button-filtered"
+              >
+                <span className="text-xs">Filtered</span>
+                <span className="text-gray-400 text-base font-bold">×</span>
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              className="border-blue-500 text-blue-600 hover:bg-blue-50 shadow-sm flex items-center gap-1 px-2 py-0 h-6 min-h-0 text-xs"
+              onClick={() => setShowFilters((prev) => !prev)}
+              data-testid="button-toggle-filters"
+            >
+              <Filter className="h-4 w-4" />
+              {showFilters ? "Hide Filters" : "Show Filters"}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {showFilters && (
             <div className="flex items-center space-x-2">
               <div className="relative">
                 <Input
@@ -720,18 +750,32 @@ export default function SalesOrders() {
                   )}
                 </SelectContent>
               </Select>
-              <Button
-                variant="outline"
-                className="ml-2 border-blue-500 text-blue-600 hover:bg-blue-50 shadow-sm"
-                onClick={() => {
-                  setSearchTerm("");
-                  setStatusFilter("");
-                  setCustomerFilter("");
-                }}
-              >
-                Clear
-              </Button>
+              {/* Filtered Button */}
+              {/* {(searchTerm || (statusFilter && statusFilter !== "all") || (customerFilter && customerFilter !== "all")) && (
+                <Button
+                  variant="ghost"
+                  className="ml-2 px-4 py-2 border border-gray-200 text-gray-700 bg-gray-50 rounded-lg flex items-center gap-2 font-semibold shadow-none"
+                  onClick={() => {
+                    setSearchTerm("");
+                    setStatusFilter("");
+                    setCustomerFilter("");
+                  }}
+                  data-testid="button-filtered"
+                >
+                  <span className="text-sm">Filtered</span>
+                  <span className="text-gray-400 text-lg font-bold">×</span>
+                </Button>
+              )} */}
             </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Sales Orders Table */}
+      <Card className="shadow-lg">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>All Sales Orders</CardTitle>
           </div>
         </CardHeader>
         <CardContent>

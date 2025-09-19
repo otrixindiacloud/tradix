@@ -12,6 +12,29 @@ import { storage } from '../storage/index.js';
 export function registerPhysicalStockRoutes(app: Express) {
   // ===== PHYSICAL STOCK COUNT ROUTES =====
 
+    // Alias for frontend: GET /api/physical-stock
+    app.get("/api/physical-stock", async (req, res) => {
+      try {
+        // Use same logic as /api/physical-stock-counts, but return mapped fields for frontend
+        const counts = await storage.getPhysicalStockCounts(50, 0);
+        // Map to expected frontend fields
+        const mapped = (Array.isArray(counts) ? counts : []).map((c: any) => ({
+          id: c.id,
+          itemId: c.itemId,
+          itemName: c.itemName || c.itemName || c.description || c.itemCode || "",
+          location: c.location,
+          quantity: c.quantity,
+          lastCounted: c.lastCounted,
+          countedBy: c.countedBy,
+          notes: c.notes,
+        }));
+        res.json(mapped);
+      } catch (error) {
+        console.error("Error fetching physical stock for table:", error);
+        res.status(500).json({ message: "Failed to fetch physical stock" });
+      }
+    });
+
   // Get all physical stock counts
   app.get("/api/physical-stock-counts", async (req, res) => {
     try {

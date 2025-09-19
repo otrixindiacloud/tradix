@@ -347,12 +347,12 @@ export default function Enquiries() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg">
+            <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg">
               <MessageSquare className="h-8 w-8 text-white" />
             </div>
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent" data-testid="text-page-title">
+                <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-amber-600 to-amber-800 bg-clip-text text-transparent" data-testid="text-page-title">
                   Customer Enquiries
                 </h2>
               </div>
@@ -360,8 +360,8 @@ export default function Enquiries() {
                 Step 1: Manage customer enquiries from multiple channels
               </p>
               <div className="flex items-center gap-4 mt-2">
-                <div className="flex items-center gap-1 text-sm text-purple-600">
-                  <div className="h-2 w-2 rounded-full bg-purple-500"></div>
+                <div className="flex items-center gap-1 text-sm text-amber-600">
+                  <div className="h-2 w-2 rounded-full bg-amber-500"></div>
                   <span className="font-medium">Live Tracking</span>
                 </div>
                 <div className="text-sm text-muted-foreground">

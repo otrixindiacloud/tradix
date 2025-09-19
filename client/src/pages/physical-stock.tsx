@@ -61,11 +61,17 @@ export default function PhysicalStockPage() {
   const queryClient = useQueryClient();
 
   // Fetch physical stock
-  const { data: physicalStock = [], isLoading } = useQuery({
+  const {
+    data: physicalStock = [],
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["physical-stock"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/physical-stock");
       const data = await response.json();
+      // Debug log
+      console.log("Physical Stock API Response:", data);
       return Array.isArray(data) ? data : [];
     },
   });
@@ -252,7 +258,7 @@ export default function PhysicalStockPage() {
           </div>
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="border-green-500 text-green-600 hover:bg-green-50 shadow-md hover:shadow-lg transition-all duration-200 px-6 py-2.5 font-medium rounded-lg">
+              <Button variant="outline" className="border-blue-500 text-blue-600 hover:bg-blue-50 shadow-md hover:shadow-lg transition-all duration-200 px-6 py-2.5 font-medium rounded-lg">
                 <Plus className="h-4 w-4 mr-2" />
                 New Count
               </Button>
@@ -483,12 +489,19 @@ export default function PhysicalStockPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <DataTable
-            data={filteredStock}
-            columns={columns}
-            isLoading={isLoading}
-            emptyMessage="No physical stock found. Record your first count to get started."
-          />
+          {error ? (
+            <div className="text-red-600 font-semibold p-4">Error loading physical stock: {error.message}</div>
+          ) : (
+            <>
+              <pre className="bg-gray-50 p-2 text-xs mb-2 rounded">{JSON.stringify(physicalStock, null, 2)}</pre>
+              <DataTable
+                data={filteredStock}
+                columns={columns}
+                isLoading={isLoading}
+                emptyMessage={isLoading ? "Loading..." : "No physical stock found. Record your first count to get started."}
+              />
+            </>
+          )}
         </CardContent>
       </Card>
 

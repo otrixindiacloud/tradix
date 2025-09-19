@@ -67,7 +67,7 @@ interface PurchaseInvoice {
   approvedBy?: string;
   approvalDate?: string;
   notes?: string;
-  attachments: string[];
+  attachments: Array<string | { url: string; name?: string }>;
   itemCount: number;
   isRecurring: boolean;
   nextInvoiceDate?: string;
@@ -106,6 +106,12 @@ type PaymentEntry = {
 };
 
 export default function PurchaseInvoiceDetailPage() {
+  // Handles viewing an attachment (opens in new tab or downloads)
+  const handleViewAttachment = (attachment: { url: string; name?: string }) => {
+    if (attachment?.url) {
+      window.open(attachment.url, '_blank');
+    }
+  };
   const { id } = useParams();
   const [, navigate] = useLocation();
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -147,7 +153,11 @@ export default function PurchaseInvoiceDetailPage() {
       return;
     }
     // Find the first PDF attachment
-    const pdfAttachment = invoice.attachments.find(att => att.endsWith('.pdf'));
+    const pdfAttachment = invoice.attachments.find(att => {
+      if (typeof att === 'string') return att.endsWith('.pdf');
+      if (att && typeof att === 'object' && att.url) return att.url.endsWith('.pdf');
+      return false;
+    });
     if (!pdfAttachment) {
       toast({
         title: "No PDF Available",
@@ -156,18 +166,24 @@ export default function PurchaseInvoiceDetailPage() {
       });
       return;
     }
-    // Simulate download (replace with actual API/file URL if available)
-    const url = `/files/${pdfAttachment}`;
+    let url = '';
+    let filename = '';
+    if (typeof pdfAttachment === 'string') {
+      url = `/files/${pdfAttachment}`;
+      filename = pdfAttachment;
+    } else if (pdfAttachment && typeof pdfAttachment === 'object') {
+      url = pdfAttachment.url;
+      filename = pdfAttachment.name || pdfAttachment.url.split('/').pop() || 'invoice.pdf';
+    }
     const a = document.createElement('a');
     a.href = url;
-    a.download = pdfAttachment;
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
-    window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
     toast({
       title: "Download Started",
-      description: `Invoice PDF (${pdfAttachment}) download started.`,
+      description: `Invoice PDF (${filename}) download started.`,
     });
   };
   const queryClient = useQueryClient();
@@ -774,13 +790,13 @@ export default function PurchaseInvoiceDetailPage() {
                 Payment History
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              {paymentHistory.length === 0 ? (
-                <p className="text-gray-600 text-center py-4">No payments recorded</p>
-              ) : (
-                <div className="space-y-3">
-                  {paymentHistory.map((payment) => (
-                    <div key={payment.id} className="border rounded-lg p-3">
+                  <CardContent>
+                    {paymentHistory.length === 0 ? (
+                      <p className="text-gray-600 text-center py-4">No payments recorded</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {paymentHistory.map((payment) => (
+                          <div key={payment.id} className="rounded-lg p-3">
                       <div className="flex justify-between items-start mb-2">
                         <div>
                           <p className="font-medium">{invoice.currency} {parseFloat(payment.amount).toLocaleString()}</p>
@@ -801,29 +817,6 @@ export default function PurchaseInvoiceDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Attachments */}
-          {invoice.attachments.length > 0 && (
-            <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Attachments
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {invoice.attachments.map((attachment, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 border rounded">
-                      <span className="text-sm">{attachment}</span>
-                      <Button variant="ghost" size="sm" onClick={() => handleViewAttachment(attachment)}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Quick Actions */}
           <Card className="shadow-lg">

@@ -59,6 +59,8 @@ interface Quotation {
 
 export default function QuotationsPage() {
   const [, navigate] = useLocation();
+  // Get current user from auth context
+  const { user } = require("@/components/auth/auth-context").useAuth();
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
   const [filters, setFilters] = useState({
@@ -452,50 +454,70 @@ export default function QuotationsPage() {
       header: "Actions",
       render: (_: any, quotation: Quotation) => (
         <div className="flex gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/quotations/${quotation.id}`);
-            }}
-            data-testid={`button-view-${quotation.id}`}
-          >
-            <Eye className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleEdit(quotation);
-            }}
-            data-testid={`button-edit-${quotation.id}`}
-          >
-            <Edit className="h-4 w-4 text-blue-600" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDownload(quotation);
-            }}
-            data-testid={`button-download-${quotation.id}`}
-          >
-            <Download className="h-4 w-4 text-black" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDelete(quotation);
-            }}
-            data-testid={`button-delete-${quotation.id}`}
-          >
-            <Trash2 className="h-4 w-4 text-red-600" />
-          </Button>
+          {/* Only show Approve button for client user, hide other actions */}
+          {user?.username === "client" ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                // Call approve quotation logic here
+                // You may need to implement approveQuotation mutation
+                // For now, just show a toast
+                toast({ title: "Approved", description: `Quotation ${quotation.quoteNumber} approved.` });
+              }}
+              data-testid={`button-approve-${quotation.id}`}
+            >
+              <CheckCircle className="h-4 w-4 text-green-600" /> Approve
+            </Button>
+          ) : (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/quotations/${quotation.id}`);
+                }}
+                data-testid={`button-view-${quotation.id}`}
+              >
+                <Eye className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEdit(quotation);
+                }}
+                data-testid={`button-edit-${quotation.id}`}
+              >
+                <Edit className="h-4 w-4 text-blue-600" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDownload(quotation);
+                }}
+                data-testid={`button-download-${quotation.id}`}
+              >
+                <Download className="h-4 w-4 text-black" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(quotation);
+                }}
+                data-testid={`button-delete-${quotation.id}`}
+              >
+                <Trash2 className="h-4 w-4 text-red-600" />
+              </Button>
+            </>
+          )}
         </div>
       ),
     },
@@ -511,12 +533,12 @@ export default function QuotationsPage() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg">
+            <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
               <Calculator className="h-8 w-8 text-white" />
             </div>
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-emerald-600 to-emerald-800 bg-clip-text text-transparent">
+                <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
                   Quotations
                 </h2>
               </div>
@@ -524,8 +546,8 @@ export default function QuotationsPage() {
                 Step 2: Manage quotations, pricing, and approvals
               </p>
               <div className="flex items-center gap-4 mt-2">
-                <div className="flex items-center gap-1 text-sm text-emerald-600">
-                  <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
+                <div className="flex items-center gap-1 text-sm text-blue-600">
+                  <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                   <span className="font-medium">Live Pricing</span>
                 </div>
                 <div className="text-sm text-muted-foreground">
@@ -536,7 +558,7 @@ export default function QuotationsPage() {
           </div>
           <div className="flex gap-2">
             <Link href="/quotations/new">
-              <Button variant="outline" className="border-emerald-500 text-emerald-600 hover:bg-emerald-50 font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-200 transition flex items-center gap-2" data-testid="button-new-quotation">
+              <Button variant="outline" className="border-blue-500 text-blue-600 hover:bg-blue-50 font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition flex items-center gap-2" data-testid="button-new-quotation">
                 <Plus className="h-4 w-4" />
                 New Quotation
               </Button>
@@ -644,56 +666,6 @@ export default function QuotationsPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-              <Label>Date Range</Label>
-                {/* Filter Card - permanently visible */}
-                <div className="mb-4">
-                  <div className="shadow-lg rounded-xl bg-white p-6 flex flex-col gap-4">
-                    <h2 className="text-lg font-semibold mb-2">Filters</h2>
-                    <div className="flex flex-wrap gap-4 items-center">
-                      <input
-                        type="text"
-                        placeholder="Search quotes..."
-                        className="input input-bordered w-64"
-                        value={filters.search}
-                        onChange={e => setFilters({ ...filters, search: e.target.value })}
-                      />
-                      <select
-                        className="select select-bordered w-48"
-                        value={filters.status}
-                        onChange={e => setFilters({ ...filters, status: e.target.value })}
-                      >
-                        <option value="">All Statuses</option>
-                        {/* ...other options... */}
-                      </select>
-                      <select
-                        className="select select-bordered w-48"
-                        value={filters.customerType}
-                        onChange={e => setFilters({ ...filters, customerType: e.target.value })}
-                      >
-                        <option value="">All Customer Types</option>
-                        {/* ...other options... */}
-                      </select>
-                      <div className="flex items-center gap-2">
-                        <span>Date From</span>
-                        <input
-                          type="date"
-                          className="input input-bordered"
-                          value={filters.dateFrom}
-                          onChange={e => setFilters({ ...filters, dateFrom: e.target.value })}
-                        />
-                        <span>Date To</span>
-                        <input
-                          type="date"
-                          className="input input-bordered"
-                          value={filters.dateTo}
-                          onChange={e => setFilters({ ...filters, dateTo: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-            </div>
           </div>
         
         {/* Quick Date Filters */}

@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { Select } from "@/components/ui/select";
+import { SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import WorkflowStepper from "@/components/workflow/workflow-stepper";
@@ -58,6 +60,17 @@ import {
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [completedTasks, setCompletedTasks] = useState<number[]>([]);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
+  // Fetch customers
+  const { data: customersData = { customers: [] }, isLoading: customersLoading } = useQuery({
+    queryKey: ["/api/customers"],
+    queryFn: async () => {
+      const response = await fetch("/api/customers");
+      if (!response.ok) throw new Error("Failed to fetch customers");
+      return response.json();
+    },
+  });
+  const customers = customersData.customers || [];
   const [selectedEnquiries, setSelectedEnquiries] = useState<string[]>([]);
   
   // Load selected enquiries from localStorage on component mount
@@ -361,8 +374,28 @@ export default function Dashboard() {
               End-to-end automation from customer enquiry to invoicing
             </p>
           </div>
-          <div className="flex space-x-3">
-            <Button className="btn-primary flex items-center space-x-2" data-testid="button-new-enquiry" onClick={() => setLocation("/enquiries?new=true")}>
+          <div className="flex space-x-3 items-center">
+            {/* Customer Select Dropdown */}
+            <div className="flex items-center gap-2 min-w-[220px]">
+              <span className="text-sm text-gray-700">Customer:</span>
+              <Select
+                value={selectedCustomerId}
+                onValueChange={setSelectedCustomerId}
+                disabled={customersLoading}
+              >
+                <SelectTrigger className="min-w-[160px]">
+                  <SelectValue placeholder={customersLoading ? "Loading..." : "Select Customer"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {customers.map((c: any) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button className="btn-primary flex items-center space-x-2" data-testid="button-new-enquiry" onClick={() => setLocation("/enquiries?new=true")}> 
               <FaPlus className="h-4 w-4" />
               <span>New Enquiry</span>
             </Button>
@@ -374,25 +407,67 @@ export default function Dashboard() {
         </div>
 
         {/* Sequential Workflow Stepper */}
-        <WorkflowStepper 
-          currentStep={quotations && quotations.length > 0 ? 3 : 1}
-          completedSteps={quotations && quotations.length > 0 ? [1, 2] : []}
-          quotationId={quotations?.[0]?.id}
-          quotationNumber={quotations?.[0]?.quoteNumber || "QT-2024-001"}
-          onMarkComplete={() => {
-            // Handle mark complete action - navigate to customer acceptance
-            if (quotations?.[0]?.id) {
-              setLocation(`/quotations/${quotations[0].id}/acceptance`);
-            } else {
-              // If no quotation, navigate to create one
-              setLocation('/quotations/new');
-            }
-          }}
-          onViewDetails={() => {
-            // Handle view details action - navigate to process flow details
-            setLocation(`/process-flow-details`);
-          }}
-        />
+        {/* Filter quotations by selected customer for process flow */}
+        {(() => {
+          const filteredQuotations = selectedCustomerId
+            ? (quotations || []).filter((q: any) => q.customer?.id === selectedCustomerId)
+            : (quotations || []);
+          const currentQuote = filteredQuotations[0];
+          return (
+            <WorkflowStepper
+              currentStep={filteredQuotations.length > 0 ? 3 : 1}
+              completedSteps={filteredQuotations.length > 0 ? [1, 2] : []}
+              quotationId={currentQuote?.id}
+              quotationNumber={currentQuote?.quoteNumber || "QT-2024-001"}
+              onMarkComplete={() => {
+                if (currentQuote?.id) {
+                  setLocation(`/quotations/${currentQuote.id}/acceptance`);
+                } else {
+                  setLocation('/quotations/new');
+                }
+              }}
+              onViewDetails={() => {
+                setLocation(`/process-flow-details`);
+              }}
+              reflectionCard={currentQuote ? (
+                <div className="bg-white rounded-lg shadow border p-4 mt-4 flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-semibold text-lg text-gray-900">
+                        <span role="img" aria-label="flag">🏁</span> Current Step: Customer Acceptance
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-700 mb-1">
+                      <span className="text-sm">
+                        <FaFileInvoice className="inline-block mr-1 text-gray-500" />
+                        Quote #{currentQuote.quoteNumber} - Waiting for customer response
+                      </span>
+                    </div>
+                    {/* Show selected customer details */}
+                    {currentQuote.customer && (
+                      <div className="text-xs text-gray-600">
+                        Customer: <span className="font-medium text-gray-900">{currentQuote.customer.name}</span>
+                        {currentQuote.customer.customerType && (
+                          <span className="ml-2">({currentQuote.customer.customerType})</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="success" onClick={() => setLocation(`/quotations/${currentQuote.id}/acceptance`)}>
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      Mark Complete
+                    </Button>
+                    <Button variant="outline" onClick={() => setLocation(`/quotations/${currentQuote.id}`)}>
+                      <Eye className="h-4 w-4 mr-1" />
+                      View Details
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+            />
+          );
+        })()}
       </div>
 
       {/* KPI Cards */}
@@ -487,119 +562,6 @@ export default function Dashboard() {
       </div>
 
       {/* Selected Enquiries Progress Section */}
-      {selectedEnquiries.length > 0 && (
-        <Card className="shadow-lg mb-8">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Selected Enquiries Progress ({selectedEnquiries.length})
-              </CardTitle>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setLocation("/enquiries")}
-              >
-                Manage Selections
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {/* Progress Summary */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <HelpCircle className="h-5 w-5 text-blue-500" />
-                    <div>
-                      <div className="text-2xl font-bold text-blue-600">
-                        {selectedEnquiries.filter(id => {
-                          const enquiry = enquiries?.find((e: any) => e.id === id);
-                          return enquiry?.status === "New";
-                        }).length}
-                      </div>
-                      <div className="text-sm text-gray-600">New</div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-amber-50 p-4 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-5 w-5 text-amber-500" />
-                    <div>
-                      <div className="text-2xl font-bold text-amber-600">
-                        {selectedEnquiries.filter(id => {
-                          const enquiry = enquiries?.find((e: any) => e.id === id);
-                          return enquiry?.status === "In Progress";
-                        }).length}
-                      </div>
-                      <div className="text-sm text-gray-600">In Progress</div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-green-500" />
-                    <div>
-                      <div className="text-2xl font-bold text-green-600">
-                        {selectedEnquiries.filter(id => {
-                          const enquiry = enquiries?.find((e: any) => e.id === id);
-                          return enquiry?.status === "Quoted";
-                        }).length}
-                      </div>
-                      <div className="text-sm text-gray-600">Quoted</div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-gray-500" />
-                    <div>
-                      <div className="text-2xl font-bold text-gray-600">
-                        {selectedEnquiries.filter(id => {
-                          const enquiry = enquiries?.find((e: any) => e.id === id);
-                          return enquiry?.status === "Closed";
-                        }).length}
-                      </div>
-                      <div className="text-sm text-gray-600">Closed</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Selected Enquiries List */}
-              <div className="space-y-2">
-                <h4 className="font-semibold text-gray-900">Selected Enquiries:</h4>
-                <div className="flex flex-wrap gap-2">
-                  {selectedEnquiries.map(enquiryId => {
-                    const enquiry = enquiries?.find((e: any) => e.id === enquiryId);
-                    return enquiry ? (
-                      <div key={enquiryId} className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg">
-                        <Badge variant="outline" className={getStatusColor(enquiry.status)}>
-                          {enquiry.status}
-                        </Badge>
-                        <span className="font-mono text-sm text-gray-700">{enquiry.enquiryNumber}</span>
-                        <span className="text-sm text-gray-500">
-                          {enquiry.customer?.name || "Unknown Customer"}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setLocation(`/enquiries/${enquiry.id}`)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ) : null;
-                  })}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* AI Insights Widget */}
       <div className="mb-8">
@@ -729,13 +691,13 @@ export default function Dashboard() {
               <FaQuestionCircle className="h-5 w-5 text-blue-600" />
               Recent Enquiries
             </CardTitle>
-            <Button variant="ghost" size="sm" data-testid="button-manage-all-enquiries" onClick={() => setLocation("/enquiries")}>
+            <Button variant="ghost" size="sm" data-testid="button-manage-all-enquiries" onClick={() => setLocation("/enquiries")}> 
               Manage All
             </Button>
           </CardHeader>
           <CardContent>
             <DataTable
-              data={enquiries?.slice(0, 5) || []}
+              data={selectedCustomerId ? (enquiries?.filter((e: any) => e.customer?.id === selectedCustomerId).slice(0, 5) || []) : (enquiries?.slice(0, 5) || [])}
               columns={enquiryColumns}
               isLoading={enquiriesLoading}
               emptyMessage="No enquiries found"
@@ -750,13 +712,13 @@ export default function Dashboard() {
               <FaCheckCircle className="h-5 w-5 text-green-600" />
               Active Sales Orders
             </CardTitle>
-            <Button variant="ghost" size="sm" data-testid="button-view-all-orders" onClick={() => setLocation("/sales-orders")}>
+            <Button variant="ghost" size="sm" data-testid="button-view-all-orders" onClick={() => setLocation("/sales-orders")}> 
               View All Orders
             </Button>
           </CardHeader>
           <CardContent>
             <DataTable
-              data={salesOrders?.slice(0, 5) || []}
+              data={selectedCustomerId ? (salesOrders?.filter((o: any) => o.customer?.id === selectedCustomerId).slice(0, 5) || []) : (salesOrders?.slice(0, 5) || [])}
               columns={orderColumns}
               isLoading={ordersLoading}
               emptyMessage="No active orders found"

@@ -203,7 +203,7 @@ export default function PoUpload() {
               <Button
                 size="sm"
                 variant="outline"
-                className="border-orange-500 text-orange-600 hover:bg-orange-50"
+                className="border-blue-500 text-blue-600 hover:bg-blue-50"
                 onClick={(e) => {
                   e.stopPropagation();
                   setSelectedQuotation(quotation);
@@ -242,12 +242,12 @@ export default function PoUpload() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg">
+            <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg">
               <ShoppingBag className="h-8 w-8 text-white" />
             </div>
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-amber-600 to-amber-800 bg-clip-text text-transparent">
+                <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent">
                   Purchase Order Upload
                 </h2>
               </div>
@@ -255,8 +255,8 @@ export default function PoUpload() {
                 Step 4: Upload and validate customer PO documents against accepted quotations
               </p>
               <div className="flex items-center gap-4 mt-2">
-                <div className="flex items-center gap-1 text-sm text-amber-600">
-                  <div className="h-2 w-2 rounded-full bg-amber-500"></div>
+                <div className="flex items-center gap-1 text-sm text-purple-600">
+                  <div className="h-2 w-2 rounded-full bg-purple-500"></div>
                   <span className="font-medium">Document Validation</span>
                 </div>
                 <div className="text-sm text-muted-foreground">
@@ -268,7 +268,7 @@ export default function PoUpload() {
           <div className="flex gap-2">
             <Button
               variant="outline"
-              className="border-amber-500 text-amber-600 hover:bg-amber-50 font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-200 transition flex items-center gap-2"
+              className="border-blue-500 text-blue-600 hover:bg-blue-50 font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition flex items-center gap-2"
               onClick={() => setSelectedQuotation({})}
               data-testid="button-new-customer-po-upload"
             >

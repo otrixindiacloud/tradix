@@ -115,7 +115,10 @@ export default function PurchaseInvoicesPage() {
     dateFrom: "",
     dateTo: "",
   });
-  
+
+  // Add showFilters state for toggling filter visibility
+  const [showFilters, setShowFilters] = useState(false);
+
   const [dateRange, setDateRange] = useState<{
     from: Date | undefined;
     to: Date | undefined;
@@ -123,7 +126,7 @@ export default function PurchaseInvoicesPage() {
     from: undefined,
     to: undefined
   });
-  
+
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [deletingInvoice, setDeletingInvoice] = useState<PurchaseInvoice | null>(null);
@@ -688,16 +691,16 @@ export default function PurchaseInvoicesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Card-style header */}
+      {/* Card-style header with green theme */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg">
+            <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-green-600 to-green-700 flex items-center justify-center shadow-lg">
               <Receipt className="h-8 w-8 text-white" />
             </div>
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 to-orange-800 bg-clip-text text-transparent">
+                <h2 className="text-3xl font-bold tracking-tight text-black">
                   Purchase Invoices
                 </h2>
               </div>
@@ -705,19 +708,18 @@ export default function PurchaseInvoicesPage() {
                 Supplier invoice management and payment processing
               </p>
               <div className="flex items-center gap-4 mt-2">
-                <div className="flex items-center gap-1 text-sm text-orange-600">
-                  <div className="h-2 w-2 rounded-full bg-orange-500"></div>
+                <div className="flex items-center gap-1 text-sm text-green-700">
+                  <div className="h-2 w-2 rounded-full bg-green-600"></div>
                   <span className="font-medium">Accounts Payable</span>
                 </div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm text-blue-700 font-bold">
                   Total Invoices: {purchaseInvoices.length}
                 </div>
               </div>
             </div>
           </div>
           <div className="flex gap-2">
-              {/* Creation disabled for derived purchase invoices */}
-              <Button onClick={() => toast({ title: 'Read-only', description: 'Creation of purchase invoices is not available yet.' })} variant="outline" className="border-orange-500 text-orange-600 hover:bg-orange-50" data-testid="button-new-purchase-invoice">
+              <Button onClick={() => toast({ title: 'Read-only', description: 'Creation of purchase invoices is not available yet.' })} className="border-blue-500 bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-200" data-testid="button-new-purchase-invoice">
                 <Plus className="h-4 w-4" />
                 New Invoice
               </Button>
@@ -776,127 +778,141 @@ export default function PurchaseInvoicesPage() {
       {/* Filters */}
       <Card className="shadow-lg border border-gray-200 mb-8">
         <CardHeader>
-          <div className="flex items-center gap-2 mb-2">
-            <Filter className="h-5 w-5" />
-            <h3 className="text-lg font-semibold">Filters</h3>
+          <div className="flex items-center gap-2 mb-2 justify-between">
+            <div className="flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              <h3 className="text-lg font-semibold">Filters</h3>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFilters((prev) => !prev)}
+              className="border-blue-500 text-blue-600 hover:bg-blue-50 shadow-sm flex items-center gap-1 px-2 py-0 h-6 min-h-0 text-xs ml-auto"
+              data-testid="button-toggle-filters"
+            >
+              <Filter className="h-4 w-4 mr-1" />
+              {showFilters ? "Hide Filters" : "Show Filters"}
+            </Button>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search invoices..."
-                value={filters.search}
-                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                className="pl-10 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 rounded-md shadow-none"
-                data-testid="input-search"
-              />
-            </div>
-            <div>
-              <Select
-                value={filters.status}
-                onValueChange={(value) => setFilters({ ...filters, status: value })}
-              >
-                <SelectTrigger data-testid="select-status">
-                  <SelectValue placeholder="All Statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="Draft">Draft</SelectItem>
-                  <SelectItem value="Pending Approval">Pending Approval</SelectItem>
-                  <SelectItem value="Approved">Approved</SelectItem>
-                  <SelectItem value="Paid">Paid</SelectItem>
-                  <SelectItem value="Partially Paid">Partially Paid</SelectItem>
-                  <SelectItem value="Overdue">Overdue</SelectItem>
-                  <SelectItem value="Disputed">Disputed</SelectItem>
-                  <SelectItem value="Cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Select
-                value={filters.paymentStatus}
-                onValueChange={(value) => setFilters({ ...filters, paymentStatus: value })}
-              >
-                <SelectTrigger data-testid="select-payment-status">
-                  <SelectValue placeholder="Payment Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Payment Statuses</SelectItem>
-                  <SelectItem value="Unpaid">Unpaid</SelectItem>
-                  <SelectItem value="Partially Paid">Partially Paid</SelectItem>
-                  <SelectItem value="Paid">Paid</SelectItem>
-                  <SelectItem value="Overdue">Overdue</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Select
-                value={filters.currency}
-                onValueChange={(value) => setFilters({ ...filters, currency: value })}
-              >
-                <SelectTrigger data-testid="select-currency">
-                  <SelectValue placeholder="All Currencies" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Currencies</SelectItem>
-                  <SelectItem value="BHD">BHD</SelectItem>
-                  <SelectItem value="AED">AED</SelectItem>
-                  <SelectItem value="EUR">EUR</SelectItem>
-                  <SelectItem value="GBP">GBP</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Input
-                placeholder="Filter by supplier..."
-                value={filters.supplier}
-                onChange={(e) => setFilters({ ...filters, supplier: e.target.value })}
-                className="border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 rounded-md shadow-none"
-              />
-            </div>
-            <div>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !dateRange.from && "text-muted-foreground",
-                      dateRange.from && "border-blue-300 bg-blue-50"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateRange.from ? (
-                      dateRange.to ? (
-                        <>
-                          {format(dateRange.from, "LLL dd, y")} -{" "}
-                          {format(dateRange.to, "LLL dd, y")}
-                        </>
+        {showFilters && (
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search invoices..."
+                  value={filters.search}
+                  onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                  className="pl-10 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 rounded-md shadow-none"
+                  data-testid="input-search"
+                />
+              </div>
+              <div>
+                <Select
+                  value={filters.status}
+                  onValueChange={(value) => setFilters({ ...filters, status: value })}
+                >
+                  <SelectTrigger data-testid="select-status">
+                    <SelectValue placeholder="All Statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="Draft">Draft</SelectItem>
+                    <SelectItem value="Pending Approval">Pending Approval</SelectItem>
+                    <SelectItem value="Approved">Approved</SelectItem>
+                    <SelectItem value="Paid">Paid</SelectItem>
+                    <SelectItem value="Partially Paid">Partially Paid</SelectItem>
+                    <SelectItem value="Overdue">Overdue</SelectItem>
+                    <SelectItem value="Disputed">Disputed</SelectItem>
+                    <SelectItem value="Cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Select
+                  value={filters.paymentStatus}
+                  onValueChange={(value) => setFilters({ ...filters, paymentStatus: value })}
+                >
+                  <SelectTrigger data-testid="select-payment-status">
+                    <SelectValue placeholder="Payment Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Payment Statuses</SelectItem>
+                    <SelectItem value="Unpaid">Unpaid</SelectItem>
+                    <SelectItem value="Partially Paid">Partially Paid</SelectItem>
+                    <SelectItem value="Paid">Paid</SelectItem>
+                    <SelectItem value="Overdue">Overdue</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Select
+                  value={filters.currency}
+                  onValueChange={(value) => setFilters({ ...filters, currency: value })}
+                >
+                  <SelectTrigger data-testid="select-currency">
+                    <SelectValue placeholder="All Currencies" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Currencies</SelectItem>
+                    <SelectItem value="BHD">BHD</SelectItem>
+                    <SelectItem value="AED">AED</SelectItem>
+                    <SelectItem value="EUR">EUR</SelectItem>
+                    <SelectItem value="GBP">GBP</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Input
+                  placeholder="Filter by supplier..."
+                  value={filters.supplier}
+                  onChange={(e) => setFilters({ ...filters, supplier: e.target.value })}
+                  className="border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 rounded-md shadow-none"
+                />
+              </div>
+              <div>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !dateRange.from && "text-muted-foreground",
+                        dateRange.from && "border-blue-300 bg-blue-50"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateRange.from ? (
+                        dateRange.to ? (
+                          <>
+                            {format(dateRange.from, "LLL dd, y")} -{" "}
+                            {format(dateRange.to, "LLL dd, y")}
+                          </>
+                        ) : (
+                          format(dateRange.from, "LLL dd, y")
+                        )
                       ) : (
-                        format(dateRange.from, "LLL dd, y")
-                      )
-                    ) : (
-                      <span>Pick a date range</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start" side="bottom" sideOffset={8}>
-                  <Calendar
-                    initialFocus
-                    mode="range"
-                    defaultMonth={dateRange.from}
-                    selected={dateRange}
-                    onSelect={(range) => handleDateRangeChange(range?.from, range?.to)}
-                    numberOfMonths={2}
-                    disabled={(date) => date > new Date()}
-                  />
-                </PopoverContent>
-              </Popover>
+                        <span>Pick a date range</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start" side="bottom" sideOffset={8}>
+                    <Calendar
+                      initialFocus
+                      mode="range"
+                      defaultMonth={dateRange.from}
+                      selected={dateRange}
+                      onSelect={(range) => handleDateRangeChange(range?.from, range?.to)}
+                      numberOfMonths={2}
+                      disabled={(date) => date > new Date()}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
-          </div>
-        </CardContent>
+          </CardContent>
+        )}
       </Card>
 
       {/* Purchase Invoices Table */}

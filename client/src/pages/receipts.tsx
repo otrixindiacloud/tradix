@@ -160,9 +160,9 @@ export default function ReceiptsPage() {
 
   // Fetch goods receipts
   const { data: receipts = [], isLoading } = useQuery({
-    queryKey: ["goods-receipts"],
+    queryKey: ["receipts"],
     queryFn: async () => {
-      const response = await apiRequest("GET", "/api/goods-receipts");
+      const response = await apiRequest("GET", "/api/receipts");
       const data = await response.json();
       return Array.isArray(data) ? data : [];
     },
@@ -170,7 +170,7 @@ export default function ReceiptsPage() {
 
   // Fetch statistics
   const { data: stats } = useQuery({
-    queryKey: ["goods-receipts-stats"],
+    queryKey: ["receipts-stats"],
     queryFn: async () => {
       const receiptsArray = Array.isArray(receipts) ? receipts : [];
       const total = receiptsArray.length;
@@ -187,15 +187,15 @@ export default function ReceiptsPage() {
   // Create goods receipt mutation
   const createReceiptMutation = useMutation({
     mutationFn: async (data: GoodsReceiptForm) => {
-      return await apiRequest("POST", "/api/goods-receipts", data);
+      return await apiRequest("POST", "/api/receipts", data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["goods-receipts"] });
+      queryClient.invalidateQueries({ queryKey: ["receipts"] });
       setShowCreateDialog(false);
       form.reset();
       toast({
         title: "Success",
-        description: "Goods receipt created successfully",
+        description: " receipt created successfully",
       });
     },
     onError: (error: any) => {
@@ -210,10 +210,10 @@ export default function ReceiptsPage() {
   // Update goods receipt mutation
   const updateReceiptMutation = useMutation({
     mutationFn: async (data: GoodsReceiptForm & { id: string }) => {
-      return await apiRequest("PUT", `/api/goods-receipts/${data.id}`, data);
+      return await apiRequest("PUT", `/api/receipts/${data.id}`, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["goods-receipts"] });
+      queryClient.invalidateQueries({ queryKey: ["receipts"] });
       setShowEditDialog(false);
       toast({
         title: "Success",
@@ -269,10 +269,10 @@ export default function ReceiptsPage() {
     {
       key: "supplierName",
       header: "Supplier",
-      render: (value: string) => (
+      render: (_: string, receipt: any) => (
         <div className="flex items-center gap-2">
           <Building2 className="h-4 w-4 text-gray-500" />
-          <span>{value || "N/A"}</span>
+          <span>{receipt.supplierName || receipt.supplierLpoId || "N/A"}</span>
         </div>
       ),
     },
@@ -364,7 +364,7 @@ export default function ReceiptsPage() {
           </div>
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="border-green-500 text-green-600 hover:bg-green-50 shadow-md hover:shadow-lg transition-all duration-200 px-6 py-2.5 font-medium rounded-lg">
+              <Button variant="outline" className="border-blue-500 text-blue-600 hover:bg-blue-100 shadow-md hover:shadow-lg transition-all duration-200 px-6 py-2.5 font-medium rounded-lg">
                 <Plus className="h-4 w-4 mr-2" />
                 New Receipt
               </Button>
@@ -515,11 +515,13 @@ export default function ReceiptsPage() {
             <form
               onSubmit={form.handleSubmit((data) => {
                 if (editForm && editForm.id) {
+                  // Update via API (PUT /api/receipts/:id)
                   updateReceiptMutation.mutate({ ...data, id: editForm.id }, {
                     onSuccess: () => {
                       setShowEditDialog(false);
                       setEditForm(null);
                       form.reset();
+                      queryClient.invalidateQueries({ queryKey: ["receipts"] });
                     }
                   });
                 }

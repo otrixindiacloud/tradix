@@ -2049,14 +2049,23 @@ export default function InventoryManagementPage() {
   return (
     <div className="container mx-auto py-6" data-testid="inventory-management-page">
       <div className="mb-6">
-        <div className="rounded-xl shadow-sm flex items-center justify-between px-6 py-6 bg-gray-50">
-          <div className="flex items-center space-x-4">
-            <span className="p-2 rounded-lg bg-gray-100 flex items-center justify-center">
-              <Boxes className="h-9 w-9 text-blue-600" aria-label="Inventory Management Icon" />
-            </span>
+        {/* Enhanced Card-style header */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 relative overflow-hidden px-8 py-8">
+          {/* Background decoration */}
+          <div className="absolute top-0 right-0 w-48 h-24 bg-gradient-to-bl from-blue-50/50 to-transparent rounded-bl-full"></div>
+          <div className="absolute bottom-0 left-0 w-32 h-16 bg-gradient-to-tr from-blue-100/30 to-transparent rounded-tr-full"></div>
+          <div className="flex items-center gap-6 relative z-10">
+            <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-lg border border-blue-100">
+              <Boxes className="h-12 w-12 text-white" aria-label="Inventory Management Icon" />
+            </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Inventory Management</h1>
-              <p className="text-gray-600 mt-1">Step 8: Monitor stock levels and manage inventory with barcode tracking</p>
+              <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-2">Inventory Management</h1>
+              <div className="flex items-center gap-3 mb-2">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
+                  Step 8
+                </span>
+                <span className="text-gray-600 text-sm font-medium">Monitor stock levels and manage inventory with barcode tracking</span>
+              </div>
             </div>
           </div>
         </div>

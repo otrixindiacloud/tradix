@@ -49,6 +49,7 @@ const stockIssueSchema = z.object({
   purpose: z.string().min(1, "Purpose is required"),
   departmentId: z.string().optional(),
   notes: z.string().optional(),
+  status: z.string().optional(), // Add status field
 });
 
 type StockIssueForm = z.infer<typeof stockIssueSchema>;
@@ -79,12 +80,12 @@ export default function StockIssuesPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch stock issues (using stock movements with movementType = "Issue")
+  // Fetch stock issues from new API
   const { data: stockIssues = [], isLoading } = useQuery({
     queryKey: ["stock-issues"],
     queryFn: async () => {
       try {
-        const response = await apiRequest("GET", "/api/stock-movements?type=Issue");
+        const response = await apiRequest("GET", "/api/stock-issues");
         const data = await response.json();
         return Array.isArray(data) ? data : [];
       } catch (error) {
@@ -135,11 +136,10 @@ export default function StockIssuesPage() {
     mutationFn: async (data: StockIssueForm) => {
       const issueData = {
         ...data,
-        movementType: "Issue",
         quantity: data.quantityIssued,
         status: "Draft",
       };
-      return await apiRequest("POST", "/api/stock-movements", issueData);
+      return await apiRequest("POST", "/api/stock-issues", issueData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["stock-issues"] });
@@ -156,6 +156,33 @@ export default function StockIssuesPage() {
         description: error.message || "Failed to create stock issue",
         variant: "destructive",
       });
+    },
+  });
+  // Update stock issue mutation
+  const updateIssueMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string, data: Partial<StockIssueForm> }) => {
+      return await apiRequest("PUT", `/api/stock-issues/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["stock-issues"] });
+      toast({ title: "Success", description: "Stock issue updated successfully" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to update stock issue", variant: "destructive" });
+    },
+  });
+
+  // Delete stock issue mutation
+  const deleteIssueMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest("DELETE", `/api/stock-issues/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["stock-issues"] });
+      toast({ title: "Success", description: "Stock issue deleted" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to delete stock issue", variant: "destructive" });
     },
   });
 
@@ -193,19 +220,19 @@ export default function StockIssuesPage() {
   // Table columns
   const columns = [
     {
-      key: "referenceNumber",
+      key: "issueNumber",
       header: "Issue Number",
-      render: (value: string) => (
-        <span className="font-mono text-sm font-medium">{value || "N/A"}</span>
+      render: (_: any, issue: any) => (
+        <span className="font-mono text-sm font-medium">{issue.issueNumber || issue.referenceNumber || "N/A"}</span>
       ),
     },
     {
       key: "itemName",
       header: "Item",
-      render: (value: string, issue: any) => (
+      render: (_: any, issue: any) => (
         <div className="flex items-center gap-2">
           <Package className="h-4 w-4 text-gray-500" />
-          <span>{value || issue.itemCode || "N/A"}</span>
+          <span>{issue.itemName || issue.itemCode || issue.itemId || "N/A"}</span>
         </div>
       ),
     },
@@ -267,13 +294,20 @@ export default function StockIssuesPage() {
             variant="outline"
             size="sm"
             onClick={() => {
-              toast({
-                title: "Info",
-                description: "Edit functionality will be implemented soon",
-              });
+              // Example edit: update status to Issued
+              updateIssueMutation.mutate({ id: issue.id, data: { status: "Issued" } });
             }}
           >
             <Edit className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              deleteIssueMutation.mutate(issue.id);
+            }}
+          >
+            <AlertTriangle className="h-4 w-4 text-red-500" />
           </Button>
         </div>
       ),
@@ -306,7 +340,7 @@ export default function StockIssuesPage() {
           </div>
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="border-red-500 text-red-600 hover:bg-red-50 shadow-md hover:shadow-lg transition-all duration-200 px-6 py-2.5 font-medium rounded-lg">
+              <Button variant="outline" className="border-blue-500 text-blue-600 hover:bg-blue-50 shadow-md hover:shadow-lg transition-all duration-200 px-6 py-2.5 font-medium rounded-lg">
                 <Plus className="h-4 w-4 mr-2" />
                 Issue Stock
               </Button>

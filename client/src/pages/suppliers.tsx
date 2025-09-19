@@ -442,11 +442,11 @@ export default function Suppliers() {
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                size="sm"
+                className="border-blue-500 text-blue-600 hover:bg-blue-50 shadow-sm flex items-center gap-1 px-2 py-0 h-6 min-h-0 text-xs"
                 onClick={() => setShowFilters(!showFilters)}
                 data-testid="button-toggle-filters"
               >
-                <Filter className="w-4 h-4 mr-2" />
+                <Filter className="w-3 h-3 mr-1" />
                 {showFilters ? "Hide" : "Show"} Filters
               </Button>
               {(filters.companyName || filters.contactPerson || filters.email || filters.phone) && (

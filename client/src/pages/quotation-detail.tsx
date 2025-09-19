@@ -34,6 +34,8 @@ import { SYSTEM_USER_ID } from "@shared/utils/uuid";
 import { useUserId } from "@/hooks/useUserId";
 import { Link } from "wouter";
 import QuotationItemsManager from "@/components/quotation/quotation-items-manager";
+import { useAuth } from "@/components/auth/auth-context";
+import type { Request, Response, NextFunction } from "express";
 
 interface Quotation {
   id: string;
@@ -74,8 +76,14 @@ interface QuotationItem {
 }
 
 import { useParams, useLocation } from "wouter";
-// ...existing code...
+
 export default function QuotationDetailPage() {
+  // Filter states
+  const [filterSearch, setFilterSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterCustomerType, setFilterCustomerType] = useState("all");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
   const userId = useUserId();
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
@@ -83,7 +91,8 @@ export default function QuotationDetailPage() {
   const [showRevisionDialog, setShowRevisionDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [revisionReason, setRevisionReason] = useState("");
-// ...existing code...
+  const { user } = useAuth();
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -410,7 +419,8 @@ export default function QuotationDetailPage() {
           <Copy className="h-4 w-4 mr-2" />
           Create Revision
         </Button>
-        {quotation.status === "Draft" && quotation.approvalStatus !== "Pending" && (
+        {/* Only admin can approve quotations */}
+        {user?.role === "admin" && quotation.status === "Draft" && quotation.approvalStatus !== "Pending" && (
           <Button 
             onClick={() => updateStatusMutation.mutate("Sent")}
             disabled={updateStatusMutation.isPending}
@@ -422,7 +432,8 @@ export default function QuotationDetailPage() {
             Send to Customer
           </Button>
         )}
-        {quotation.status === "Sent" && (
+        {/* Only admin can mark accepted/rejected */}
+        {user?.role === "admin" && quotation.status === "Sent" && (
           <div className="flex gap-2">
             <Link href={`/quotations/${id}/acceptance`}>
               <Button variant="default" data-testid="button-customer-acceptance">

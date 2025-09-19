@@ -92,10 +92,10 @@ export class PhysicalStockStorage extends BaseStorage {
           lastName: users.lastName,
         },
       })
-      .from(physicalStockCounts)
-      .leftJoin(users, eq(physicalStockCounts.startedBy, users.id))
-      .leftJoin(users, eq(physicalStockCounts.completedBy, users.id))
-      .leftJoin(users, eq(physicalStockCounts.createdBy, users.id))
+  .from(physicalStockCounts)
+  .leftJoin(users.as('startedByUser'), eq(physicalStockCounts.startedBy, users.as('startedByUser').id))
+  .leftJoin(users.as('completedByUser'), eq(physicalStockCounts.completedBy, users.as('completedByUser').id))
+  .leftJoin(users.as('createdByUser'), eq(physicalStockCounts.createdBy, users.as('createdByUser').id))
       .orderBy(desc(physicalStockCounts.createdAt))
       .limit(limit)
       .offset(offset);

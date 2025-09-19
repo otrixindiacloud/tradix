@@ -460,21 +460,44 @@ export default function DeliveryNote() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Delivery Notes</h1>
-          <p className="text-gray-600 mt-1">
-            Manage delivery notes generated from sales orders with barcode picking and delivery confirmation
-          </p>
+      {/* Card-style header */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
+              <Truck className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                  Delivery Notes
+                </h1>
+              </div>
+              <p className="text-muted-foreground text-lg">
+                Step 8: Manage delivery notes generated from sales orders with barcode picking and delivery confirmation
+              </p>
+              <div className="flex items-center gap-4 mt-2">
+                <div className="flex items-center gap-1 text-sm text-blue-600">
+                  <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                  <span className="font-medium">Delivery Management</span>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Active Deliveries: {deliveryNotesData.filter((d: DeliveryNote) => d.status !== "Complete" && d.status !== "Cancelled").length}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => setShowCreateDialog(true)}
+              variant="outline"
+              className="border-blue-500 text-blue-600 hover:bg-blue-50 font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Create Delivery Note
+            </Button>
+          </div>
         </div>
-        <Button 
-          onClick={() => setShowCreateDialog(true)}
-          variant="outline"
-          className="border-blue-500 text-blue-600 hover:bg-blue-50"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Create Delivery Note
-        </Button>
       </div>
 
       {/* Filters */}

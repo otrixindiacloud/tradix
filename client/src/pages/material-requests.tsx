@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -103,6 +103,42 @@ const getPriorityColor = (priority: string) => {
 };
 
 export default function MaterialRequestsPage() {
+  // Item-level edit dialog state
+  // Duplicate declarations removed (already declared above)
+  // Item-level edit dialog state
+  const [showEditItemDialog, setShowEditItemDialog] = useState(false);
+  const [editItem, setEditItem] = useState<RequestItem | null>(null);
+
+  // Item-level edit form
+  const editItemForm = useForm<MaterialRequestItemForm>({
+    resolver: zodResolver(materialRequestItemSchema),
+    defaultValues: {
+      itemDescription: "",
+      quantity: 1,
+      unitOfMeasure: "",
+      estimatedCost: 0,
+      specification: "",
+      preferredSupplier: "",
+      urgency: "Standard",
+    },
+  });
+
+  React.useEffect(() => {
+    if (editItem) {
+      editItemForm.reset(editItem);
+    }
+  }, [editItem]);
+
+  // Update item in state
+  const onEditItemSubmit = (data: MaterialRequestItemForm) => {
+    if (!editItem) return;
+    setRequestItems(prev => prev.map(item => item.id === editItem.id ? { ...item, ...data } : item));
+    setShowEditItemDialog(false);
+    setEditItem(null);
+    // Update total cost
+    const newTotal = requestItems.map(item => item.id === editItem.id ? { ...item, ...data } : item).reduce((sum, item) => sum + (item.quantity * item.estimatedCost), 0);
+    form.setValue("totalEstimatedCost", newTotal);
+  };
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
@@ -110,6 +146,7 @@ export default function MaterialRequestsPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<Requisition | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [requestItems, setRequestItems] = useState<RequestItem[]>([]);
   const [showAddItemDialog, setShowAddItemDialog] = useState(false);
 
@@ -120,7 +157,7 @@ export default function MaterialRequestsPage() {
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ["material-requests"],
     queryFn: async () => {
-      const response = await apiRequest("GET", "/api/requisitions");
+      const response = await apiRequest("GET", "/api/material-requests");
       const data = await response.json();
       return Array.isArray(data) ? data as Requisition[] : [];
     },
@@ -151,7 +188,7 @@ export default function MaterialRequestsPage() {
         itemCount: requestItems.length,
         items: requestItems,
       };
-      return await apiRequest("POST", "/api/requisitions", requestData);
+      return await apiRequest("POST", "/api/material-requests", requestData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["material-requests"] });
@@ -345,19 +382,184 @@ export default function MaterialRequestsPage() {
             variant="outline"
             size="sm"
             onClick={() => {
-              // TODO: Implement edit functionality
-              toast({
-                title: "Info",
-                description: "Edit functionality will be implemented soon",
-              });
+              setSelectedRequest(request);
+              setShowEditDialog(true);
             }}
           >
             <Edit className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-red-600 border-red-300"
+            onClick={async () => {
+              if (window.confirm("Are you sure you want to delete this request?")) {
+                await apiRequest("DELETE", `/api/material-requests/${request.id}`);
+                queryClient.invalidateQueries({ queryKey: ["material-requests"] });
+                toast({ title: "Deleted", description: "Material request deleted." });
+              }
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
           </Button>
         </div>
       ),
     },
   ];
+  // Edit material request mutation
+  const editRequestMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<MaterialRequestForm> }) => {
+      return await apiRequest("PUT", `/api/material-requests/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["material-requests"] });
+      setShowEditDialog(false);
+      toast({ title: "Success", description: "Material request updated." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to update request", variant: "destructive" });
+    },
+  });
+  // Edit dialog form
+  const editForm = useForm<MaterialRequestForm>({
+    resolver: zodResolver(materialRequestSchema),
+    defaultValues: selectedRequest
+      ? {
+          requestedBy: selectedRequest.requestedBy || "",
+          department: selectedRequest.department || "",
+          priority: selectedRequest.priority || "Medium",
+          requiredDate: selectedRequest.requiredDate
+            ? typeof selectedRequest.requiredDate === "string"
+              ? selectedRequest.requiredDate
+              : new Date(selectedRequest.requiredDate).toISOString().slice(0, 10)
+            : "",
+          totalEstimatedCost: typeof selectedRequest.totalEstimatedCost === "number"
+            ? selectedRequest.totalEstimatedCost
+            : Number(selectedRequest.totalEstimatedCost) || 0,
+          justification: selectedRequest.justification || "",
+          notes: selectedRequest.notes || "",
+        }
+      : {
+          requestedBy: "",
+          department: "",
+          priority: "Medium",
+          requiredDate: "",
+          totalEstimatedCost: 0,
+          justification: "",
+          notes: "",
+        },
+  });
+
+  // When selectedRequest changes, reset editForm
+  React.useEffect(() => {
+    if (selectedRequest) {
+      editForm.reset({
+        requestedBy: selectedRequest.requestedBy || "",
+        department: selectedRequest.department || "",
+        priority: selectedRequest.priority || "Medium",
+        requiredDate: selectedRequest.requiredDate
+          ? typeof selectedRequest.requiredDate === "string"
+            ? selectedRequest.requiredDate
+            : new Date(selectedRequest.requiredDate).toISOString().slice(0, 10)
+          : "",
+        totalEstimatedCost: typeof selectedRequest.totalEstimatedCost === "number"
+          ? selectedRequest.totalEstimatedCost
+          : Number(selectedRequest.totalEstimatedCost) || 0,
+        justification: selectedRequest.justification || "",
+        notes: selectedRequest.notes || "",
+      });
+    }
+  }, [selectedRequest]);
+  // Edit dialog UI
+  <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+    <DialogContent className="max-w-4xl w-[90vw] max-h-[85vh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle>Edit Material Request</DialogTitle>
+        <DialogDescription>Update the details of this material request.</DialogDescription>
+      </DialogHeader>
+      <Form {...editForm}>
+        <form
+          onSubmit={editForm.handleSubmit((data) => {
+            if (selectedRequest) {
+              editRequestMutation.mutate({ id: selectedRequest.id, data });
+            }
+          })}
+          className="space-y-3"
+        >
+          <div className="grid grid-cols-2 gap-4">
+            <FormField control={editForm.control} name="requestedBy" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Requested By</FormLabel>
+                <FormControl><Input placeholder="Enter name" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={editForm.control} name="department" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Department</FormLabel>
+                <FormControl><Input placeholder="Enter department" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <FormField control={editForm.control} name="priority" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Priority</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Select priority" /></SelectTrigger></FormControl>
+                  <SelectContent>
+                    <SelectItem value="Low">Low</SelectItem>
+                    <SelectItem value="Medium">Medium</SelectItem>
+                    <SelectItem value="High">High</SelectItem>
+                    <SelectItem value="Urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={editForm.control} name="requiredDate" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Required Date</FormLabel>
+                <FormControl><Input type="date" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <FormField control={editForm.control} name="totalEstimatedCost" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Total Estimated Cost</FormLabel>
+                <FormControl>
+                  <Input type="number" step="0.01" placeholder="0.00" {...field} value={field.value || 0} readOnly className="bg-gray-50" />
+                </FormControl>
+                <p className="text-xs text-gray-600">Auto-calculated from items</p>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={editForm.control} name="justification" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Justification</FormLabel>
+                <FormControl><Textarea placeholder="Explain the business need for this request..." rows={2} {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={editForm.control} name="notes" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Additional Notes</FormLabel>
+                <FormControl><Textarea placeholder="Any additional information..." rows={2} {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button type="button" variant="outline" onClick={() => setShowEditDialog(false)}>Cancel</Button>
+            <Button type="submit" disabled={editRequestMutation.isPending}>{editRequestMutation.isPending ? "Saving..." : "Save Changes"}</Button>
+          </div>
+        </form>
+      </Form>
+    </DialogContent>
+  </Dialog>
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -563,7 +765,19 @@ export default function MaterialRequestsPage() {
                           <div className="col-span-1 text-center font-medium">
                             {formatCurrency(item.quantity * item.estimatedCost)}
                           </div>
-                          <div className="col-span-1 text-center">
+                          <div className="col-span-1 text-center flex gap-1 justify-center">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setEditItem(item);
+                                setShowEditItemDialog(true);
+                              }}
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
                             <Button
                               type="button"
                               variant="ghost"
@@ -576,6 +790,159 @@ export default function MaterialRequestsPage() {
                           </div>
                         </div>
                       ))}
+      {/* Item-level Edit Dialog */}
+      <Dialog open={showEditItemDialog} onOpenChange={setShowEditItemDialog}>
+        <DialogContent className="max-w-3xl w-[80vw] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Request Item</DialogTitle>
+            <DialogDescription>Edit the details of this material item.</DialogDescription>
+          </DialogHeader>
+          <Form {...editItemForm}>
+            <form onSubmit={editItemForm.handleSubmit(onEditItemSubmit)} className="space-y-3">
+              <FormField control={editItemForm.control} name="itemDescription" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Item Description</FormLabel>
+                  <FormControl><Input placeholder="Enter item description" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <div className="grid grid-cols-3 gap-4">
+                <FormField control={editItemForm.control} name="quantity" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Quantity</FormLabel>
+                    <FormControl><Input type="number" min="1" {...field} onChange={(e) => field.onChange(parseInt(e.target.value) || 1)} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={editItemForm.control} name="unitOfMeasure" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Unit of Measure</FormLabel>
+                    <FormControl><Input placeholder="e.g., pieces, kg, liters" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={editItemForm.control} name="estimatedCost" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Unit Cost</FormLabel>
+                    <FormControl><Input type="number" step="0.01" placeholder="0.00" {...field} onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField control={editItemForm.control} name="preferredSupplier" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preferred Supplier (Optional)</FormLabel>
+                    <FormControl><Input placeholder="Enter supplier name" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={editItemForm.control} name="urgency" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Urgency</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Select urgency" /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="Standard">Standard</SelectItem>
+                        <SelectItem value="Urgent">Urgent</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+              <FormField control={editItemForm.control} name="specification" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Specification (Optional)</FormLabel>
+                  <FormControl><Textarea placeholder="Enter detailed specifications..." rows={3} {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <div className="flex justify-end gap-3 pt-4">
+                <Button type="button" variant="outline" onClick={() => setShowEditItemDialog(false)}>Cancel</Button>
+                <Button type="submit">Save Changes</Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      {/* Item-level Edit Dialog */}
+      <Dialog open={showEditItemDialog} onOpenChange={setShowEditItemDialog}>
+        <DialogContent className="max-w-3xl w-[80vw] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Request Item</DialogTitle>
+            <DialogDescription>Edit the details of this material item.</DialogDescription>
+          </DialogHeader>
+          <Form {...editItemForm}>
+            <form onSubmit={editItemForm.handleSubmit(onEditItemSubmit)} className="space-y-3">
+              <FormField control={editItemForm.control} name="itemDescription" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Item Description</FormLabel>
+                  <FormControl><Input placeholder="Enter item description" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <div className="grid grid-cols-3 gap-4">
+                <FormField control={editItemForm.control} name="quantity" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Quantity</FormLabel>
+                    <FormControl><Input type="number" min="1" {...field} onChange={(e) => field.onChange(parseInt(e.target.value) || 1)} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={editItemForm.control} name="unitOfMeasure" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Unit of Measure</FormLabel>
+                    <FormControl><Input placeholder="e.g., pieces, kg, liters" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={editItemForm.control} name="estimatedCost" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Unit Cost</FormLabel>
+                    <FormControl><Input type="number" step="0.01" placeholder="0.00" {...field} onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField control={editItemForm.control} name="preferredSupplier" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preferred Supplier (Optional)</FormLabel>
+                    <FormControl><Input placeholder="Enter supplier name" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={editItemForm.control} name="urgency" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Urgency</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Select urgency" /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="Standard">Standard</SelectItem>
+                        <SelectItem value="Urgent">Urgent</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+              <FormField control={editItemForm.control} name="specification" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Specification (Optional)</FormLabel>
+                  <FormControl><Textarea placeholder="Enter detailed specifications..." rows={3} {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <div className="flex justify-end gap-3 pt-4">
+                <Button type="button" variant="outline" onClick={() => setShowEditItemDialog(false)}>Cancel</Button>
+                <Button type="submit">Save Changes</Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+  // ...existing code...
                     </div>
                   ) : (
                     <div className="text-center py-8 text-gray-500 border border-dashed rounded-lg">

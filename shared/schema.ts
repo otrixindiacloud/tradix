@@ -10,8 +10,101 @@ import {
   boolean,
   pgEnum,
   uuid,
-  date,
+  date
 } from "drizzle-orm/pg-core";
+// Physical Stock Table
+export const physicalStock = pgTable("physical_stock", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  itemId: uuid("item_id").notNull(),
+  location: varchar("location", { length: 128 }),
+  quantity: integer("quantity").notNull(),
+  lastUpdated: timestamp("last_updated", { withTimezone: true }).defaultNow(),
+});
+
+// Stock Transfer Table
+export const stockTransfer = pgTable("stock_transfer", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  fromLocation: varchar("from_location", { length: 128 }).notNull(),
+  toLocation: varchar("to_location", { length: 128 }).notNull(),
+  itemId: uuid("item_id").notNull(),
+  quantity: integer("quantity").notNull(),
+  transferDate: timestamp("transfer_date", { withTimezone: true }).defaultNow(),
+  status: varchar("status", { length: 32 }), // e.g., Pending, Completed
+});
+
+// Stock Issues Table
+export const stockIssue = pgTable("stock_issue", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  itemId: uuid("item_id").notNull(),
+  issuedTo: varchar("issued_to", { length: 128 }),
+  quantity: integer("quantity").notNull(),
+  issueDate: timestamp("issue_date", { withTimezone: true }).defaultNow(),
+  reason: text("reason"),
+});
+
+// Material Request Table
+export const materialRequest = pgTable("material_request", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  requestedBy: varchar("requested_by", { length: 128 }),
+  itemId: uuid("item_id").notNull(),
+  quantity: integer("quantity").notNull(),
+  requestDate: timestamp("request_date", { withTimezone: true }).defaultNow(),
+  status: varchar("status", { length: 32 }), // e.g., Pending, Approved, Rejected
+  notes: text("notes"),
+});
+
+// Inventory Management Table
+export const inventoryItem = pgTable("inventory_item", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  supplierCode: varchar("supplier_code", { length: 64 }),
+  barcode: varchar("barcode", { length: 64 }),
+  description: text("description"),
+  category: varchar("category", { length: 64 }),
+  uom: varchar("uom", { length: 16 }),
+  costPrice: integer("cost_price"),
+  markupRule: varchar("markup_rule", { length: 32 }),
+  color: varchar("color", { length: 32 }),
+  size: varchar("size", { length: 32 }),
+  packaging: varchar("packaging", { length: 64 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+// Goods Receipt Table
+export const goodsReceipt = pgTable("goods_receipt", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  supplierLpoId: uuid("supplier_lpo_id").notNull(),
+  itemId: uuid("item_id").notNull(),
+  barcode: varchar("barcode", { length: 64 }),
+  quantity: integer("quantity").notNull(),
+  receiptDate: timestamp("receipt_date", { withTimezone: true }).defaultNow(),
+  status: varchar("status", { length: 32 }), // e.g., Received, Damaged, Shortage
+  notes: text("notes"),
+});
+
+// Shipping Tracking Table
+export const shippingTracking = pgTable("shipping_tracking", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  salesOrderId: uuid("sales_order_id").notNull(),
+  trackingNumber: varchar("tracking_number", { length: 64 }),
+  carrier: varchar("carrier", { length: 64 }),
+  status: varchar("status", { length: 32 }), // e.g., In Transit, Delivered
+  shippedDate: timestamp("shipped_date", { withTimezone: true }),
+  deliveredDate: timestamp("delivered_date", { withTimezone: true }),
+  notes: text("notes"),
+});
+
+// Customer PO Upload Table
+export const customerPoUpload = pgTable("customer_po_upload", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  customerId: uuid("customer_id").notNull(),
+  quotationId: uuid("quotation_id").notNull(),
+  poNumber: varchar("po_number", { length: 64 }),
+  fileUrl: varchar("file_url", { length: 256 }), // Path to uploaded PO file
+  uploadDate: timestamp("upload_date", { withTimezone: true }).defaultNow(),
+  uploadedBy: varchar("uploaded_by", { length: 128 }),
+});
+
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { nanoid } from "nanoid";

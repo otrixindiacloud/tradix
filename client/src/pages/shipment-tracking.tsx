@@ -86,6 +86,8 @@ interface ShipmentTracking {
 }
 
 export default function ShipmentTrackingPage() {
+  // Show filters by default (show button first)
+  const [showFilters, setShowFilters] = useState(false);
   const [, navigate] = useLocation();
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
@@ -626,16 +628,16 @@ export default function ShipmentTrackingPage() {
 
   return (
     <div className="space-y-6">
-      {/* Card-style header with enhanced design */}
-      <div className="rounded-2xl shadow-lg border border-gray-200 p-8">
+      {/* Enhanced Card-style header */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-green-500 via-green-600 to-emerald-600 flex items-center justify-center shadow-xl">
+            <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 flex items-center justify-center shadow-xl">
               <Truck className="h-10 w-10 text-white" />
             </div>
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <h2 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-green-700 to-emerald-700 bg-clip-text text-transparent">
+                <h2 className="text-4xl font-bold tracking-tight text-black">
                   Shipment Tracking
                 </h2>
                 <div className="flex items-center gap-1 text-sm text-blue-600 bg-white border border-blue-200 px-3 py-1 rounded-full">
@@ -648,8 +650,8 @@ export default function ShipmentTrackingPage() {
               </p>
               <div className="flex items-center gap-6">
                 <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Globe className="h-4 w-4 text-green-600" />
-                  <span className="font-medium">Total Shipments: <span className="text-green-700 font-bold">{shipments.length}</span></span>
+                  <Globe className="h-4 w-4 text-blue-600" />
+                  <span className="font-medium">Total Shipments: <span className="text-blue-700 font-bold">{shipments.length}</span></span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <BarChart3 className="h-4 w-4 text-blue-600" />
@@ -660,7 +662,7 @@ export default function ShipmentTrackingPage() {
           </div>
           <div className="flex gap-3">
             <Button 
-              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-3" 
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-3 border border-blue-500 focus:ring-2 focus:ring-blue-200" 
               onClick={() => setShowNewDialog(true)}
               data-testid="button-new-shipment"
             >
@@ -673,7 +675,7 @@ export default function ShipmentTrackingPage() {
 
       {/* Enhanced Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 my-8">
-        <Card className="relative overflow-hidden border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+  <Card className="relative overflow-hidden border-gray-200 shadow-lg">
           <div className="absolute top-0 right-0 w-20 h-20 bg-gray-100 rounded-full -mr-10 -mt-10 opacity-30"></div>
           <div className="flex flex-row items-start gap-4 p-6 relative z-10">
             <div className="rounded-xl bg-orange-500 p-3 shadow-lg">
@@ -689,7 +691,7 @@ export default function ShipmentTrackingPage() {
           </div>
         </Card>
         
-        <Card className="relative overflow-hidden border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+  <Card className="relative overflow-hidden border-gray-200 shadow-lg">
           <div className="absolute top-0 right-0 w-20 h-20 bg-gray-100 rounded-full -mr-10 -mt-10 opacity-30"></div>
           <div className="flex flex-row items-start gap-4 p-6 relative z-10">
             <div className="rounded-xl bg-blue-500 p-3 shadow-lg">
@@ -705,7 +707,7 @@ export default function ShipmentTrackingPage() {
           </div>
         </Card>
         
-        <Card className="relative overflow-hidden border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+  <Card className="relative overflow-hidden border-gray-200 shadow-lg">
           <div className="absolute top-0 right-0 w-20 h-20 bg-gray-100 rounded-full -mr-10 -mt-10 opacity-30"></div>
           <div className="flex flex-row items-start gap-4 p-6 relative z-10">
             <div className="rounded-xl bg-yellow-500 p-3 shadow-lg">
@@ -721,7 +723,7 @@ export default function ShipmentTrackingPage() {
           </div>
         </Card>
         
-        <Card className="relative overflow-hidden border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+  <Card className="relative overflow-hidden border-gray-200 shadow-lg">
           <div className="absolute top-0 right-0 w-20 h-20 bg-gray-100 rounded-full -mr-10 -mt-10 opacity-30"></div>
           <div className="flex flex-row items-start gap-4 p-6 relative z-10">
             <div className="rounded-xl bg-green-500 p-3 shadow-lg">
@@ -738,128 +740,147 @@ export default function ShipmentTrackingPage() {
         </Card>
       </div>
 
-      {/* Enhanced Filters Section */}
+      {/* Enhanced Filters Section with show/hide button */}
       <Card className="p-6 shadow-lg border-gray-200 bg-white">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="flex items-center justify-center">
-            <Filter className="h-5 w-5 text-gray-600" />
+        <div className="flex items-center gap-3 mb-6 justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center">
+              <Filter className="h-5 w-5 text-gray-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-800">Filter Shipments</h3>
           </div>
-          <h3 className="text-xl font-bold text-gray-800">Filter Shipments</h3>
+          <Button
+            variant="outline"
+            className="border-blue-500 text-blue-600 hover:bg-blue-50 shadow-sm flex items-center gap-1 px-2 py-0 h-6 min-h-0 text-xs"
+            onClick={() => setShowFilters((prev) => !prev)}
+            data-testid="button-toggle-filters"
+          >
+            <Filter className="w-3 h-3 mr-1" />
+            <span>{showFilters ? "Hide Filters" : "Show Filters"}</span>
+          </Button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search shipments..."
-              value={filters.search}
-              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-              className="pl-10 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg shadow-sm transition-all duration-200"
-              data-testid="input-search"
-            />
-          </div>
-          <div>
-            <Select
-              value={filters.status}
-              onValueChange={(value) => setFilters({ ...filters, status: value })}
-            >
-              <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg" data-testid="select-status">
-                <SelectValue placeholder="All Statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="Pending">Pending</SelectItem>
-                <SelectItem value="Picked Up">Picked Up</SelectItem>
-                <SelectItem value="In Transit">In Transit</SelectItem>
-                <SelectItem value="Out for Delivery">Out for Delivery</SelectItem>
-                <SelectItem value="Delivered">Delivered</SelectItem>
-                <SelectItem value="Delayed">Delayed</SelectItem>
-                <SelectItem value="Cancelled">Cancelled</SelectItem>
-                <SelectItem value="Lost">Lost</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Select
-              value={filters.priority}
-              onValueChange={(value) => setFilters({ ...filters, priority: value })}
-            >
-              <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg" data-testid="select-priority">
-                <SelectValue placeholder="All Priorities" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Priorities</SelectItem>
-                <SelectItem value="Low">Low</SelectItem>
-                <SelectItem value="Medium">Medium</SelectItem>
-                <SelectItem value="High">High</SelectItem>
-                <SelectItem value="Urgent">Urgent</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Select
-              value={filters.serviceType}
-              onValueChange={(value) => setFilters({ ...filters, serviceType: value })}
-            >
-              <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg" data-testid="select-service-type">
-                <SelectValue placeholder="All Services" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Services</SelectItem>
-                <SelectItem value="Economy">Economy</SelectItem>
-                <SelectItem value="Standard">Standard</SelectItem>
-                <SelectItem value="Express">Express</SelectItem>
-                <SelectItem value="Overnight">Overnight</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Input
-              placeholder="Filter by carrier..."
-              value={filters.carrier}
-              onChange={(e) => setFilters({ ...filters, carrier: e.target.value })}
-              className="border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg shadow-sm transition-all duration-200"
-            />
-          </div>
-          <div>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg",
-                    !dateRange.from && "text-muted-foreground",
-                    dateRange.from && "border-blue-300 bg-blue-50"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateRange.from ? (
-                    dateRange.to ? (
-                      <>
-                        {format(dateRange.from, "LLL dd, y")} -{" "}
-                        {format(dateRange.to, "LLL dd, y")}
-                      </>
+        {showFilters && (
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+            <div className="relative">
+              <div className="mb-1 text-sm text-black font-normal">Search</div>
+              <Search className="absolute left-2 inset-y-10 my-auto h-4 w-4 text-gray-400 pointer-events-none" />
+              <Input
+                placeholder="Search shipments..."
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                className="pl-10 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg shadow-sm transition-all duration-200"
+                data-testid="input-search"
+              />
+            </div>
+            <div>
+              <div className="mb-1 text-sm text-black font-normal">Status</div>
+              <Select
+                value={filters.status}
+                onValueChange={(value) => setFilters({ ...filters, status: value })}
+              >
+                <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg" data-testid="select-status">
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectItem value="Picked Up">Picked Up</SelectItem>
+                  <SelectItem value="In Transit">In Transit</SelectItem>
+                  <SelectItem value="Out for Delivery">Out for Delivery</SelectItem>
+                  <SelectItem value="Delivered">Delivered</SelectItem>
+                  <SelectItem value="Delayed">Delayed</SelectItem>
+                  <SelectItem value="Cancelled">Cancelled</SelectItem>
+                  <SelectItem value="Lost">Lost</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <div className="mb-1 text-sm text-black font-normal">Priority</div>
+              <Select
+                value={filters.priority}
+                onValueChange={(value) => setFilters({ ...filters, priority: value })}
+              >
+                <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg" data-testid="select-priority">
+                  <SelectValue placeholder="All Priorities" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Priorities</SelectItem>
+                  <SelectItem value="Low">Low</SelectItem>
+                  <SelectItem value="Medium">Medium</SelectItem>
+                  <SelectItem value="High">High</SelectItem>
+                  <SelectItem value="Urgent">Urgent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <div className="mb-1 text-sm text-black font-normal">Service Type</div>
+              <Select
+                value={filters.serviceType}
+                onValueChange={(value) => setFilters({ ...filters, serviceType: value })}
+              >
+                <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg" data-testid="select-service-type">
+                  <SelectValue placeholder="All Services" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Services</SelectItem>
+                  <SelectItem value="Economy">Economy</SelectItem>
+                  <SelectItem value="Standard">Standard</SelectItem>
+                  <SelectItem value="Express">Express</SelectItem>
+                  <SelectItem value="Overnight">Overnight</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <div className="mb-1 text-sm text-black font-normal">Carrier</div>
+              <Input
+                placeholder="Filter by carrier..."
+                value={filters.carrier}
+                onChange={(e) => setFilters({ ...filters, carrier: e.target.value })}
+                className="border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg shadow-sm transition-all duration-200"
+              />
+            </div>
+            <div>
+              <div className="mb-1 text-sm text-black font-normal">Date Range</div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg",
+                      !dateRange.from && "text-muted-foreground",
+                      dateRange.from && "border-blue-300 bg-blue-50"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateRange.from ? (
+                      dateRange.to ? (
+                        <>
+                          {format(dateRange.from, "LLL dd, y")} -{" "}
+                          {format(dateRange.to, "LLL dd, y")}
+                        </>
+                      ) : (
+                        format(dateRange.from, "LLL dd, y")
+                      )
                     ) : (
-                      format(dateRange.from, "LLL dd, y")
-                    )
-                  ) : (
-                    <span>Pick a date range</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start" side="bottom" sideOffset={8}>
-                <Calendar
-                  initialFocus
-                  mode="range"
-                  defaultMonth={dateRange.from}
-                  selected={dateRange}
-                  onSelect={(range) => handleDateRangeChange(range?.from, range?.to)}
-                  numberOfMonths={2}
-                  disabled={(date) => date > new Date()}
-                />
-              </PopoverContent>
-            </Popover>
+                      <span>Pick a date range</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start" side="bottom" sideOffset={8}>
+                  <Calendar
+                    initialFocus
+                    mode="range"
+                    defaultMonth={dateRange.from}
+                    selected={dateRange}
+                    onSelect={(range) => handleDateRangeChange(range?.from, range?.to)}
+                    numberOfMonths={2}
+                    disabled={(date) => date > new Date()}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
-        </div>
+        )}
       </Card>
 
       {/* Enhanced Shipments Table */}

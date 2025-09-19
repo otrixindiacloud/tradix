@@ -15,11 +15,12 @@ import { eq, and, inArray } from 'drizzle-orm';
 
 export class PurchaseOrderStorage extends BaseStorage {
   async getPurchaseOrders(limit = 50, offset = 0, filters: any = {}): Promise<PurchaseOrder[]> {
-    let q = db.select().from(purchaseOrders).limit(limit).offset(offset);
+    let query = db.select().from(purchaseOrders);
     if (filters.quotationId) {
-      q = db.select().from(purchaseOrders).where(eq(purchaseOrders.quotationId, filters.quotationId)).limit(limit).offset(offset);
+      query = query.where(eq(purchaseOrders.quotationId, filters.quotationId));
     }
-    return await q;
+    const result = await query.limit(limit).offset(offset);
+    return result;
   }
 
   async getPurchaseOrder(id: string): Promise<PurchaseOrder | undefined> {

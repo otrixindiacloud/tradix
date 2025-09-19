@@ -84,6 +84,7 @@ interface SupplierQuoteItem {
 }
 
 export default function SupplierQuotesPage() {
+  const [showFilters, setShowFilters] = useState(false);
   const [, navigate] = useLocation();
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
@@ -648,12 +649,12 @@ export default function SupplierQuotesPage() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shadow-lg">
+            <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-amber-600 to-amber-700 flex items-center justify-center shadow-lg">
               <Building2 className="h-8 w-8 text-white" />
             </div>
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-indigo-600 to-indigo-800 bg-clip-text text-transparent">
+                <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-amber-700 to-amber-800 bg-clip-text text-transparent">
                   Supplier Quotes
                 </h2>
               </div>
@@ -661,8 +662,8 @@ export default function SupplierQuotesPage() {
                 Manage supplier quotations and procurement comparisons
               </p>
               <div className="flex items-center gap-4 mt-2">
-                <div className="flex items-center gap-1 text-sm text-indigo-600">
-                  <div className="h-2 w-2 rounded-full bg-indigo-500"></div>
+                <div className="flex items-center gap-1 text-sm text-amber-700">
+                  <div className="h-2 w-2 rounded-full bg-amber-600"></div>
                   <span className="font-medium">Supplier Management</span>
                 </div>
                 <div className="text-sm text-muted-foreground">
@@ -684,7 +685,7 @@ export default function SupplierQuotesPage() {
             )}
             <Button 
               variant="outline"
-              className="border-indigo-500 text-indigo-600 hover:bg-indigo-50 font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 transition flex items-center gap-2" 
+              className="border-blue-500 text-blue-600 hover:bg-blue-50 font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition flex items-center gap-2" 
               onClick={() => setShowNewDialog(true)}
               data-testid="button-new-supplier-quote"
             >
@@ -743,125 +744,147 @@ export default function SupplierQuotesPage() {
         </Card>
       </div>
 
-      {/* Filters */}
+      {/* Filters with show/hide button and headings */}
       <Card className="mb-4 p-4">
-        <div className="flex items-center gap-2 mb-4">      
-          <Filter className="h-5 w-5" />
-          <h3 className="text-lg font-semibold">Filters</h3>
+        <div className="flex items-center gap-2 mb-4 justify-between">      
+          <div className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            <h3 className="text-lg font-semibold">Filters</h3>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-blue-500 text-blue-600 hover:bg-blue-50 shadow-sm flex items-center gap-1 px-2 py-0 h-6 min-h-0 text-xs"
+            onClick={() => setShowFilters((prev) => !prev)}
+            data-testid="button-toggle-filters"
+          >
+            <Filter className="h-4 w-4" />
+            <span>{showFilters ? "Hide Filters" : "Show Filters"}</span>
+          </Button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search quotes..."
-              value={filters.search}
-              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-              className="pl-10 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 rounded-md shadow-none"
-              data-testid="input-search"
-            />
-          </div>
-          <div>
-            <Select
-              value={filters.status}
-              onValueChange={(value) => setFilters({ ...filters, status: value })}
-            >
-              <SelectTrigger data-testid="select-status">
-                <SelectValue placeholder="All Statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="Pending">Pending</SelectItem>
-                <SelectItem value="Received">Received</SelectItem>
-                <SelectItem value="Under Review">Under Review</SelectItem>
-                <SelectItem value="Approved">Approved</SelectItem>
-                <SelectItem value="Rejected">Rejected</SelectItem>
-                <SelectItem value="Accepted">Accepted</SelectItem>
-                <SelectItem value="Expired">Expired</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Select
-              value={filters.priority}
-              onValueChange={(value) => setFilters({ ...filters, priority: value })}
-            >
-              <SelectTrigger data-testid="select-priority">
-                <SelectValue placeholder="All Priorities" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Priorities</SelectItem>
-                <SelectItem value="Low">Low</SelectItem>
-                <SelectItem value="Medium">Medium</SelectItem>
-                <SelectItem value="High">High</SelectItem>
-                <SelectItem value="Urgent">Urgent</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Select
-              value={filters.currency}
-              onValueChange={(value) => setFilters({ ...filters, currency: value })}
-            >
-              <SelectTrigger data-testid="select-currency">
-                <SelectValue placeholder="All Currencies" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Currencies</SelectItem>
-                <SelectItem value="BHD">BHD</SelectItem>
-                <SelectItem value="AED">AED</SelectItem>
-                <SelectItem value="EUR">EUR</SelectItem>
-                <SelectItem value="GBP">GBP</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Input
-              placeholder="Filter by supplier..."
-              value={filters.supplier}
-              onChange={(e) => setFilters({ ...filters, supplier: e.target.value })}
-              className="border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 rounded-md shadow-none"
-            />
-          </div>
-          <div>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !dateRange.from && "text-muted-foreground",
-                    dateRange.from && "border-blue-300 bg-blue-50"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateRange.from ? (
-                    dateRange.to ? (
-                      <>
-                        {format(dateRange.from, "LLL dd, y")} -{" "}
-                        {format(dateRange.to, "LLL dd, y")}
-                      </>
-                    ) : (
-                      format(dateRange.from, "LLL dd, y")
-                    )
-                  ) : (
-                    <span>Pick a date range</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start" side="bottom" sideOffset={8}>
-                <Calendar
-                  initialFocus
-                  mode="range"
-                  defaultMonth={dateRange.from}
-                  selected={dateRange}
-                  onSelect={(range) => handleDateRangeChange(range?.from, range?.to)}
-                  numberOfMonths={2}
-                  disabled={(date) => date > new Date()}
+        {showFilters && (
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+            <div className="flex flex-col">
+              <label className="text-sm text-black mb-1">Search</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search quotes..."
+                  value={filters.search}
+                  onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                  className="pl-10 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 rounded-md shadow-none"
+                  data-testid="input-search"
                 />
-              </PopoverContent>
-            </Popover>
+              </div>
+            </div>
+            <div className="flex flex-col">
+              <label className="text-sm text-black mb-1">Status</label>
+              <Select
+                value={filters.status}
+                onValueChange={(value) => setFilters({ ...filters, status: value })}
+              >
+                <SelectTrigger data-testid="select-status">
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectItem value="Received">Received</SelectItem>
+                  <SelectItem value="Under Review">Under Review</SelectItem>
+                  <SelectItem value="Approved">Approved</SelectItem>
+                  <SelectItem value="Rejected">Rejected</SelectItem>
+                  <SelectItem value="Accepted">Accepted</SelectItem>
+                  <SelectItem value="Expired">Expired</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col">
+              <label className="text-sm text-black mb-1">Priority</label>
+              <Select
+                value={filters.priority}
+                onValueChange={(value) => setFilters({ ...filters, priority: value })}
+              >
+                <SelectTrigger data-testid="select-priority">
+                  <SelectValue placeholder="All Priorities" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Priorities</SelectItem>
+                  <SelectItem value="Low">Low</SelectItem>
+                  <SelectItem value="Medium">Medium</SelectItem>
+                  <SelectItem value="High">High</SelectItem>
+                  <SelectItem value="Urgent">Urgent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col">
+              <label className="text-sm text-black mb-1">Currency</label>
+              <Select
+                value={filters.currency}
+                onValueChange={(value) => setFilters({ ...filters, currency: value })}
+              >
+                <SelectTrigger data-testid="select-currency">
+                  <SelectValue placeholder="All Currencies" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Currencies</SelectItem>
+                  <SelectItem value="BHD">BHD</SelectItem>
+                  <SelectItem value="AED">AED</SelectItem>
+                  <SelectItem value="EUR">EUR</SelectItem>
+                  <SelectItem value="GBP">GBP</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col">
+              <label className="text-sm text-black mb-1">Supplier</label>
+              <Input
+                placeholder="Filter by supplier..."
+                value={filters.supplier}
+                onChange={(e) => setFilters({ ...filters, supplier: e.target.value })}
+                className="border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 rounded-md shadow-none"
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-sm text-black mb-1">Date Range</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !dateRange.from && "text-muted-foreground",
+                      dateRange.from && "border-blue-300 bg-blue-50"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateRange.from ? (
+                      dateRange.to ? (
+                        <>
+                          {format(dateRange.from, "LLL dd, y")} -{" "}
+                          {format(dateRange.to, "LLL dd, y")}
+                        </>
+                      ) : (
+                        format(dateRange.from, "LLL dd, y")
+                      )
+                    ) : (
+                      <span>Pick a date range</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start" side="bottom" sideOffset={8}>
+                  <Calendar
+                    initialFocus
+                    mode="range"
+                    defaultMonth={dateRange.from}
+                    selected={dateRange}
+                    onSelect={(range) => handleDateRangeChange(range?.from, range?.to)}
+                    numberOfMonths={2}
+                    disabled={(date) => date > new Date()}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
-        </div>
+        )}
       </Card>
 
       {/* Supplier Quotes Table - moved inside Card for consistent UI */}

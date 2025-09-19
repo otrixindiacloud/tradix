@@ -582,7 +582,7 @@ export default function Invoicing() {
                 variant="outline"
                 onClick={() => setShowGenerateDialog(true)}
                 data-testid="button-open-generate-invoice"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 "
               >
                 <Plus className="h-4 w-4" /> 
                 Generate Invoice

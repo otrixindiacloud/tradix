@@ -38,6 +38,18 @@ import { registerFileRoutes } from "./files";
 export async function registerRoutes(app: Express): Promise<Server> {
   // Register all route modules
   registerDashboardRoutes(app);
+  // Inventory Items API
+  const { registerInventoryItemsRoutes } = await import("./inventory-items-index");
+  registerInventoryItemsRoutes(app);
+  // Stock Issues API
+  const { registerStockIssuesRoutes } = await import("./stock-issues-index");
+  registerStockIssuesRoutes(app);
+  // Receipt Returns API
+  const { registerReceiptReturnsRoutes } = await import("./receipt-returns-index");
+  registerReceiptReturnsRoutes(app);
+  // Register receipts API
+  const { registerReceiptsRoutes } = await import("./receipts-index");
+  registerReceiptsRoutes(app);
   registerCustomerRoutes(app);
   registerSupplierRoutes(app);
   registerItemRoutes(app);
