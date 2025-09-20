@@ -20,6 +20,25 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 export default function EnquiryDetail() {
+  // State for supplier RFQ tab
+  const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([]);
+  const [rfqLoading, setRfqLoading] = useState(false);
+
+  // RFQ form state
+  const [rfqPaymentTerms, setRfqPaymentTerms] = useState("Net 30");
+  const [rfqDeliveryTerms, setRfqDeliveryTerms] = useState("FOB Destination");
+  const [rfqPriority, setRfqPriority] = useState("Medium");
+
+  // Fetch suppliers for multi-select
+  const { data: suppliers, isLoading: suppliersLoading } = useQuery({
+    queryKey: ["/api/suppliers"],
+    queryFn: async () => {
+      const response = await fetch("/api/suppliers");
+      if (!response.ok) throw new Error("Failed to fetch suppliers");
+      return response.json();
+    },
+  });
+  // const { toast } = useToast(); // Removed duplicate declaration
   const userId = useUserId();
   const { id } = useParams();
   const [, navigate] = useLocation();
@@ -92,6 +111,7 @@ export default function EnquiryDetail() {
     },
   });
 
+
   const updateAttachments = useMutation({
     mutationFn: async (attachments: any[]) => {
       const response = await apiRequest("PUT", `/api/enquiries/${id}/attachments`, { attachments });
@@ -162,7 +182,7 @@ export default function EnquiryDetail() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading enquiry details...</p>
-        </div>
+            </div>
       </div>
     );
   }
@@ -182,7 +202,8 @@ export default function EnquiryDetail() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+  {/* Supplier Management Section */}
+  {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button
@@ -277,72 +298,68 @@ export default function EnquiryDetail() {
       </div>
 
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <span className="flex items-center justify-center w-10 h-10">
-                {getStatusIcon(enquiry.status)
-                  ? React.cloneElement(getStatusIcon(enquiry.status) as React.ReactElement, { className: "h-7 w-7 text-gray-700" })
-                  : null}
-              </span>
-              <div>
-                <p className="text-sm text-muted-foreground">Status</p>
-                <Badge variant="outline" className={getStatusColor(enquiry.status)} data-testid="badge-status">
-                  {enquiry.status}
-                </Badge>
-              </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Status Card */}
+        <Card className="shadow-md border-0 bg-gradient-to-br from-gray-50 to-white">
+          <CardContent className="p-6 flex items-center gap-4">
+            <span className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
+              {getStatusIcon(enquiry.status)
+                ? React.cloneElement(getStatusIcon(enquiry.status) as React.ReactElement, { className: "h-7 w-7 text-primary" })
+                : null}
+            </span>
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Status</p>
+              <Badge variant="outline" className={getStatusColor(enquiry.status) + " text-base px-3 py-1"} data-testid="badge-status">
+                {enquiry.status}
+              </Badge>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <span className="flex items-center justify-center w-10 h-10">
-                <Paperclip className="h-7 w-7 text-blue-500" />
-              </span>
-              <div>
-                <p className="text-sm text-muted-foreground">Source</p>
-                <p className="font-medium" data-testid="text-source">{enquiry.source}</p>
-              </div>
+        {/* Source Card */}
+        <Card className="shadow-md border-0 bg-gradient-to-br from-blue-50 to-white">
+          <CardContent className="p-6 flex items-center gap-4">
+            <span className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-100">
+              <Paperclip className="h-7 w-7 text-blue-500" />
+            </span>
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Source</p>
+              <p className="font-semibold text-base text-blue-900" data-testid="text-source">{enquiry.source}</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <span className="flex items-center justify-center w-10 h-10">
-                <Package className="h-7 w-7 text-green-500" />
-              </span>
-              <div>
-                <p className="text-sm text-muted-foreground">Customer</p>
-                <p className="font-medium" data-testid="text-customer-name">
-                  {customer?.name || "Loading..."}
+        {/* Customer Card */}
+        <Card className="shadow-md border-0 bg-gradient-to-br from-green-50 to-white">
+          <CardContent className="p-6 flex items-center gap-4">
+            <span className="flex items-center justify-center w-12 h-12 rounded-full bg-green-100">
+              <Package className="h-7 w-7 text-green-500" />
+            </span>
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Customer</p>
+              <p className="font-semibold text-base text-green-900" data-testid="text-customer-name">
+                {customer?.name || "Loading..."}
+              </p>
+              {customer && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {customer.customerType}
                 </p>
-                {customer && (
-                  <p className="text-sm text-muted-foreground">
-                    {customer.customerType}
-                  </p>
-                )}
-              </div>
+              )}
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <span className="flex items-center justify-center w-10 h-10">
-                <Clock className="h-7 w-7 text-purple-500" />
-              </span>
-              <div>
-                <p className="text-sm text-muted-foreground">Target Delivery</p>
-                <p className="font-medium" data-testid="text-target-delivery">
-                  {enquiry.targetDeliveryDate ? formatDate(enquiry.targetDeliveryDate) : "Not specified"}
-                </p>
-              </div>
+        {/* Target Delivery Card */}
+        <Card className="shadow-md border-0 bg-gradient-to-br from-purple-50 to-white">
+          <CardContent className="p-6 flex items-center gap-4">
+            <span className="flex items-center justify-center w-12 h-12 rounded-full bg-purple-100">
+              <Clock className="h-7 w-7 text-purple-500" />
+            </span>
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Target Delivery</p>
+              <p className="font-semibold text-base text-purple-900" data-testid="text-target-delivery">
+                {enquiry.targetDeliveryDate ? formatDate(enquiry.targetDeliveryDate) : "Not specified"}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -353,7 +370,9 @@ export default function EnquiryDetail() {
         <TabsList>
           <TabsTrigger value="details">Details</TabsTrigger>
           <TabsTrigger value="items">Items</TabsTrigger>
+          <TabsTrigger value="supplier-source">Supplier Source</TabsTrigger>
           <TabsTrigger value="attachments">Attachments</TabsTrigger>
+        
         </TabsList>
 
         <TabsContent value="details" className="space-y-6">
@@ -422,7 +441,164 @@ export default function EnquiryDetail() {
         <TabsContent value="items">
           <EnquiryItemsManager enquiryId={enquiry.id} />
         </TabsContent>
+<TabsContent value="supplier-source" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                <div className="flex items-center gap-2">
+                  <Package className="h-6 w-6 text-primary" />
+                  <span className="font-bold text-lg text-gray-900">Supplier RFQ</span>
+                </div>
+              </CardTitle>
+            </CardHeader>
+      <CardContent className="space-y-4">
+        {/* RFQ Form Fields */}
+        {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Payment Terms</label>
+            <input
+              type="text"
+              className="border rounded px-3 py-2 w-full"
+              value={rfqPaymentTerms}
+              onChange={e => setRfqPaymentTerms(e.target.value)}
+              placeholder="e.g., Net 30"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Delivery Terms</label>
+            <input
+              type="text"
+              className="border rounded px-3 py-2 w-full"
+              value={rfqDeliveryTerms}
+              onChange={e => setRfqDeliveryTerms(e.target.value)}
+              placeholder="e.g., FOB Destination"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Priority</label>
+            <select
+              className="border rounded px-3 py-2 w-full"
+              value={rfqPriority}
 
+
+
+              
+              onChange={e => setRfqPriority(e.target.value)}
+            >
+              <option value="Low">Low</option>
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+              <option value="Urgent">Urgent</option>
+            </select>
+          </div>
+        </div>
+        {/* Show enquiry items */}
+        {/* <div className="mb-4">
+          <h4 className="font-semibold mb-2">Enquiry Items</h4>
+          <table className="w-full border text-sm">
+            <thead>
+              <tr className="bg-gray-50">
+                <th className="p-2 border">Description</th>
+                <th className="p-2 border">Qty</th>
+                <th className="p-2 border">Unit</th>
+                <th className="p-2 border">Specification</th>
+                <th className="p-2 border">Unit Price</th>
+                <th className="p-2 border">Line Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(enquiry.items || []).map((item: any, idx: number) => (
+                <tr key={idx}>
+                  <td className="p-2 border">{item.description || item.itemDescription || ""}</td>
+                  <td className="p-2 border">{item.quantity || 1}</td>
+                  <td className="p-2 border">{item.unitOfMeasure || "pcs"}</td>
+                  <td className="p-2 border">{item.specification || ""}</td>
+                  <td className="p-2 border">{item.unitPrice ? `AED ${item.unitPrice}` : "-"}</td>
+                  <td className="p-2 border">{item.unitPrice && item.quantity ? `AED ${(item.unitPrice * item.quantity).toFixed(2)}` : "-"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div> */} 
+        {/* Total Amount Calculation */}
+        {/* <div className="mb-4 text-right font-bold text-lg">
+          Total Amount: AED {((enquiry.items || []).reduce((sum: number, item: any) => sum + ((item.unitPrice || 0) * (item.quantity || 1)), 0)).toFixed(2)}
+        </div> */}
+        {/* Supplier selection */}
+        {suppliersLoading ? (
+          <div className="text-muted-foreground text-sm">Loading suppliers...</div>
+        ) : suppliers && suppliers.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {suppliers.map((supplier: any) => (
+              <label key={supplier.id} className="flex items-center border rounded-xl p-4 bg-white shadow-sm cursor-pointer hover:border-primary transition">
+                <input
+                  type="checkbox"
+                  value={supplier.id}
+                  checked={selectedSuppliers.includes(supplier.id)}
+                  onChange={e => {
+                    setSelectedSuppliers(prev =>
+                      e.target.checked
+                        ? [...prev, supplier.id]
+                        : prev.filter(id => id !== supplier.id)
+                    );
+                  }}
+                  className="accent-primary h-5 w-5 mr-4"
+                />
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary font-bold text-lg">
+                    {supplier.name ? supplier.name.charAt(0) : "S"}
+                  </span>
+                  <div className="flex flex-col">
+                    <span className="font-semibold text-base text-gray-900">{supplier.name}</span>
+                    <span className="text-xs text-muted-foreground">{supplier.companyType || "Supplier"}</span>
+                    <span className="text-xs text-muted-foreground">{supplier.email}</span>
+                  </div>
+                </div>
+              </label>
+            ))}
+          </div>
+        ) : (
+          <div className="text-muted-foreground text-sm">No suppliers found.</div>
+        )}
+        <div className="flex justify-end mt-4">
+          <Button
+            variant="default"
+            disabled={rfqLoading || selectedSuppliers.length === 0}
+            onClick={async () => {
+              setRfqLoading(true);
+              let allSuccess = true;
+              let errorMessages = [];
+              for (const supplierId of selectedSuppliers) {
+                try {
+                  const response = await fetch('/api/customer-quotes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enquiryId: enquiry.id, customerId: enquiry.customerId, supplierId })
+                  });
+                  // Force supplier quotes table to refresh
+                  queryClient.invalidateQueries({ queryKey: ["/api/supplier-quotes"] });
+                } catch (err) {
+                  allSuccess = false;
+                  errorMessages.push(`Supplier ${supplierId}: ${err instanceof Error ? err.message : 'Unknown error'}`);
+                }
+              }
+              if (allSuccess) {
+                toast({ title: 'Success', description: 'Requests sent to all selected suppliers.' });
+                // Already invalidated above; no need to use window.queryClient
+              } else {
+                toast({ title: 'Error', description: `Some requests failed.\n${errorMessages.join('\n')}`, variant: 'destructive' });
+              }
+              setRfqLoading(false);
+            }}
+            className="rounded-lg px-5 py-2 font-semibold"
+          >
+            {rfqLoading ? "Sending..." : "Send Request"}
+          </Button>
+        </div>
+        <div className="mt-2"></div>
+      </CardContent>
+    </Card>
+  </TabsContent>
         <TabsContent value="attachments">
           <AttachmentManager
             attachments={enquiry.attachments || []}
@@ -432,51 +608,31 @@ export default function EnquiryDetail() {
           />
         </TabsContent>
       </Tabs>
-
-      {/* Convert to Quotation Confirmation Dialog */}
-      <AlertDialog open={showConvertDialog} onOpenChange={setShowConvertDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Convert Enquiry to Quotation</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will create a new quotation based on this enquiry. Pricing will be calculated automatically based on the customer type and markup rules. The enquiry status will be updated to "Quoted".
-              <br /><br />
-              Are you sure you want to proceed?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => convertToQuotation.mutate()}
-              disabled={convertToQuotation.isPending}
-            >
-              {convertToQuotation.isPending ? "Converting..." : "Convert to Quotation"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Edit Enquiry Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Enquiry</DialogTitle>
-          </DialogHeader>
-          {enquiry && (
-            <EnquiryForm
-              enquiryId={enquiry.id}
-              initialData={{
-                customerId: enquiry.customerId,
-                source: enquiry.source,
-                targetDeliveryDate: enquiry.targetDeliveryDate ? enquiry.targetDeliveryDate.split('T')[0] : undefined,
-                notes: enquiry.notes,
-              }}
-              onCancel={() => setShowEditDialog(false)}
-              onSuccess={() => setShowEditDialog(false)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
+    {/* Convert to Quotation Confirmation Dialog */}
+    <AlertDialog open={showConvertDialog} onOpenChange={setShowConvertDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Convert Enquiry to Quotation</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will create a new quotation based on this enquiry. Pricing will be calculated automatically based on the customer type and markup rules. The enquiry status will be updated to "Quoted".
+            <br /><br />
+            Are you sure you want to proceed?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => setShowConvertDialog(false)}>
+            Cancel
+          </AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => convertToQuotation.mutate()}
+            disabled={convertToQuotation.isPending}
+            data-testid="button-confirm-convert"
+          >
+            {convertToQuotation.isPending ? "Converting..." : "Confirm"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </div>
+   );
+  }

@@ -56,24 +56,24 @@ export default function PoUpload() {
 
   const uploadPO = useMutation({
     mutationFn: async ({ quotationId, poNumber, file }: { quotationId: string; poNumber: string; file: File }) => {
-      // For now, simulate file upload and create PO record with document info
-      const documentName = file.name;
-      const documentType = file.type.includes('pdf') ? 'PDF' : 'IMAGE';
-      const documentPath = `/uploads/po/${Date.now()}-${file.name}`; // Simulated path
-      
-      const payload: any = {
-        quotationId,
-        poNumber,
-        documentPath,
-        documentName,
-        documentType,
-      };
+      // Use FormData for file upload
+      const formData = new FormData();
+      formData.append("quotationId", quotationId);
+      formData.append("poNumber", poNumber);
+      formData.append("file", file);
       if (currentUser?.user?.id) {
-        payload.uploadedBy = currentUser.user.id;
+        formData.append("uploadedBy", currentUser.user.id);
       }
 
-      const response = await apiRequest("POST", "/api/customer-po-upload", payload);
-      
+      // Use fetch directly for multipart upload
+      const response = await fetch("/api/customer-po-upload", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to upload PO document");
+      }
       return response.json();
     },
     onSuccess: () => {
@@ -161,32 +161,29 @@ export default function PoUpload() {
     {
       key: "customerPoNumber",
       header: "PO Number",
-      render: (value: string) => value || (
-            <Badge
-              variant="outline"
-              className="border-orange-500 text-orange-600 hover:bg-orange-50 flex items-center justify-center gap-2"
-            >
-              <AlertTriangle className="h-3 w-3 text-orange-600" />
-              <span className="font-medium">Pending</span>
-            </Badge>
+      render: (value: string) => (
+        value ? (
+          <span className="font-mono text-sm text-blue-700 font-semibold">{value}</span>
+        ) : (
+          <Badge variant="outline" className="border-orange-500 text-orange-600">Pending</Badge>
+        )
       ),
     },
     {
       key: "customerPoDocument",
       header: "PO Document",
-      render: (value: string) => value ? (
-          <Badge variant="outline" className="text-green-600">
+      render: (value: string, row: any) => (
+        value ? (
+          <Badge variant="outline" className="text-green-700 border-green-500">
             <Check className="h-3 w-3 mr-1" />
-            Uploaded
+            Uploaded{row.customerPoDocumentName ? `: ${row.customerPoDocumentName}` : ""}
           </Badge>
-      ) : (
-            <Badge
-              variant="outline"
-              className="border-red-500 text-red-600 hover:bg-red-50 flex items-center justify-center gap-2"
-            >
-              <X className="h-3 w-3 text-red-600" />
-              <span className="font-medium">Missing</span>
-            </Badge>
+        ) : (
+          <Badge variant="outline" className="border-red-500 text-red-600">
+            <X className="h-3 w-3 mr-1" />
+            Not uploaded
+          </Badge>
+        )
       ),
     },
     {
@@ -384,7 +381,8 @@ export default function PoUpload() {
         </CardContent>
       </Card>
 
-      {/* Upload Dialog */}
+      {/*
+       */}
       <Dialog open={!!selectedQuotation} onOpenChange={() => setSelectedQuotation(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>

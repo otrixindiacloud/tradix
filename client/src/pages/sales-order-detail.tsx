@@ -2,6 +2,33 @@ import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+// Status badge class helper
+const getStatusBadgeClass = (status: string) => {
+  const normalizedStatus = status.toLowerCase();
+  switch (normalizedStatus) {
+    case 'draft':
+      return "bg-gray-50 text-gray-700 border-gray-200";
+    case 'under review':
+    case 'pending':
+      return "border-orange-500 text-orange-600 hover:bg-orange-50";
+    case 'approved':
+      return "bg-teal-50 text-teal-700 border-teal-200";
+    case 'sent':
+      return "bg-blue-50 text-blue-700 border-blue-200";
+    case 'accepted':
+    case 'completed':
+      return "bg-green-50 text-green-700 border-green-200";
+    case 'rejected':
+    case 'rejected by customer':
+      return "bg-red-50 text-red-700 border-red-200";
+    case 'expired':
+      return "bg-red-50 text-red-700 border-red-200";
+    case 'cancelled':
+      return "bg-gray-50 text-gray-700 border-gray-200";
+    default:
+      return "bg-gray-50 text-gray-700 border-gray-200";
+  }
+};
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import StatusPill from "@/components/status/status-pill";
@@ -279,7 +306,7 @@ export default function SalesOrderDetail() {
                 }}
                 disabled={updateOrderStatus.isPending}
                 variant="outline"
-                className="border-green-500 text-green-600 hover:bg-green-50"
+                className={getStatusBadgeClass("accepted")}
               >
                 {updateOrderStatus.isPending ? (
                   <LoadingSpinner size="sm" />
@@ -296,7 +323,7 @@ export default function SalesOrderDetail() {
               <Button
                 onClick={() => updateOrderStatus.mutate({ status: "Processing" })}
                 variant="outline"
-                className="border-orange-500 text-orange-600 hover:bg-orange-50"
+                className={getStatusBadgeClass("pending")}
               >
                 <Package className="h-4 w-4 mr-2" />
                 Start Processing
@@ -307,7 +334,7 @@ export default function SalesOrderDetail() {
               <Button
                 onClick={() => updateOrderStatus.mutate({ status: "Shipped" })}
                 variant="outline"
-                className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                className={getStatusBadgeClass("sent")}
               >
                 <Truck className="h-4 w-4 mr-2" />
                 Mark as Shipped
@@ -318,7 +345,7 @@ export default function SalesOrderDetail() {
               <Button
                 onClick={() => setShowLpoValidationDialog(true)}
                 variant="outline"
-                className="border-amber-500 text-amber-600 hover:bg-amber-50"
+                className={getStatusBadgeClass("pending")}
               >
                 <FileCheck className="h-4 w-4 mr-2" />
                 Validate Customer LPO
@@ -328,7 +355,7 @@ export default function SalesOrderDetail() {
             <Button
               onClick={() => setShowAmendDialog(true)}
               variant="outline"
-              className="border-purple-500 text-purple-600 hover:bg-purple-50"
+              className={getStatusBadgeClass("under review")}
             >
               <Edit className="h-4 w-4 mr-2" />
               Create Amendment
@@ -346,7 +373,7 @@ export default function SalesOrderDetail() {
                   });
                 }}
                 variant="outline"
-                className="text-red-600 hover:text-red-700"
+                className={getStatusBadgeClass("rejected")}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete Order
@@ -664,7 +691,7 @@ export default function SalesOrderDetail() {
             </p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAmendDialog(false)}>
+            <Button variant="outline" className={getStatusBadgeClass("cancelled")} onClick={() => setShowAmendDialog(false)}>
               Cancel
             </Button>
             <Button
@@ -675,7 +702,7 @@ export default function SalesOrderDetail() {
               }}
               disabled={!amendmentReason.trim() || createAmendedOrder.isPending}
               variant="outline"
-              className="border-blue-500 text-blue-600 hover:bg-blue-50"
+              className={getStatusBadgeClass("sent")}
             >
               {createAmendedOrder.isPending ? (
                 <LoadingSpinner size="sm" />
@@ -725,7 +752,7 @@ export default function SalesOrderDetail() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowLpoValidationDialog(false)}>
+            <Button variant="outline" className={getStatusBadgeClass("cancelled")} onClick={() => setShowLpoValidationDialog(false)}>
               Cancel
             </Button>
             <Button
@@ -739,7 +766,7 @@ export default function SalesOrderDetail() {
               }}
               disabled={!lpoValidationStatus || validateCustomerLpo.isPending}
               variant="outline"
-              className="border-green-500 text-green-600 hover:bg-green-50"
+              className={getStatusBadgeClass("approved")}
             >
               {validateCustomerLpo.isPending ? (
                 <LoadingSpinner size="sm" />
@@ -905,12 +932,12 @@ export default function SalesOrderDetail() {
             <Button
               variant="outline"
               onClick={() => setLocation(`/customers/${salesOrder.customer?.id}`)}
-              className="flex items-center gap-2"
+              className={getStatusBadgeClass("sent") + " flex items-center gap-2"}
             >
               <Eye className="h-4 w-4" />
               View Full Profile
             </Button>
-            <Button onClick={() => setShowCustomerDetailsDialog(false)}>
+            <Button className={getStatusBadgeClass("cancelled")} onClick={() => setShowCustomerDetailsDialog(false)}>
               Close
             </Button>
           </DialogFooter>

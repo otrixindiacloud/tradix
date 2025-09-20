@@ -136,91 +136,15 @@ export default function SupplierQuotesPage() {
   const queryClient = useQueryClient();
 
   // Mock data for development - replace with actual API call
-  const mockSupplierQuotes: SupplierQuote[] = [
-    {
-      id: "sq-001",
-      quoteNumber: "SQ-2024-001",
-      supplierId: "sup-001",
-      supplierName: "Tech Solutions LLC",
-      requisitionId: "req-001",
-      requisitionNumber: "REQ-2024-001",
-      rfqNumber: "RFQ-2024-001",
-      status: "Received",
-      priority: "High",
-      requestDate: "2024-01-15",
-      responseDate: "2024-01-17",
-      validUntil: "2024-02-15",
-      totalAmount: "5200.00",
-  currency: "BHD",
-      paymentTerms: "Net 30",
-      deliveryTerms: "FOB Destination",
-      deliveryDate: "2024-01-25",
-      itemCount: 3,
-      competitiveRank: 2,
-      isPreferredSupplier: true,
-      evaluationScore: 8.5,
-      createdAt: "2024-01-15T10:00:00Z",
-      updatedAt: "2024-01-17T14:30:00Z"
-    },
-    {
-      id: "sq-002",
-      quoteNumber: "SQ-2024-002",
-      supplierId: "sup-002",
-      supplierName: "Office Supplies Co",
-      requisitionId: "req-002",
-      requisitionNumber: "REQ-2024-002",
-      rfqNumber: "RFQ-2024-002",
-      status: "Under Review",
-      priority: "Medium",
-      requestDate: "2024-01-14",
-      responseDate: "2024-01-16",
-      validUntil: "2024-02-14",
-      totalAmount: "2100.00",
-  currency: "BHD",
-      paymentTerms: "Net 15",
-      deliveryTerms: "CIF",
-      deliveryDate: "2024-01-22",
-      itemCount: 5,
-      competitiveRank: 1,
-      isPreferredSupplier: false,
-      evaluationScore: 9.2,
-      createdAt: "2024-01-14T09:30:00Z",
-      updatedAt: "2024-01-16T11:45:00Z"
-    },
-    {
-      id: "sq-003",
-      quoteNumber: "SQ-2024-003",
-      supplierId: "sup-003",
-      supplierName: "Industrial Equipment Ltd",
-      status: "Pending",
-      priority: "Urgent",
-      requestDate: "2024-01-18",
-      validUntil: "2024-02-18",
-      totalAmount: "0.00",
-  currency: "BHD",
-      paymentTerms: "Net 45",
-      deliveryTerms: "FOB Origin",
-      itemCount: 0,
-      isPreferredSupplier: true,
-      createdAt: "2024-01-18T08:15:00Z",
-      updatedAt: "2024-01-18T08:15:00Z"
-    }
-  ];
 
-  const { data: supplierQuotes = mockSupplierQuotes, isLoading, error } = useQuery({
+  const { data: supplierQuotes = [], isLoading, error } = useQuery({
     queryKey: ["/api/supplier-quotes", filters],
     queryFn: async () => {
-      // For now, return mock data. Replace with actual API call
-      return mockSupplierQuotes.filter(quote => {
-        if (filters.status && quote.status !== filters.status) return false;
-        if (filters.priority && quote.priority !== filters.priority) return false;
-        if (filters.supplier && quote.supplierName.toLowerCase().indexOf(filters.supplier.toLowerCase()) === -1) return false;
-        if (filters.currency && quote.currency !== filters.currency) return false;
-        if (filters.search && !quote.quoteNumber.toLowerCase().includes(filters.search.toLowerCase()) 
-            && !quote.supplierName.toLowerCase().includes(filters.search.toLowerCase())
-            && !quote.rfqNumber?.toLowerCase().includes(filters.search.toLowerCase())) return false;
-        return true;
-      });
+      const params = new URLSearchParams(filters as any).toString();
+      const res = await fetch(`/api/supplier-quotes?${params}`);
+      if (!res.ok) throw new Error("Failed to fetch supplier quotes");
+      const result = await res.json();
+      return result.data || [];
     },
   });
 
@@ -234,24 +158,13 @@ export default function SupplierQuotesPage() {
   // Create supplier quote mutation
   const createSupplierQuote = useMutation({
     mutationFn: async (data: typeof newQuote) => {
-      // Mock implementation - replace with actual API call
-      const supplier = mockSuppliers.find(s => s.id === data.supplierId);
-      const newQuoteData: SupplierQuote = {
-        id: `sq-${Date.now()}`,
-        quoteNumber: `SQ-2024-${String(mockSupplierQuotes.length + 1).padStart(3, '0')}`,
-        supplierName: supplier?.name || "Unknown Supplier",
-        ...data,
-        status: "Pending",
-        requestDate: new Date().toISOString().split('T')[0],
-        totalAmount: "0.00",
-  currency: "BHD",
-        itemCount: 0,
-        isPreferredSupplier: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      mockSupplierQuotes.push(newQuoteData);
-      return newQuoteData;
+      const res = await fetch("/api/supplier-quotes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) throw new Error("Failed to create supplier quote");
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/supplier-quotes"] });
@@ -282,22 +195,13 @@ export default function SupplierQuotesPage() {
   // Update supplier quote mutation
   const updateSupplierQuote = useMutation({
     mutationFn: async (data: { id: string; updates: typeof editQuote }) => {
-      // Mock implementation - replace with actual API call
-      const quoteIndex = mockSupplierQuotes.findIndex(q => q.id === data.id);
-      if (quoteIndex === -1) {
-        throw new Error("Quote not found");
-      }
-      
-      const supplier = mockSuppliers.find(s => s.id === data.updates.supplierId);
-      const updatedQuote = {
-        ...mockSupplierQuotes[quoteIndex],
-        ...data.updates,
-        supplierName: supplier?.name || mockSupplierQuotes[quoteIndex].supplierName,
-        updatedAt: new Date().toISOString()
-      };
-      
-      mockSupplierQuotes[quoteIndex] = updatedQuote;
-      return updatedQuote;
+      const res = await fetch(`/api/supplier-quotes/${data.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data.updates)
+      });
+      if (!res.ok) throw new Error("Failed to update supplier quote");
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/supplier-quotes"] });
@@ -320,11 +224,11 @@ export default function SupplierQuotesPage() {
   // Delete supplier quote mutation
   const deleteSupplierQuote = useMutation({
     mutationFn: async (id: string) => {
-      // Mock implementation - replace with actual API call
-      const index = mockSupplierQuotes.findIndex(q => q.id === id);
-      if (index > -1) {
-        mockSupplierQuotes.splice(index, 1);
-      }
+      const res = await fetch(`/api/supplier-quotes/${id}`, {
+        method: "DELETE"
+      });
+      if (!res.ok) throw new Error("Failed to delete supplier quote");
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/supplier-quotes"] });

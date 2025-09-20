@@ -42,7 +42,7 @@ interface Quotation {
   revision: number;
   customerId: string;
   customerType: "Retail" | "Wholesale";
-  status: "Draft" | "Sent" | "Accepted" | "Rejected" | "Expired";
+  status: "Draft" | "Sent" | "Approved" | "Rejected" | "Expired" | "Accepted";
   quoteDate: string;
   validUntil: string;
   subtotal: string;
@@ -57,10 +57,12 @@ interface Quotation {
   createdAt: string;
 }
 
+import { useAuth } from "@/components/auth/auth-context";
+
 export default function QuotationsPage() {
   const [, navigate] = useLocation();
   // Get current user from auth context
-  const { user } = require("@/components/auth/auth-context").useAuth();
+  const { user } = useAuth();
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
   const [filters, setFilters] = useState({
@@ -82,6 +84,7 @@ export default function QuotationsPage() {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingQuotation, setEditingQuotation] = useState<Quotation | null>(null);
   const [deletingQuotation, setDeletingQuotation] = useState<Quotation | null>(null);
+  const [showFilter, setShowFilter] = useState(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -283,7 +286,7 @@ export default function QuotationsPage() {
     switch (status) {
       case "Draft": return <Clock className="h-4 w-4" />;
       case "Sent": return <FileText className="h-4 w-4" />;
-      case "Accepted": return <CheckCircle className="h-4 w-4" />;
+      case "Approved": return <CheckCircle className="h-4 w-4" />;
       case "Rejected": return <XCircle className="h-4 w-4" />;
       case "Expired": return <AlertTriangle className="h-4 w-4" />;
       default: return <Clock className="h-4 w-4" />;
@@ -296,6 +299,7 @@ export default function QuotationsPage() {
       case "Sent": return "text-gray-700";
       case "Accepted": return "text-green-700";
       case "Rejected": return "text-red-700";
+      
       case "Expired": return "text-orange-700";
       default: return "text-gray-700";
     }
@@ -567,159 +571,69 @@ export default function QuotationsPage() {
         </div>
       </div>
 
-      {/* Stats Cards - Card/Box UI */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 my-6">
-        <Card className="flex flex-row items-start gap-4 p-4 shadow-sm border border-gray-200 bg-white">
-          <div className="rounded-full bg-gray-100 p-2 mt-1">
-            <Clock className="h-6 w-6 text-gray-500" />
-          </div>
-          <div className="flex-1">
-            <div className="text-lg font-bold text-gray-700">Draft Quotes</div>
-            <div className="text-2xl font-bold text-gray-900">
-              {quotations?.filter((q: Quotation) => q.status === "Draft").length || 0}
-            </div>
-          </div>
-        </Card>
-        <Card className="flex flex-row items-start gap-4 p-4 shadow-sm border border-gray-200 bg-white">
-          <div className="rounded-full bg-gray-100 p-2 mt-1">
-            <FileText className="h-6 w-6 text-gray-500" />
-          </div>
-          <div className="flex-1">
-            <div className="text-lg font-bold text-gray-700">Sent Quotes</div>
-            <div className="text-2xl font-bold text-gray-900">
-              {quotations?.filter((q: Quotation) => q.status === "Sent").length || 0}
-            </div>
-          </div>
-        </Card>
-        <Card className="flex flex-row items-start gap-4 p-4 shadow-sm border border-gray-200 bg-white">
-          <div className="rounded-full bg-yellow-100 p-2 mt-1">
-            {/* Pending approval icon (visible now with contrasting color) */}
-            <AlertTriangle className="h-6 w-6 text-yellow-600" />
-          </div>
-          <div className="flex-1">
-            <div className="text-lg font-bold text-gray-700">Pending Approval</div>
-            <div className="text-2xl font-bold text-gray-900">
-              {quotations?.filter((q: Quotation) => q.approvalStatus === "Pending").length || 0}
-            </div>
-          </div>
-        </Card>
-        <Card className="flex flex-row items-start gap-4 p-4 shadow-sm border border-gray-200 bg-white">
-          <div className="rounded-full bg-green-100 p-2 mt-1">
-            <CheckCircle className="h-6 w-6 text-green-500" />
-          </div>
-          <div className="flex-1">
-            <div className="text-lg font-bold text-gray-700">Accepted</div>
-            <div className="text-2xl font-bold text-gray-900">
-              {quotations?.filter((q: Quotation) => q.status === "Accepted").length || 0}
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <div>
+      {/* Filters Section with Show/Hide Button inside Card */}
+      <Card className="mb-6 p-6 rounded-xl shadow-sm border border-gray-100 bg-white">
         <div className="flex items-center gap-2 mb-4">
           <Filter className="h-5 w-5" />
           <h3 className="text-lg font-semibold">Filters</h3>
+          <button
+            className="ml-auto flex items-center gap-1 px-2 py-0.5 border border-blue-500 text-blue-600 bg-white rounded-full hover:bg-blue-50 hover:text-blue-700 transition font-medium text-xs shadow-none"
+            onClick={() => setShowFilter((prev) => !prev)}
+            aria-label={showFilter ? "Hide Filters" : "Show Filters"}
+            type="button"
+          >
+            <Filter className="h-4 w-4" />
+            {showFilter ? "Hide Filters" : "Show Filters"}
+          </button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search quotes..."
-              value={filters.search}
-              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-              className="pl-10 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 rounded-md shadow-none"
-              data-testid="input-search"
-            />
-          </div>
-          <div>
-            <Select
-              value={filters.status}
-              onValueChange={(value) => setFilters({ ...filters, status: value })}
-            >
-              <SelectTrigger data-testid="select-status">
-                <SelectValue placeholder="All Statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="Draft">Draft</SelectItem>
-                <SelectItem value="Sent">Sent</SelectItem>
-                <SelectItem value="Accepted">Accepted</SelectItem>
-                <SelectItem value="Rejected">Rejected</SelectItem>
-                <SelectItem value="Expired">Expired</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Select
-              value={filters.customerType}
-              onValueChange={(value) => setFilters({ ...filters, customerType: value })}
-            >
-              <SelectTrigger data-testid="select-customer-type">
-                <SelectValue placeholder="All Customer Types" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Customer Types</SelectItem>
-                <SelectItem value="Retail">Retail</SelectItem>
-                <SelectItem value="Wholesale">Wholesale</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          </div>
-        
-        {/* Quick Date Filters */}
-        <div className="mt-6 pt-4 border-t">
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant={!dateRange.from ? "default" : "outline"}
-              size="sm"
-              onClick={() => {
-                const today = new Date();
-                handleDateRangeChange(today, today);
-              }}
-            >
-              Today
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const today = new Date();
-                const weekAgo = new Date();
-                weekAgo.setDate(today.getDate() - 7);
-                handleDateRangeChange(weekAgo, today);
-              }}
-            >
-              Last 7 days
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const today = new Date();
-                const monthAgo = new Date();
-                monthAgo.setMonth(today.getMonth() - 1);
-                handleDateRangeChange(monthAgo, today);
-              }}
-            >
-              Last 30 days
-            </Button>
-            {dateRange.from && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  handleDateRangeChange(undefined, undefined);
-                }}
-                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+        {showFilter && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search quotes..."
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                className="pl-10 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 rounded-md shadow-none"
+                data-testid="input-search"
+              />
+            </div>
+            <div>
+              <Select
+                value={filters.status}
+                onValueChange={(value) => setFilters({ ...filters, status: value })}
               >
-                Clear Filter
-              </Button>
-            )}
+                <SelectTrigger data-testid="select-status">
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="Draft">Draft</SelectItem>
+                  <SelectItem value="Sent">Sent</SelectItem>
+                  <SelectItem value="Accepted">Accepted</SelectItem>
+                  <SelectItem value="Rejected">Rejected</SelectItem>
+                  <SelectItem value="Expired">Expired</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Select
+                value={filters.customerType}
+                onValueChange={(value) => setFilters({ ...filters, customerType: value })}
+              >
+                <SelectTrigger data-testid="select-customer-type">
+                  <SelectValue placeholder="All Customer Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Customer Types</SelectItem>
+                  <SelectItem value="Retail">Retail</SelectItem>
+                  <SelectItem value="Wholesale">Wholesale</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        </div>
-      </div>
+        )}
+      </Card>
 
       {/* Quotations Table */}
       <div>

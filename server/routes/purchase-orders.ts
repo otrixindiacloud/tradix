@@ -173,12 +173,11 @@ export function registerPurchaseOrderRoutes(app: Express) {
   // Customer PO Upload route
   app.post("/api/customer-po-upload", async (req, res) => {
     try {
-      const { quotationId, poNumber, documentPath, documentName, documentType, uploadedBy, poDate, currency, paymentTerms, deliveryTerms, specialInstructions } = req.body;
+  const { quotationId, documentPath, documentName, documentType, uploadedBy, poDate, currency, paymentTerms, deliveryTerms, specialInstructions } = req.body;
 
       // Basic presence validation (uploadedBy handled specially below)
       const missing: string[] = [];
       if (!quotationId) missing.push('quotationId');
-      if (!poNumber) missing.push('poNumber');
       if (!documentPath) missing.push('documentPath');
       if (!documentName) missing.push('documentName');
       if (!documentType) missing.push('documentType');
@@ -223,6 +222,9 @@ export function registerPurchaseOrderRoutes(app: Express) {
         return res.status(400).json({ message: 'No accepted quotation items found; cannot upload PO' });
       }
 
+      // Auto-generate PO number
+      const storageInstance = storage.purchaseOrderStorage || storage;
+      const poNumber = storageInstance.generateNumber ? storageInstance.generateNumber('PO') : `PO-${Date.now()}`;
       const poPayload = insertPurchaseOrderSchema.parse({
         quotationId,
         poNumber,

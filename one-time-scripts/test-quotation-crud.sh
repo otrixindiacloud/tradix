@@ -6,19 +6,35 @@ echo "====================================="
 
 BASE_URL="http://localhost:5000"
 
+# Use a valid quotation ID from the GET /api/quotations (List) output
+QUOTATION_ID="15b06ffe-ff1f-420c-bddd-33bc2a12c158"
+
 echo -e "\n1. 📋 Testing GET /api/quotations (List)"
 curl -s "${BASE_URL}/api/quotations" | jq '.' | head -20
 
-echo -e "\n2. 📋 Testing GET /api/quotations/quot-1 (Get Single)"
-curl -s "${BASE_URL}/api/quotations/quot-1" | jq '.'
+echo -e "\n2. 📋 Testing GET /api/quotations/$QUOTATION_ID (Get Single)"
+curl -s "${BASE_URL}/api/quotations/$QUOTATION_ID" | jq '.'
 
-echo -e "\n3. 📋 Testing GET /api/quotations/quot-1/items (Get Items)"
-curl -s "${BASE_URL}/api/quotations/quot-1/items" | jq '.'
+echo -e "\n3. 📋 Testing GET /api/quotations/$QUOTATION_ID/items (Get Items)"
+curl -s "${BASE_URL}/api/quotations/$QUOTATION_ID/items" | jq '.'
 
-echo -e "\n4. 🔧 Testing PUT /api/quotations/quot-1 (Update Status)"
-curl -s -X PUT "${BASE_URL}/api/quotations/quot-1" \
+echo -e "\n4. 🔧 Testing PUT /api/quotations/$QUOTATION_ID (Update Status)"
+curl -s -X PUT "${BASE_URL}/api/quotations/$QUOTATION_ID" \
   -H "Content-Type: application/json" \
+  -H "x-user-role: admin" \
   -d '{"status": "Accepted"}' | jq '.'
+
+echo -e "\n4a. 🔧 Testing PUT /api/quotations/$QUOTATION_ID (Approve Quotation)"
+curl -s -X PUT "${BASE_URL}/api/quotations/$QUOTATION_ID" \
+  -H "Content-Type: application/json" \
+  -H "x-user-role: admin" \
+  -d '{"status": "Accepted", "approvalStatus": "Approved"}' | jq '.'
+
+echo -e "\n4b. 🔧 Testing PUT /api/quotations/$QUOTATION_ID (Reject Quotation)"
+curl -s -X PUT "${BASE_URL}/api/quotations/$QUOTATION_ID" \
+  -H "Content-Type: application/json" \
+  -H "x-user-role: admin" \
+  -d '{"status": "Rejected", "approvalStatus": "Rejected", "rejectionReason": "Test rejection"}' | jq '.'
 
 echo -e "\n5. 📋 Testing GET /api/customers (For quotation creation)"
 curl -s "${BASE_URL}/api/customers" | jq '.' | head -10

@@ -93,6 +93,9 @@ export default function QuotationDetailPage() {
   const [revisionReason, setRevisionReason] = useState("");
   const { user } = useAuth();
 
+  // Role-based permission: client user (id: 'client') is fully view-only
+  const isClientViewOnly = user?.id === "client";
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -153,27 +156,30 @@ export default function QuotationDetailPage() {
     ? customers.find((c: any) => c.id === quotation.customerId)?.name || 'Unknown Customer'
     : 'No Customer';
 
+  // Handles both status and approvalStatus updates
   const updateStatusMutation = useMutation({
-    mutationFn: async (status: string) => {
+    mutationFn: async (payload: { status?: string; approvalStatus?: string }) => {
+      if (isClientViewOnly) throw new Error("Client user cannot perform any changes");
       const response = await fetch(`/api/quotations/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify(payload),
       });
-      if (!response.ok) throw new Error("Failed to update quotation status");
+      if (!response.ok) throw new Error("Failed to update quotation");
       return response.json();
     },
     onSuccess: () => {
       toast({
         title: "Success",
-        description: "Quotation status updated successfully",
+        description: "Quotation updated successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/quotations", id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/quotations", id, "history"] });
     },
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to update quotation status",
+        description: error.message || "Failed to update quotation",
         variant: "destructive",
       });
     },
@@ -181,10 +187,11 @@ export default function QuotationDetailPage() {
 
   const createRevisionMutation = useMutation({
     mutationFn: async (revisionData: { revisionReason: string }) => {
+      if (isClientViewOnly) throw new Error("Client user cannot perform any changes");
       const response = await fetch(`/api/quotations/${id}/revisions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ ...revisionData, userId }),
+        body: JSON.stringify({ ...revisionData, userId }),
       });
       if (!response.ok) throw new Error("Failed to create quotation revision");
       return response.json();
@@ -210,6 +217,14 @@ export default function QuotationDetailPage() {
   });
 
   const handleCreateRevision = () => {
+    if (isClientViewOnly) {
+      toast({
+        title: "Error",
+        description: "Client user cannot perform any changes",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!revisionReason.trim()) {
       toast({
         title: "Error",
@@ -257,10 +272,22 @@ export default function QuotationDetailPage() {
   // Returns Tailwind classes for badge background and text color
   const getApprovalStatusBadgeClass = (status: string) => {
     switch (status) {
-      case "Approved": return "bg-green-100 text-green-800";
-      case "Pending": return "bg-orange-500 text-white border border-orange-500";
-      case "Rejected": return "bg-red-100 text-red-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "Approved": return "border border-teal-200 text-teal-700";
+      case "Pending": return "border border-orange-500 text-orange-600";
+      case "Rejected": return "border border-red-200 text-red-700";
+      default: return "border border-gray-300 text-gray-800";
+    }
+  };
+
+  // Returns Tailwind classes for status badge background and text color
+  const getStatusBadgeClass = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "draft": return "border border-gray-400 text-gray-700";
+      case "sent": return "border border-blue-400 text-blue-700";
+      case "accepted": return "border border-green-400 text-green-700";
+      case "rejected": return "border border-red-400 text-red-700";
+      case "expired": return "border border-orange-400 text-orange-700";
+      default: return "border border-gray-300 text-gray-800";
     }
   };
 
@@ -406,27 +433,40 @@ export default function QuotationDetailPage() {
         <Button 
           variant="outline" 
           data-testid="button-edit"
-          onClick={() => setShowEditDialog(true)}
+          onClick={() => !isClientViewOnly && setShowEditDialog(true)}
+          disabled={isClientViewOnly}
+          title={isClientViewOnly ? "You do not have access to make changes" : undefined}
         >
           <Edit className="h-4 w-4 mr-2" />
           Edit
         </Button>
-        <Button variant="outline" data-testid="button-download" onClick={downloadPDF}>
+        <Button 
+          variant="outline" 
+          data-testid="button-download" 
+          onClick={downloadPDF}
+        >
           <Download className="h-4 w-4 mr-2" />
           Download PDF
         </Button>
-        <Button variant="outline" data-testid="button-create-revision" onClick={() => setShowRevisionDialog(true)}>
+        <Button 
+          variant="outline" 
+          data-testid="button-create-revision" 
+          onClick={() => !isClientViewOnly && setShowRevisionDialog(true)}
+          disabled={isClientViewOnly}
+          title={isClientViewOnly ? "You do not have access to make changes" : undefined}
+        >
           <Copy className="h-4 w-4 mr-2" />
           Create Revision
         </Button>
         {/* Only admin can approve quotations */}
         {user?.role === "admin" && quotation.status === "Draft" && quotation.approvalStatus !== "Pending" && (
           <Button 
-            onClick={() => updateStatusMutation.mutate("Sent")}
-            disabled={updateStatusMutation.isPending}
+            onClick={() => !isClientViewOnly && updateStatusMutation.mutate({ status: "Sent" })}
+            disabled={updateStatusMutation.isPending || isClientViewOnly}
             data-testid="button-send"
             variant="outline"
-            className="border-gray-500 text-gray-600 hover:bg-gray-50"
+            className={getApprovalStatusBadgeClass("Sent")}
+            title={isClientViewOnly ? "You do not have access to make changes" : undefined}
           >
             <Send className="h-4 w-4 mr-2" />
             Send to Customer
@@ -442,21 +482,23 @@ export default function QuotationDetailPage() {
               </Button>
             </Link>
             <Button 
-              onClick={() => updateStatusMutation.mutate("Accepted")}
-              disabled={updateStatusMutation.isPending}
+              onClick={() => !isClientViewOnly && updateStatusMutation.mutate({ status: "Accepted" })}
+              disabled={updateStatusMutation.isPending || isClientViewOnly}
               data-testid="button-accept"
               variant="outline"
-              className="border-green-500 text-green-600 hover:bg-green-50"
+              className={getStatusBadgeClass("accepted")}
+              title={isClientViewOnly ? "You do not have access to make changes" : undefined}
             >
               <Check className="h-4 w-4 mr-2" />
               Mark Accepted
             </Button>
             <Button 
               variant="outline"
-              onClick={() => updateStatusMutation.mutate("Rejected")}
-              disabled={updateStatusMutation.isPending}
+              onClick={() => !isClientViewOnly && updateStatusMutation.mutate({ status: "Rejected" })}
+              disabled={updateStatusMutation.isPending || isClientViewOnly}
               data-testid="button-reject"
               className="border-red-700 text-red-700 hover:bg-red-50"
+              title={isClientViewOnly ? "You do not have access to make changes" : undefined}
             >
               <X className="h-4 w-4 mr-2" />
               Mark Rejected
@@ -465,7 +507,7 @@ export default function QuotationDetailPage() {
         )}
       </div>
 
-      {/* Warning for Pending Approval */}
+      {/* Warning for Pending Approval and Approve/Reject Buttons */}
       {quotation.approvalStatus === "Pending" && (
         <Card className="border-yellow-200 bg-yellow-50">
           <CardContent className="p-4">
@@ -648,9 +690,60 @@ export default function QuotationDetailPage() {
                       }
                     </div>
                   </div>
-                  <Badge className={getApprovalStatusBadgeClass(quotation.approvalStatus)}>
-                    {quotation.approvalStatus || "None"}
+                  <Badge
+                    className={
+                      quotation.approvalStatus === "Approved"
+                        ? "border border-teal-200 text-teal-700 px-4 py-1 rounded-full bg-transparent"
+                        : quotation.approvalStatus === "Pending"
+                        ? "border border-orange-500 text-orange-600 px-4 py-1 rounded-full bg-transparent"
+                        : quotation.approvalStatus === "Rejected"
+                        ? "border border-red-200 text-red-700 px-4 py-1 rounded-full bg-transparent"
+                        : "border border-gray-300 text-gray-800 px-4 py-1 rounded-full bg-transparent"
+                    }
+                  >
+                    {quotation.approvalStatus === "Approved"
+                      ? "Approved"
+                      : quotation.approvalStatus === "Pending"
+                      ? "Pending"
+                      : quotation.approvalStatus === "Rejected"
+                      ? "Rejected"
+                      : quotation.approvalStatus || "None"}
                   </Badge>
+                </div>
+                {/* Approval Status Update UI */}
+                <div className="flex items-center gap-4 mt-4">
+                  <label htmlFor="approval-status-select" className="text-sm font-medium text-gray-700">Update Approval Status:</label>
+                  <select
+                    id="approval-status-select"
+                    className="border rounded px-2 py-1"
+                    value={quotation.approvalStatus}
+                    onChange={e => {
+                      const value = e.target.value;
+                      let status: string | undefined;
+                      if (value === "Approved") status = "Approved";
+                      else if (value === "Rejected") status = "Rejected";
+                      updateStatusMutation.mutate({ approvalStatus: value, status });
+                    }}
+                    disabled={updateStatusMutation.isPending}
+                  >
+                    <option value="Approved">Approved</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Rejected">Rejected</option>
+                  </select>
+                  <Button
+                    onClick={() => {
+                      const select = document.getElementById('approval-status-select') as HTMLSelectElement;
+                      const value = select.value;
+                      let status: string | undefined;
+                      if (value === "Approved") status = "Approved";
+                      else if (value === "Rejected") status = "Rejected";
+                      updateStatusMutation.mutate({ approvalStatus: value, status });
+                    }}
+                    disabled={updateStatusMutation.isPending}
+                    variant="outline"
+                  >
+                    {updateStatusMutation.isPending ? "Updating..." : "Update Approval"}
+                  </Button>
                 </div>
               </div>
             </CardContent>

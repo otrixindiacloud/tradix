@@ -69,10 +69,76 @@ export function registerQuotationRoutes(app: Express) {
   }
 
   // Restrict approval actions to admin only
+  // Custom schema for status/approval updates
+  const quotationStatusUpdateSchema = z.object({
+    status: z.string().optional(),
+    approvalStatus: z.string().optional(),
+    rejectionReason: z.string().optional(),
+  }).passthrough();
+
   app.put("/api/quotations/:id", requireAdminRole, async (req, res) => {
     try {
-      const quotationData = insertQuotationSchema.partial().parse(req.body);
-      const quotation = await storage.updateQuotation(req.params.id, quotationData);
+      const userId = req.header('x-user-id') || ((req as any).user && (req as any).user.id) || 'system';
+      const role = req.header('x-user-role') || ((req as any).user && (req as any).user.role);
+      const now = new Date();
+      console.log('[QUOTATION STATUS UPDATE]', {
+        userId,
+        role,
+        payload: req.body,
+        params: req.params
+      });
+      const quotationData = quotationStatusUpdateSchema.parse(req.body);
+      // Only allow valid status values
+      const allowedStatus = ["Draft", "Sent", "Accepted", "Rejected", "Expired"] as const;
+      let updateFields: Partial<{ status?: "Draft" | "Sent" | "Accepted" | "Rejected" | "Expired"; approvalStatus?: string; rejectionReason?: string; [k: string]: any }> = {};
+      if (quotationData.status && allowedStatus.includes(quotationData.status as typeof allowedStatus[number])) {
+        updateFields.status = quotationData.status as typeof allowedStatus[number];
+      }
+      if (typeof quotationData.approvalStatus === "string") {
+        updateFields.approvalStatus = quotationData.approvalStatus;
+      }
+      if (typeof quotationData.rejectionReason === "string") {
+        updateFields.rejectionReason = quotationData.rejectionReason;
+      }
+
+      // Approval logic
+      if (quotationData.approvalStatus === "Approved") {
+        updateFields.approvedBy = userId;
+        updateFields.approvedAt = now;
+        updateFields.status = "Accepted";
+        updateFields.approvalStatus = "Approved";
+        // Log approval in audit trail
+        await storage.createQuotationApproval({
+          quotationId: req.params.id,
+          approverLevel: "Manager", // TODO: derive from business logic
+          approverId: userId,
+          status: "Approved",
+          comments: "Approved via API",
+        });
+      } else if (quotationData.approvalStatus === "Rejected") {
+        updateFields.approvedBy = userId;
+        updateFields.approvedAt = now;
+        updateFields.status = "Rejected";
+        updateFields.approvalStatus = "Rejected";
+        updateFields.rejectionReason = quotationData.rejectionReason || "Rejected via API";
+        // Log rejection in audit trail
+        await storage.createQuotationApproval({
+          quotationId: req.params.id,
+          approverLevel: "Manager", // TODO: derive from business logic
+          approverId: userId,
+          status: "Rejected",
+          comments: updateFields.rejectionReason,
+        });
+      }
+
+      // Only pass allowed fields to updateQuotation
+      const allowedKeys = ["status", "approvalStatus", "rejectionReason", "approvedBy", "approvedAt"];
+      const filteredUpdateFields: any = {};
+      for (const key of allowedKeys) {
+        if (key in updateFields) filteredUpdateFields[key] = updateFields[key];
+      }
+      const quotation = await storage.updateQuotation(req.params.id, filteredUpdateFields);
+      console.log('[QUOTATION STATUS UPDATED]', quotation);
       res.json(quotation);
     } catch (error) {
       if (error instanceof z.ZodError) {

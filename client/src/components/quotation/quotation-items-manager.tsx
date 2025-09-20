@@ -55,6 +55,9 @@ export default function QuotationItemsManager({
   const [editingItem, setEditingItem] = useState<QuotationItem | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  // Role-based permission: client user (id: 'client') is view-only
+  const authUser = (window as any).authUser || null;
+  const isClientViewOnly = authUser?.id === "client";
 
   const { data: itemsResponse, isLoading } = useQuery({
     queryKey: ["/api/quotations", quotationId, "items"],
@@ -94,6 +97,7 @@ export default function QuotationItemsManager({
 
   const createItem = useMutation({
     mutationFn: async (data: QuotationItemFormData) => {
+  if (isClientViewOnly) throw new Error("Client user cannot perform any changes");
       const response = await fetch(`/api/quotations/${quotationId}/items`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -131,6 +135,7 @@ export default function QuotationItemsManager({
 
   const updateItem = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<QuotationItemFormData> }) => {
+  if (isClientViewOnly) throw new Error("Client user cannot perform any changes");
       const response = await fetch(`/api/quotation-items/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -170,6 +175,7 @@ export default function QuotationItemsManager({
 
   const deleteItem = useMutation({
     mutationFn: async (id: string) => {
+      if (isClientViewOnly) throw new Error("You do not have permission to delete this");
       const response = await fetch(`/api/quotation-items/${id}`, {
         method: "DELETE",
       });
@@ -183,10 +189,12 @@ export default function QuotationItemsManager({
         description: "Item deleted successfully",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to delete item",
+        description: error?.message === "You do not have permission to delete this"
+          ? "You do not have permission to delete this"
+          : "Failed to delete item",
         variant: "destructive",
       });
     },
@@ -239,7 +247,7 @@ export default function QuotationItemsManager({
             <Package className="h-5 w-5" />
             Quotation Items
           </CardTitle>
-          {editable && (
+          {editable && !isClientViewOnly && (
             <Dialog open={showAddItem} onOpenChange={setShowAddItem}>
               <DialogTrigger asChild>
                 <Button 

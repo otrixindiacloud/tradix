@@ -126,7 +126,8 @@ export default function Invoicing() {
 
   const generateProformaInvoice = useMutation({
     mutationFn: async (salesOrderId: string) => {
-      const response = await apiRequest("POST", "/api/invoices/proforma", { salesOrderId });
+      // Send invoiceType explicitly for backend compatibility
+      const response = await apiRequest("POST", "/api/invoices/proforma", { salesOrderId, invoiceType: "Proforma" });
       return response.json();
     },
     onSuccess: () => {
@@ -144,28 +145,7 @@ export default function Invoicing() {
       });
     },
   });
-  // Additional mutation for the dedicated proforma route in modular route file
-  const generateProformaInvoiceAlt = useMutation({
-    mutationFn: async ({ salesOrderId }: { salesOrderId: string }) => {
-      const response = await apiRequest("POST", "/api/invoices/generate-proforma", { salesOrderId });
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
-      toast({
-        title: "Success",
-        description: "Proforma invoice generated successfully",
-      });
-    },
-    onError: (err: any) => {
-      console.error("Proforma generation error", err);
-      toast({
-        title: "Error",
-        description: "Failed to generate proforma invoice",
-        variant: "destructive",
-      });
-    },
-  });
+  // Remove alternate mutation, use only main mutation for proforma
 
   const downloadInvoicePDF = async (invoiceId: string, invoiceNumber: string, invoiceType: string = 'Standard') => {
     try {
@@ -176,18 +156,19 @@ export default function Invoicing() {
         description: `Creating comprehensive ${isProforma ? 'proforma' : ''} invoice with material specifications...`,
       });
 
-      const response = await fetch(`/api/invoices/${invoiceId}/pdf`, {
+      // Pass invoiceType as query param for backend compatibility
+      const response = await fetch(`/api/invoices/${invoiceId}/pdf?invoiceType=${encodeURIComponent(invoiceType)}`, {
         method: 'GET',
         headers: {
           'Accept': 'application/pdf',
         },
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to generate PDF' }));
         throw new Error(errorData.message || 'Failed to generate PDF');
       }
-      
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -197,13 +178,13 @@ export default function Invoicing() {
       a.style.display = 'none';
       document.body.appendChild(a);
       a.click();
-      
+
       // Cleanup
       setTimeout(() => {
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
       }, 100);
-      
+
       toast({
         title: "Success",
         description: `Comprehensive ${isProforma ? 'proforma' : ''} invoice PDF downloaded successfully with all material specifications and company details`,
@@ -590,10 +571,9 @@ export default function Invoicing() {
               <Button
                 variant="outline"
                 onClick={() => {
-                  // For quick proforma generation user would need to select a draft invoice or use a prompt
                   const draftWithSO = invoices?.find((inv: any) => inv.status === "Draft" && inv.salesOrderId);
                   if (draftWithSO) {
-                    generateProformaInvoiceAlt.mutate({ salesOrderId: draftWithSO.salesOrderId });
+                    generateProformaInvoice.mutate(draftWithSO.salesOrderId);
                   } else {
                     toast({
                       title: "No Draft Found",
@@ -602,12 +582,12 @@ export default function Invoicing() {
                     });
                   }
                 }}
-                disabled={generateProformaInvoiceAlt.isPending}
+                disabled={generateProformaInvoice.isPending}
                 data-testid="button-generate-proforma-quick"
                 className="flex items-center gap-2"
               >
                 <FileText className="h-4 w-4" />
-                {generateProformaInvoiceAlt.isPending ? "Generating..." : "Quick Proforma"}
+                {generateProformaInvoice.isPending ? "Generating..." : "Quick Proforma"}
               </Button>
               <Button
                 variant="outline"
@@ -1023,11 +1003,11 @@ export default function Invoicing() {
                   {selectedInvoice?.salesOrderId && (
                     <Button
                       variant="outline"
-                      onClick={() => generateProformaInvoiceAlt.mutate({ salesOrderId: selectedInvoice.salesOrderId })}
-                      disabled={generateProformaInvoiceAlt.isPending}
+                      onClick={() => generateProformaInvoice.mutate(selectedInvoice.salesOrderId)}
+                      disabled={generateProformaInvoice.isPending}
                       data-testid="button-generate-proforma-from-invoice"
                     >
-                      {generateProformaInvoiceAlt.isPending ? "Generating..." : "Generate Proforma"}
+                      {generateProformaInvoice.isPending ? "Generating..." : "Generate Proforma"}
                     </Button>
                   )}
                 </div>

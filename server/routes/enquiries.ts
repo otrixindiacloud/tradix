@@ -4,6 +4,24 @@ import { insertEnquirySchema, updateEnquirySchema, insertEnquiryItemSchema } fro
 import { z } from "zod";
 
 export function registerEnquiryRoutes(app: Express) {
+  // Send RFQ to multiple suppliers for an enquiry
+  app.post("/api/enquiries/:id/send-rfq", async (req, res) => {
+    try {
+      const enquiryId = req.params.id;
+      const { supplierId } = req.body;
+      if (!supplierId) {
+        return res.status(400).json({ message: "Missing supplierId" });
+      }
+      // Here you would create a SupplierQuote or RFQ record for this supplier and enquiry
+      // For demo, just log and return success
+      await storage.logAuditEvent("enquiry", enquiryId, "send-rfq", undefined, undefined, { supplierId });
+      // TODO: Implement actual RFQ creation logic (e.g., createSupplierQuote)
+      res.json({ message: `RFQ sent to supplier ${supplierId} for enquiry ${enquiryId}` });
+    } catch (error) {
+      console.error("Error sending RFQ:", error);
+      res.status(500).json({ message: "Failed to send RFQ" });
+    }
+  });
   // Enquiry routes
   app.get("/api/enquiries", async (req, res) => {
     try {

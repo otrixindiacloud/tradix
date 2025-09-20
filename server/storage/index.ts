@@ -14,6 +14,7 @@ export * from './delivery-storage.js';
 export * from './shipment-storage.js';
 export * from './physical-stock-storage.js';
 export * from './modular-storage-clean.js';
+export * from './supplier-quote-storage';
 
 // Provide a unified storage instance (modular) for all route imports.
 // This ensures patched module implementations (e.g., GoodsReceiptStorage) are actually used.

@@ -33,25 +33,30 @@ const iconMap: Record<string, React.ReactNode> = {
 // Unified style tokens
 const baseClasses = 'inline-flex items-center gap-1.5 rounded-full border text-xs font-medium px-2 py-0.5 transition-colors h-6 min-w-[64px] justify-center';
 
+// Status color/style mapping for pill backgrounds and borders
 const styleMap: Record<string, string> = {
-  accepted: 'border-green-500 text-green-600 bg-green-50 shadow-sm',
-  confirmed: 'border-green-500 text-green-600 bg-green-50 shadow-sm',
-  approved: 'border-teal-500 text-teal-600 bg-teal-50 shadow-sm',
-  completed: 'border-green-500 text-green-600 bg-green-50 shadow-sm',
-  draft: 'border-gray-400 text-gray-600 bg-gray-50 shadow-sm',
-  pending: 'border-orange-500 text-orange-600 bg-orange-50 shadow-sm',
-  'in-progress': 'border-blue-500 text-blue-600 bg-blue-50 shadow-sm',
-  open: 'border-sky-400 text-sky-600 bg-sky-50 shadow-sm',
-  'on-hold': 'border-yellow-400 text-yellow-600 bg-yellow-50 shadow-sm',
-  cancelled: 'border-gray-500 text-gray-600 bg-gray-50 shadow-sm',
-  rejected: 'border-red-500 text-red-600 bg-red-50 shadow-sm',
-  overdue: 'border-red-500 text-red-600 bg-red-50 shadow-sm',
-  warning: 'border-yellow-300 text-yellow-700 bg-yellow-50',
-  error: 'border-red-300 text-red-700 bg-red-50',
-  info: 'border-blue-300 text-blue-700 bg-blue-50',
-  default: 'border-gray-300 text-gray-700 bg-gray-50'
+  accepted: 'bg-blue-50 border-blue-200 text-blue-700',
+  confirmed: 'bg-blue-50 border-blue-200 text-blue-700',
+  approved: 'bg-green-50 border-green-200 text-green-700',
+  completed: 'bg-green-50 border-green-200 text-green-700',
+  'in-progress': 'bg-yellow-50 border-yellow-200 text-yellow-700',
+  pending: 'bg-yellow-50 border-yellow-200 text-yellow-700',
+  open: 'bg-blue-50 border-blue-200 text-blue-700',
+  'on-hold': 'bg-gray-50 border-gray-200 text-gray-700',
+  cancelled: 'bg-red-50 border-red-200 text-red-700',
+  rejected: 'bg-red-50 border-red-200 text-red-700',
+  overdue: 'bg-orange-50 border-orange-200 text-orange-700',
+  warning: 'bg-orange-50 border-orange-200 text-orange-700',
+  error: 'bg-red-50 border-red-200 text-red-700',
+  info: 'bg-gray-50 border-gray-200 text-gray-700',
+  draft: 'bg-gray-50 border-gray-200 text-gray-700',
+  default: 'bg-gray-50 border-gray-200 text-gray-700'
 };
 
+const getStatusBadgeClass = (status: string) => {
+  const key = status.toLowerCase();
+  return styleMap[key] || styleMap.default;
+};
 function normalize(status: string): keyof typeof styleMap {
   const s = status.toLowerCase();
   if (s === 'draft') return 'draft';

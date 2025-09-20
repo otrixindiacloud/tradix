@@ -1,3 +1,4 @@
+import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -129,37 +130,56 @@ export default function EnquiryForm({ onSuccess, onCancel, initialData, enquiryI
               <FormField
                 control={form.control}
                 name="customerId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2">
-                      <FaUser className="h-4 w-4 text-gray-600" />
-                      Customer
-                    </FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger data-testid="select-customer">
-                          <SelectValue placeholder="Select a customer" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {Array.isArray(customers) && customers.length > 0 ? (
-                          customers.map((customer: any) => (
-                            <SelectItem key={customer.id} value={customer.id}>
-                              {customer.name} ({customer.customerType})
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <div className="px-4 py-2 text-gray-500 text-sm">
-                            {customers === undefined
-                              ? "Loading customers..."
-                              : "No customers found. Please add a customer first."}
+                render={({ field }) => {
+                  const [search, setSearch] = React.useState("");
+                  const filteredCustomers = Array.isArray(customers)
+                    ? customers.filter((customer: any) =>
+                        customer.name.toLowerCase().includes(search.toLowerCase()) ||
+                        customer.customerType.toLowerCase().includes(search.toLowerCase())
+                      )
+                    : [];
+                  return (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        <FaUser className="h-4 w-4 text-gray-600" />
+                        Customer
+                      </FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-customer" className="w-full">
+                            <SelectValue placeholder="Search or select a customer" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="max-h-60 overflow-auto">
+                          <div className="px-2 py-2">
+                            <input
+                              type="text"
+                              className="border rounded px-2 py-1 w-full mb-2"
+                              placeholder="Search customer..."
+                              value={search}
+                              onChange={e => setSearch(e.target.value)}
+                              autoFocus
+                            />
                           </div>
-                        )}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                          {filteredCustomers.length > 0 ? (
+                            filteredCustomers.map((customer: any) => (
+                              <SelectItem key={customer.id} value={customer.id} className="px-2 py-1 cursor-pointer hover:bg-gray-100">
+                                {customer.name} ({customer.customerType})
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <div className="px-4 py-2 text-gray-500 text-sm">
+                              {customers === undefined
+                                ? "Loading customers..."
+                                : "No customers found. Please add a customer first."}
+                            </div>
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
 
               <FormField

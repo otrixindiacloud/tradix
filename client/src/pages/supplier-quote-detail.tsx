@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -66,210 +66,44 @@ interface SupplierQuoteItem {
 }
 
 export default function SupplierQuoteDetailPage() {
+
   const params = useParams();
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editForm, setEditForm] = useState<SupplierQuote | null>(null);
-  // Handle edit button click
-  const handleEditClick = () => {
-    setEditForm(quote ? { ...quote } : null);
-    setShowEditDialog(true);
-  };
-
-  // Handle form field change
-  const handleEditChange = (field: keyof SupplierQuote, value: any) => {
-    if (!editForm) return;
-    setEditForm({ ...editForm, [field]: value });
-  };
-
-  // Handle save
-  const handleEditSave = () => {
-    // Here you would call API to save changes
-    toast({
-      title: "Success",
-      description: "Supplier quote updated (mock)",
-    });
-    setShowEditDialog(false);
-  };
-
   const quoteId = params.id;
 
-  // Mock data for development - matching IDs from supplier-quotes.tsx
-  const mockQuotes: { [key: string]: SupplierQuote } = {
-    "sq-001": {
-      id: "sq-001",
-      quoteNumber: "SQ-2024-001",
-      supplierId: "sup-001",
-      supplierName: "Tech Solutions LLC",
-      requisitionId: "req-001",
-      requisitionNumber: "REQ-2024-001",
-      priority: "High",
-      status: "Received",
-      requestDate: "2024-01-15",
-      responseDate: "2024-01-17",
-      validUntil: "2024-02-15",
-      totalAmount: "5200.00",
-      currency: "BHD",
-      paymentTerms: "Net 30",
-      deliveryTerms: "FOB Destination",
-      notes: "Special discount for bulk order. Installation service included.",
-      score: 8.5,
-      rank: 2,
-      itemCount: 3,
-      createdAt: "2024-01-15T10:00:00Z",
-      updatedAt: "2024-01-17T14:30:00Z"
-    },
-    "sq-002": {
-      id: "sq-002",
-      quoteNumber: "SQ-2024-002",
-      supplierId: "sup-002",
-      supplierName: "Office Supplies Co",
-      requisitionId: "req-002",
-      requisitionNumber: "REQ-2024-002",
-      priority: "Medium",
-      status: "Under Review",
-      requestDate: "2024-01-14",
-      responseDate: "2024-01-16",
-      validUntil: "2024-02-14",
-      totalAmount: "2100.00",
-      currency: "BHD",
-      paymentTerms: "Net 15",
-      deliveryTerms: "CIF",
-      score: 9.2,
-      rank: 1,
-      itemCount: 5,
-      createdAt: "2024-01-14T09:30:00Z",
-      updatedAt: "2024-01-16T11:20:00Z"
-    },
-    "sq-003": {
-      id: "sq-003",
-      quoteNumber: "SQ-2024-003",
-      supplierId: "sup-003",
-      supplierName: "Industrial Equipment Ltd",
-      requisitionId: "req-003",
-      requisitionNumber: "REQ-2024-003",
-      priority: "Urgent",
-      status: "Pending",
-      requestDate: "2024-01-18",
-      responseDate: undefined,
-      validUntil: "2024-02-18",
-      totalAmount: "0.00",
-      currency: "BHD",
-      paymentTerms: "Net 45",
-      deliveryTerms: "EXW",
-      score: undefined,
-      rank: undefined,
-      itemCount: 0,
-      createdAt: "2024-01-18T08:00:00Z",
-      updatedAt: "2024-01-18T08:00:00Z"
-    }
-  };
+  // Fetch quote details from API
+  const [quote, setQuote] = useState<SupplierQuote | null>(null);
+  const [items, setItems] = useState<SupplierQuoteItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const mockItems: { [key: string]: SupplierQuoteItem[] } = {
-    "sq-001": [
-      {
-        id: "item-001",
-        quoteId: "sq-001",
-        itemDescription: "Dell PowerEdge R750 Server",
-        quantity: 2,
-        unitPrice: "2400.00",
-        totalPrice: "4800.00",
-        unitOfMeasure: "Units",
-        specifications: "32GB RAM, 2TB SSD, Dual processors",
-        leadTime: "10-12 working days",
-        warranty: "3 years on-site"
-      },
-      {
-        id: "item-002",
-        quoteId: "sq-001",
-        itemDescription: "Network Switch 48-port",
-        quantity: 1,
-        unitPrice: "400.00",
-        totalPrice: "400.00",
-        unitOfMeasure: "Unit",
-        specifications: "Gigabit Ethernet, managed switch",
-        leadTime: "5-7 working days",
-        warranty: "2 years"
-      }
-    ],
-    "sq-002": [
-      {
-        id: "item-003",
-        quoteId: "sq-002",
-        itemDescription: "Office Desk - Executive",
-        quantity: 3,
-        unitPrice: "280.00",
-        totalPrice: "840.00",
-        unitOfMeasure: "Units",
-        specifications: "L-shaped, oak finish, 160cm",
-        leadTime: "3-5 working days",
-        warranty: "1 year"
-      },
-      {
-        id: "item-004",
-        quoteId: "sq-002",
-        itemDescription: "Ergonomic Office Chair",
-        quantity: 3,
-        unitPrice: "220.00",
-        totalPrice: "660.00",
-        unitOfMeasure: "Units",
-        specifications: "Mesh back, adjustable height",
-        leadTime: "2-3 working days",
-        warranty: "2 years"
-      },
-      {
-        id: "item-005",
-        quoteId: "sq-002",
-        itemDescription: "Monitor Stand - Adjustable",
-        quantity: 3,
-        unitPrice: "85.00",
-        totalPrice: "255.00",
-        unitOfMeasure: "Units",
-        specifications: "Height adjustable, 13-27 inch monitors",
-        leadTime: "2-3 working days",
-        warranty: "1 year"
-      },
-      {
-        id: "item-006",
-        quoteId: "sq-002",
-        itemDescription: "Desk Lamp - LED",
-        quantity: 3,
-        unitPrice: "45.00",
-        totalPrice: "135.00",
-        unitOfMeasure: "Units",
-        specifications: "USB charging port, adjustable brightness",
-        leadTime: "1-2 working days",
-        warranty: "2 years"
-      },
-      {
-        id: "item-007",
-        quoteId: "sq-002",
-        itemDescription: "Cable Management Tray",
-        quantity: 3,
-        unitPrice: "25.00",
-        totalPrice: "75.00",
-        unitOfMeasure: "Units",
-        specifications: "Under-desk mounting, mesh design",
-        leadTime: "1-2 working days",
-        warranty: "1 year"
-      }
-    ],
-    "sq-003": []
-  };
-
-  // Use mock data instead of API calls
-  const quote = mockQuotes[quoteId || ""] || null;
-  const items = mockItems[quoteId || ""] || [];
-
-  // Debug logging for development
-  console.log("Debug - Quote ID from URL:", quoteId);
-  console.log("Debug - Available quote IDs:", Object.keys(mockQuotes));
-  console.log("Debug - Found quote:", quote ? "Yes" : "No");
-  if (quote) {
-    console.log("Debug - Quote details:", quote.quoteNumber, quote.supplierName);
-  }
+  // Fetch quote and items on mount or quoteId change
+  React.useEffect(() => {
+    if (!quoteId) return;
+    setLoading(true);
+    setError(null);
+    Promise.all([
+      fetch(`/api/supplier-quotes/${quoteId}`).then(async r => {
+        if (!r.ok) throw new Error("Failed to fetch quote");
+        return r.json();
+      }),
+      fetch(`/api/supplier-quotes/${quoteId}/items`).then(async r => {
+        if (!r.ok) throw new Error("Failed to fetch items");
+        return r.json();
+      })
+    ]).then(([quoteData, itemsData]) => {
+      setQuote(quoteData);
+      setItems(itemsData);
+      setLoading(false);
+    }).catch(e => {
+      setError(e.message);
+      setLoading(false);
+    });
+  }, [quoteId]);
 
   const handleDelete = () => {
     toast({
@@ -327,6 +161,30 @@ export default function SupplierQuoteDetailPage() {
       </div>
     );
   }
+
+  // Add missing handleEditClick function
+  const handleEditClick = () => {
+    if (quote) {
+      setEditForm(quote);
+      setShowEditDialog(true);
+    }
+  };
+
+  // Add missing handleEditChange function
+  const handleEditChange = <K extends keyof SupplierQuote>(key: K, value: SupplierQuote[K]) => {
+    setEditForm(prev => prev ? { ...prev, [key]: value } : prev);
+  };
+
+  // Add missing handleEditSave function (mock implementation)
+  const handleEditSave = () => {
+    toast({
+      title: "Success",
+      description: "Supplier quote updated (mock)",
+    });
+    setShowEditDialog(false);
+    // Optionally update quote state with editForm
+    if (editForm) setQuote(editForm);
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -488,17 +346,27 @@ export default function SupplierQuoteDetailPage() {
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Request Date</label>
-                <p className="mt-1">{formatDate(new Date(quote.requestDate), 'MMM dd, yyyy')}</p>
+                <p className="mt-1">{
+                  quote.requestDate && !isNaN(Date.parse(quote.requestDate))
+                    ? formatDate(new Date(quote.requestDate), 'MMM dd, yyyy')
+                    : 'N/A'
+                }</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Response Date</label>
                 <p className="mt-1">
-                  {quote.responseDate ? formatDate(new Date(quote.responseDate), 'MMM dd, yyyy') : 'Pending'}
+                  {quote.responseDate && !isNaN(Date.parse(quote.responseDate))
+                    ? formatDate(new Date(quote.responseDate), 'MMM dd, yyyy')
+                    : 'Pending'}
                 </p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Valid Until</label>
-                <p className="mt-1">{formatDate(new Date(quote.validUntil), 'MMM dd, yyyy')}</p>
+                <p className="mt-1">{
+                  quote.validUntil && !isNaN(Date.parse(quote.validUntil))
+                    ? formatDate(new Date(quote.validUntil), 'MMM dd, yyyy')
+                    : 'N/A'
+                }</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Currency</label>
@@ -601,7 +469,7 @@ export default function SupplierQuoteDetailPage() {
                   <select
                     className="w-full border rounded p-2"
                     value={editForm.priority}
-                    onChange={e => handleEditChange("priority", e.target.value)}
+                    onChange={e => handleEditChange("priority", e.target.value as SupplierQuote["priority"])}
                   >
                     <option value="Low">Low</option>
                     <option value="Medium">Medium</option>
@@ -614,7 +482,7 @@ export default function SupplierQuoteDetailPage() {
                   <select
                     className="w-full border rounded p-2"
                     value={editForm.status}
-                    onChange={e => handleEditChange("status", e.target.value)}
+                    onChange={e => handleEditChange("status", e.target.value as SupplierQuote["status"])}
                   >
                     <option value="Draft">Draft</option>
                     <option value="Sent">Sent</option>

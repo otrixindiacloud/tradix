@@ -58,6 +58,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   };
 
+  // Expose user info globally for client role checks
+  if (typeof window !== 'undefined') {
+    (window as any).authUser = user;
+  }
   const value: AuthContextValue = { user, loading, login, logout, refresh: fetchMe };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
