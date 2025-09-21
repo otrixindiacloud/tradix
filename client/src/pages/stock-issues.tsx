@@ -134,9 +134,18 @@ export default function StockIssuesPage() {
   // Create stock issue mutation
   const createIssueMutation = useMutation({
     mutationFn: async (data: StockIssueForm) => {
+      // Map frontend fields to backend expected fields
+      const selectedItem = items.find((item: any) => item.id === data.itemId);
       const issueData = {
-        ...data,
-        quantity: data.quantityIssued,
+        issueNumber: data.issueNumber,
+        itemId: data.itemId,
+        itemCode: selectedItem?.itemCode || selectedItem?.code || undefined,
+        quantity: Number(data.quantityIssued),
+        issuedTo: data.issuedTo,
+        issueDate: data.issueDate,
+        reason: data.purpose, // backend expects 'reason'
+        departmentId: data.departmentId || undefined,
+        notes: data.notes || undefined,
         status: "Draft",
       };
       return await apiRequest("POST", "/api/stock-issues", issueData);

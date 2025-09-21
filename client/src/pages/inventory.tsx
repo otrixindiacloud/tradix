@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Search, Filter, Package, AlertTriangle, TrendingUp, TrendingDown, Scan, Boxes, DollarSign, Lock, XCircle, Warehouse, Plus } from "lucide-react";
+import { Search, Filter, Package, AlertTriangle, TrendingUp, TrendingDown, Scan, Boxes, DollarSign, Lock, XCircle, Warehouse, Plus, Eye, Edit, Trash2 } from "lucide-react";
 import DataTable, { Column } from "@/components/tables/data-table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/utils";
@@ -36,6 +36,71 @@ const createItemSchema = z.object({
 type CreateItemForm = z.infer<typeof createItemSchema>;
 
 export default function Inventory() {
+  // State for edit dialog
+  const [editingItem, setEditingItem] = useState<any>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const editItemForm = useForm<CreateItemForm>({
+    resolver: zodResolver(createItemSchema),
+    defaultValues: {
+      supplierCode: "",
+      barcode: "",
+      description: "",
+      category: "",
+      unitOfMeasure: "",
+      costPrice: 0,
+      quantity: 0,
+      totalStock: 0,
+      reservedQuantity: 0,
+      availableQuantity: 0,
+      storageLocation: "",
+    },
+  });
+
+  // Mutation for updating inventory item
+  const updateItem = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: CreateItemForm }) => {
+      const response = await apiRequest("PUT", `/api/inventory-items/${id}`, data);
+      if (!response.ok) throw new Error("Failed to update item");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory-items"] });
+      setShowEditDialog(false);
+      setEditingItem(null);
+      editItemForm.reset();
+      toast({
+        title: "Success",
+        description: "Item updated successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update item",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // When opening edit dialog, set form values
+  const handleEditClick = (item: any) => {
+    setEditingItem(item);
+    setShowEditDialog(true);
+    editItemForm.reset({
+      supplierCode: item.supplierCode || "",
+      barcode: item.barcode || "",
+      description: item.description || "",
+      category: item.category || "",
+      unitOfMeasure: item.unitOfMeasure || "",
+      costPrice: item.costPrice || 0,
+      quantity: item.quantity || 0,
+      totalStock: item.totalStock || 0,
+      reservedQuantity: item.reservedQuantity || 0,
+      availableQuantity: item.availableQuantity || 0,
+      storageLocation: item.storageLocation || "",
+    });
+  };
+
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [stockFilter, setStockFilter] = useState("all");
@@ -45,6 +110,8 @@ export default function Inventory() {
   const [adjustingItem, setAdjustingItem] = useState<any>(null);
   const [adjustmentQuantity, setAdjustmentQuantity] = useState<number>(0);
   const [adjustmentType, setAdjustmentType] = useState<"increase" | "decrease" | "set">("increase");
+  const [deletingItem, setDeletingItem] = useState<any>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -232,7 +299,17 @@ export default function Inventory() {
     };
   });
 
-  const filteredInventory = inventoryWithDetails?.filter((item: any) => {
+  // Sort inventory by createdAt descending (newest first)
+  const sortedInventory = inventoryWithDetails?.slice().sort((a: any, b: any) => {
+    // If createdAt exists, use it; fallback to id (assuming uuid or increment)
+    if (a.createdAt && b.createdAt) {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }
+    // Fallback: sort by id descending
+    return (b.id > a.id ? 1 : b.id < a.id ? -1 : 0);
+  });
+
+  const filteredInventory = sortedInventory?.filter((item: any) => {
     const matchesSearch = item.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          item.supplierCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          item.barcode?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -351,6 +428,7 @@ export default function Inventory() {
       header: "Actions",
       render: (_, item: any) => (
         <div className="flex items-center space-x-2">
+          {/* View Icon */}
           <Button
             size="sm"
             variant="ghost"
@@ -359,19 +437,36 @@ export default function Inventory() {
               setSelectedItem(item);
             }}
             data-testid={`button-view-${item.id}`}
+            title="View Details"
           >
-            <Package className="h-4 w-4" />
+            <Eye className="h-4 w-4 text-blue-600" />
           </Button>
+          {/* Edit Icon */}
           <Button
             size="sm"
             variant="ghost"
             onClick={(e) => {
               e.stopPropagation();
-              console.log("Scan barcode for:", item.barcode);
+              handleEditClick(item);
             }}
-            data-testid={`button-scan-${item.id}`}
+            data-testid={`button-edit-${item.id}`}
+            title="Edit Item"
           >
-            <Scan className="h-4 w-4" />
+            <Edit className="h-4 w-4 text-green-600" />
+          </Button>
+          {/* Delete Icon */}
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={(e) => {
+              e.stopPropagation();
+              setDeletingItem(item);
+              setShowDeleteDialog(true);
+            }}
+            data-testid={`button-delete-${item.id}`}
+            title="Delete Item"
+          >
+            <Trash2 className="h-4 w-4 text-red-600" />
           </Button>
         </div>
       ),
@@ -954,6 +1049,189 @@ export default function Inventory() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Item Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Inventory Item</DialogTitle>
+          </DialogHeader>
+          {editingItem && (
+            <Form {...editItemForm}>
+              <form
+                onSubmit={editItemForm.handleSubmit((data) => updateItem.mutate({ id: editingItem.id, data }))}
+                className="space-y-4"
+              >
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={editItemForm.control}
+                    name="supplierCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Supplier Code *</FormLabel>
+                        <FormControl>
+                          <Input {...field} disabled />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={editItemForm.control}
+                    name="barcode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Barcode</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <FormField
+                  control={editItemForm.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description *</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={editItemForm.control}
+                    name="category"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Category *</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={editItemForm.control}
+                    name="unitOfMeasure"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Unit of Measure *</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <FormField
+                    control={editItemForm.control}
+                    name="costPrice"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cost Price *</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={field.value}
+                            onChange={e => field.onChange(e.target.value === "" ? 0 : parseFloat(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={editItemForm.control}
+                    name="quantity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Total Stock *</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={field.value}
+                            onChange={e => field.onChange(e.target.value === "" ? 0 : parseInt(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={editItemForm.control}
+                    name="reservedQuantity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Reserved</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={field.value}
+                            onChange={e => field.onChange(e.target.value === "" ? 0 : parseInt(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <FormField
+                  control={editItemForm.control}
+                  name="availableQuantity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Available</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={field.value}
+                          onChange={e => field.onChange(e.target.value === "" ? 0 : parseInt(e.target.value))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={editItemForm.control}
+                  name="storageLocation"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Location</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex justify-end space-x-2 pt-4">
+                  <Button variant="outline" type="button" onClick={() => setShowEditDialog(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={updateItem.isPending}>
+                    {updateItem.isPending ? "Updating..." : "Update Item"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Item Details Dialog */}
       <Dialog open={!!selectedItem} onOpenChange={() => setSelectedItem(null)}>

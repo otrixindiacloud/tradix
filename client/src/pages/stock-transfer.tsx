@@ -184,6 +184,7 @@ export default function StockTransferPage() {
         itemId: data.itemId,
         movementType: "Transfer",
         referenceType: "Transfer",
+        referenceId: data.transferNumber,
         transferNumber: data.transferNumber,
         quantityMoved: quantity,
         quantityBefore,
@@ -197,6 +198,9 @@ export default function StockTransferPage() {
         reason: data.reason,
         notes: data.notes,
         status: data.status,
+        unitCost: selectedItem.unitCost || "0",
+        totalValue: ((selectedItem.unitCost || 0) * quantity).toString(),
+        variantId: selectedItem.variantId || undefined,
       };
       const response = await apiRequest("POST", "/api/stock-movements", transferData);
       if (!response.ok) {

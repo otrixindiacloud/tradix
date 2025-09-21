@@ -103,6 +103,9 @@ const getPriorityColor = (priority: string) => {
 };
 
 export default function MaterialRequestsPage() {
+  // Pagination state for requests table
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
   // Item-level edit dialog state
   // Duplicate declarations removed (already declared above)
   // Item-level edit dialog state
@@ -282,6 +285,10 @@ export default function MaterialRequestsPage() {
 
     return matchesSearch && matchesStatus && matchesPriority && matchesDepartment;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredRequests.length / pageSize);
+  const paginatedRequests = filteredRequests.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   // Get unique departments for filter
   const departments = Array.from(new Set((Array.isArray(requests) ? requests : []).map((r: Requisition) => r.department))).filter(Boolean);
@@ -1087,7 +1094,7 @@ export default function MaterialRequestsPage() {
         </CardContent>
       </Card>
 
-      {/* Requests Table */}
+      {/* Requests Table with Pagination */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Material Requests</CardTitle>
@@ -1097,11 +1104,37 @@ export default function MaterialRequestsPage() {
         </CardHeader>
         <CardContent>
           <DataTable
-            data={filteredRequests}
+            data={paginatedRequests}
             columns={columns}
             isLoading={isLoading}
             emptyMessage="No material requests found. Create your first request to get started."
           />
+          {/* Pagination Controls */}
+          {filteredRequests.length > pageSize && (
+            <div className="flex justify-center items-center gap-2 mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(currentPage - 1)}
+                data-testid="button-prev-page"
+              >
+                Previous
+              </Button>
+              <span className="mx-2 text-sm">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(currentPage + 1)}
+                data-testid="button-next-page"
+              >
+                Next
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 

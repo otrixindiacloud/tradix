@@ -13,6 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useToast } from "@/hooks/use-toast";
+import DataTable from "@/components/tables/data-table";
 import {
   Package,
   Plus,
@@ -22,6 +24,7 @@ import {
   Eye,
   CheckCircle,
   Clock,
+  Trash,
   XCircle,
   AlertTriangle,
   User,
@@ -34,17 +37,27 @@ import {
   Scan,
   ClipboardCheck
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import DataTable from "@/components/tables/data-table";
-import { formatDate, formatCurrency } from "@/lib/utils";
+
+// Utility function to format date strings as "YYYY-MM-DD"
+function formatDate(dateStr?: string) {
+  if (!dateStr) return "N/A";
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
+  return date.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+  });
+}
 
 // Form schemas
 const goodsReceiptSchema = z.object({
   receiptNumber: z.string().min(1, "Receipt number is required"),
   supplierLpoId: z.string().min(1, "Supplier LPO is required"),
+  supplierId: z.string().min(1, "Supplier is required"),
   receiptDate: z.string().min(1, "Receipt date is required"),
   receivedBy: z.string().min(1, "Received by is required"),
-  status: z.enum(["Pending", "Partial", "Complete", "Discrepancy"]),
+  status: z.enum(["Pending", "Partial", "Completed", "Discrepancy"]),
   notes: z.string().optional(),
 });
 
@@ -122,6 +135,7 @@ const getStatusBadge = (status: string) => {
 
 export default function ReceiptsPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   // Fetch supplier LPOs for dropdown
   const { data: supplierLpos = [] } = useQuery({
     queryKey: ["supplier-lpos"],
@@ -158,6 +172,32 @@ export default function ReceiptsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Delete goods receipt mutation
+  const deleteReceiptMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest("DELETE", `/api/receipts/${id}`);
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["receipts"] }),
+        queryClient.invalidateQueries({ queryKey: ["receipts-stats"] })
+      ]);
+      setShowDeleteDialog(false);
+      setSelectedReceipt(null);
+      toast({
+        title: "Deleted",
+        description: "Receipt deleted successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete receipt",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Fetch goods receipts
   const { data: receipts = [], isLoading } = useQuery({
     queryKey: ["receipts"],
@@ -176,7 +216,7 @@ export default function ReceiptsPage() {
       const total = receiptsArray.length;
       const pending = receiptsArray.filter(r => r.status === "Pending").length;
       const partial = receiptsArray.filter(r => r.status === "Partial").length;
-      const complete = receiptsArray.filter(r => r.status === "Complete").length;
+      const complete = receiptsArray.filter(r => r.status === "Completed").length;
       const discrepancy = receiptsArray.filter(r => r.status === "Discrepancy").length;
       
       return { total, pending, partial, complete, discrepancy };
@@ -189,14 +229,20 @@ export default function ReceiptsPage() {
     mutationFn: async (data: GoodsReceiptForm) => {
       return await apiRequest("POST", "/api/receipts", data);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["receipts"] });
-      setShowCreateDialog(false);
-      form.reset();
-      toast({
-        title: "Success",
-        description: " receipt created successfully",
-      });
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["receipts"] }),
+        queryClient.invalidateQueries({ queryKey: ["receipts-stats"] })
+      ]);
+      // Wait for receipts to refetch before closing dialog
+      setTimeout(() => {
+        setShowCreateDialog(false);
+        form.reset();
+        toast({
+          title: "Success",
+          description: "Receipt created successfully",
+        });
+      }, 300); // 300ms delay to allow table to update
     },
     onError: (error: any) => {
       toast({
@@ -212,8 +258,11 @@ export default function ReceiptsPage() {
     mutationFn: async (data: GoodsReceiptForm & { id: string }) => {
       return await apiRequest("PUT", `/api/receipts/${data.id}`, data);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["receipts"] });
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["receipts"] }),
+        queryClient.invalidateQueries({ queryKey: ["receipts-stats"] })
+      ]);
       setShowEditDialog(false);
       toast({
         title: "Success",
@@ -234,6 +283,7 @@ export default function ReceiptsPage() {
     defaultValues: {
       receiptNumber: "",
       supplierLpoId: "",
+      supplierId: "",
       receiptDate: "",
       receivedBy: "",
       status: "Pending",
@@ -242,11 +292,21 @@ export default function ReceiptsPage() {
   });
 
   const onSubmit = (data: GoodsReceiptForm) => {
-    createReceiptMutation.mutate(data);
+    // Find supplierId from selected supplierLpoId
+    const selectedLpo = supplierLpos.find((lpo: any) => lpo.id === data.supplierLpoId);
+    const supplierId = selectedLpo?.supplierId || "";
+    createReceiptMutation.mutate({ ...data, supplierId });
   };
 
+  // Sort receipts by createdAt descending (latest first)
+  const sortedReceipts = (Array.isArray(receipts) ? receipts : []).slice().sort((a: any, b: any) => {
+    const aDate = new Date(a.createdAt || a.receiptDate || 0).getTime();
+    const bDate = new Date(b.createdAt || b.receiptDate || 0).getTime();
+    return bDate - aDate;
+  });
+
   // Filter receipts
-  const filteredReceipts = (Array.isArray(receipts) ? receipts : []).filter((receipt: any) => {
+  const filteredReceipts = sortedReceipts.filter((receipt: any) => {
     const matchesSearch = 
       receipt.receiptNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       receipt.receivedBy?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -268,13 +328,18 @@ export default function ReceiptsPage() {
     },
     {
       key: "supplierName",
-      header: "Supplier",
-      render: (_: string, receipt: any) => (
-        <div className="flex items-center gap-2">
-          <Building2 className="h-4 w-4 text-gray-500" />
-          <span>{receipt.supplierName || receipt.supplierLpoId || "N/A"}</span>
-        </div>
-      ),
+      header: "Supplier LPO",
+      render: (_: string, receipt: any) => {
+        // Find LPO number from supplierLpos using supplierLpoId
+        const lpo = supplierLpos.find((l: any) => l.id === receipt.supplierLpoId);
+        const lpoNumber = lpo?.lpoNumber || receipt.supplierLpoId || "N/A";
+        return (
+          <div className="flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-gray-500" />
+            <span>{lpoNumber}</span>
+          </div>
+        );
+      },
     },
     {
       key: "receivedBy",
@@ -333,6 +398,16 @@ export default function ReceiptsPage() {
           >
             <Edit className="h-4 w-4" />
           </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => {
+              setSelectedReceipt(receipt);
+              setShowDeleteDialog(true);
+            }}
+          >
+            <Trash className="h-4 w-4" />
+          </Button>
         </div>
       ),
     },
@@ -340,6 +415,33 @@ export default function ReceiptsPage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
+      {/* Delete Receipt Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Receipt</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete receipt #{selectedReceipt?.receiptNumber}?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleteReceiptMutation.isPending}
+              onClick={() => {
+                if (selectedReceipt?.id) {
+                  deleteReceiptMutation.mutate(selectedReceipt.id);
+                }
+              }}
+            >
+              {deleteReceiptMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       {/* Header */}
       <div className="bg-gradient-to-r from-slate-50 to-green-50 rounded-xl p-6 border border-slate-200/50 shadow-sm">
         <div className="flex justify-between items-center">
@@ -398,7 +500,15 @@ export default function ReceiptsPage() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Supplier LPO</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                          <Select
+                            onValueChange={value => {
+                              field.onChange(value);
+                              // Set supplierId when LPO changes
+                              const selectedLpo = supplierLpos.find((lpo: any) => lpo.id === value);
+                              form.setValue("supplierId", selectedLpo?.supplierId || "");
+                            }}
+                            value={field.value}
+                          >
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select Supplier LPO" />
@@ -416,6 +526,8 @@ export default function ReceiptsPage() {
                         </FormItem>
                       )}
                     />
+                    {/* Hidden supplierId field for validation */}
+                    <input type="hidden" {...form.register("supplierId")} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
@@ -460,7 +572,7 @@ export default function ReceiptsPage() {
                           <SelectContent>
                             <SelectItem value="Pending">Pending</SelectItem>
                             <SelectItem value="Partial">Partial</SelectItem>
-                            <SelectItem value="Complete">Complete</SelectItem>
+                            <SelectItem value="Completed">Completed</SelectItem>
                             <SelectItem value="Discrepancy">Discrepancy</SelectItem>
                           </SelectContent>
                         </Select>
@@ -515,13 +627,17 @@ export default function ReceiptsPage() {
             <form
               onSubmit={form.handleSubmit((data) => {
                 if (editForm && editForm.id) {
-                  // Update via API (PUT /api/receipts/:id)
-                  updateReceiptMutation.mutate({ ...data, id: editForm.id }, {
-                    onSuccess: () => {
+                  // Ensure supplierId is set from selected LPO
+                  const selectedLpo = supplierLpos.find((lpo: any) => lpo.id === data.supplierLpoId);
+                  const supplierId = selectedLpo?.supplierId || data.supplierId || "";
+                  updateReceiptMutation.mutate({ ...data, supplierId, id: editForm.id }, {
+                    onSuccess: async () => {
                       setShowEditDialog(false);
                       setEditForm(null);
                       form.reset();
+                      // Invalidate queries but do not block dialog closing
                       queryClient.invalidateQueries({ queryKey: ["receipts"] });
+                      queryClient.invalidateQueries({ queryKey: ["receipts-stats"] });
                     }
                   });
                 }
@@ -610,7 +726,7 @@ export default function ReceiptsPage() {
                       <SelectContent>
                         <SelectItem value="Pending">Pending</SelectItem>
                         <SelectItem value="Partial">Partial</SelectItem>
-                        <SelectItem value="Complete">Complete</SelectItem>
+                        <SelectItem value="Completed">Completed</SelectItem>
                         <SelectItem value="Discrepancy">Discrepancy</SelectItem>
                       </SelectContent>
                     </Select>
@@ -635,7 +751,7 @@ export default function ReceiptsPage() {
                 <Button type="button" variant="outline" onClick={() => setShowEditDialog(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={updateReceiptMutation.isPending}>
+                <Button type="submit" disabled={updateReceiptMutation.isPending ? true : false}>
                   {updateReceiptMutation.isPending ? "Saving..." : "Save Changes"}
                 </Button>
               </div>
@@ -691,7 +807,7 @@ export default function ReceiptsPage() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Discrepancies</CardTitle>
+              <CardTitle className="text-sm font-medium">Discrepancy</CardTitle>
               <AlertTriangle className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>

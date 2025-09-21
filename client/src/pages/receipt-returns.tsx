@@ -108,12 +108,12 @@ export default function ReceiptReturnsPage() {
     },
   });
 
-  // Fetch goods receipts for dropdown
+  // Fetch goods receipts for dropdown (from /api/receipts)
   const { data: goodsReceipts = [] } = useQuery({
-    queryKey: ["goods-receipts"],
+    queryKey: ["receipts"],
     queryFn: async () => {
       try {
-        const response = await apiRequest("GET", "/api/goods-receipt-headers");
+        const response = await apiRequest("GET", "/api/receipts");
         const data = await response.json();
         // Ensure each receipt has a receiptNumber property
         return Array.isArray(data)
@@ -123,7 +123,7 @@ export default function ReceiptReturnsPage() {
             }))
           : [];
       } catch (error) {
-        console.error("Failed to fetch goods receipts:", error);
+        console.error("Failed to fetch receipts:", error);
         return [];
       }
     },
@@ -171,14 +171,19 @@ export default function ReceiptReturnsPage() {
     mutationFn: async (data: ReceiptReturnForm) => {
       return await apiRequest("POST", "/api/receipt-returns", data);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["receipt-returns"] });
-      setShowCreateDialog(false);
-      form.reset();
-      toast({
-        title: "Success",
-        description: "Receipt return created successfully",
-      });
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["receipt-returns"] }),
+        queryClient.invalidateQueries({ queryKey: ["receipt-returns-stats"] })
+      ]);
+      setTimeout(() => {
+        setShowCreateDialog(false);
+        form.reset();
+        toast({
+          title: "Success",
+          description: "Receipt return created successfully",
+        });
+      }, 300);
     },
     onError: (error: any) => {
       toast({
@@ -456,11 +461,6 @@ export default function ReceiptReturnsPage() {
                           };
                           apiRequest("POST", `/api/receipt-returns/${createdReturn.id}/items`, itemPayload);
                         }
-                        setShowCreateDialog(false);
-                        setSelectedItemId("");
-                        setSelectedReturnQuantity(0);
-                        form.reset();
-                        queryClient.invalidateQueries({ queryKey: ["receipt-returns"] });
                       },
                       onError: (error: any) => {
                         toast({
@@ -490,37 +490,52 @@ export default function ReceiptReturnsPage() {
                     <FormField
                       control={form.control}
                       name="goodsReceiptId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Goods Receipt (Receipt Number) <span className="text-red-500">*</span></FormLabel>
-                          <Select required onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select goods receipt" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {goodsReceipts.length === 0 ? (
-                                <div className="px-4 py-2 text-gray-500 text-sm">No goods receipts available</div>
-                              ) : (
-                                goodsReceipts.map((receipt: any) => (
-                                  <SelectItem key={receipt.id} value={receipt.id}>
-                                    {receipt.receiptNumber && typeof receipt.receiptNumber === "string"
-                                      ? receipt.receiptNumber
-                                      : `GR-${receipt.id}`}
-                                    {receipt.supplierName
-                                      ? ` — ${receipt.supplierName}`
-                                      : receipt.supplier?.name
-                                        ? ` — ${receipt.supplier.name}`
-                                        : ""}
-                                  </SelectItem>
-                                ))
-                              )}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+                      render={({ field }) => {
+                        const [receiptSearch, setReceiptSearch] = useState("");
+                        const filteredReceipts = goodsReceipts.filter((receipt: any) => {
+                          const searchStr = `${receipt.receiptNumber || ""} ${receipt.supplierName || receipt.supplier?.name || ""}`.toLowerCase();
+                          return searchStr.includes(receiptSearch.toLowerCase());
+                        });
+                        return (
+                          <FormItem>
+                            <FormLabel>Receipt Number <span className="text-red-500">*</span></FormLabel>
+                            <Select required onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select Receipt" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <div className="px-2 py-2 sticky top-0 bg-white z-10">
+                                  <Input
+                                    placeholder="Search receipt number or supplier..."
+                                    value={receiptSearch}
+                                    onChange={e => setReceiptSearch(e.target.value)}
+                                    className="mb-2"
+                                  />
+                                </div>
+                                {filteredReceipts.length === 0 ? (
+                                  <div className="px-4 py-2 text-gray-500 text-sm">No receipts found</div>
+                                ) : (
+                                  filteredReceipts.map((receipt: any) => (
+                                    <SelectItem key={receipt.id} value={receipt.id}>
+                                      {receipt.receiptNumber && typeof receipt.receiptNumber === "string"
+                                        ? receipt.receiptNumber
+                                        : `GR-${receipt.id}`}
+                                      {receipt.supplierName
+                                        ? ` — ${receipt.supplierName}`
+                                        : receipt.supplier?.name
+                                          ? ` — ${receipt.supplier.name}`
+                                          : ""}
+                                    </SelectItem>
+                                  ))
+                                )}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -652,9 +667,11 @@ export default function ReceiptReturnsPage() {
                       Cancel
                     </Button>
                     <Button
-                      type="submit" disabled={updateReturnMutation.isPending}
+                      type="submit"
+                      variant="default"
+                      disabled={createReturnMutation.isPending}
                     >
-                      {updateReturnMutation.isPending ? "Updating..." : "Process Return"}
+                      {createReturnMutation.isPending ? "Processing..." : "Process Return"}
                     </Button>
                   </div>
                 </form>

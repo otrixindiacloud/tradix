@@ -157,7 +157,7 @@ export class InvoiceStorage extends BaseStorage {
 
   async generateProformaInvoice(salesOrderId: string, userId?: string) {
     // Get sales order to extract customer ID
-    const salesOrder = await this.db.select().from(salesOrders).where(eq(salesOrders.id, salesOrderId)).limit(1);
+    const salesOrder = await db.select().from(salesOrders).where(eq(salesOrders.id, salesOrderId)).limit(1);
     if (!salesOrder.length) {
       throw new Error('Sales order not found');
     }
@@ -170,9 +170,9 @@ export class InvoiceStorage extends BaseStorage {
       salesOrderId,
       customerId: salesOrder[0].customerId,
       status: 'Draft',
-      currency: salesOrder[0].currency || 'BHD',
-      exchangeRate: salesOrder[0].exchangeRate || '1.0000',
-      baseCurrency: salesOrder[0].baseCurrency || 'BHD',
+      currency: (salesOrder[0] as any).currency || 'BHD',
+      exchangeRate: (salesOrder[0] as any).exchangeRate || '1.0000',
+      baseCurrency: (salesOrder[0] as any).baseCurrency || 'BHD',
       subtotal: 0,
       taxRate: '0',
       taxAmount: 0,

@@ -89,10 +89,13 @@ export default function Delivery() {
       setSelectedOrder(null);
       setDeliveryData({ deliveryAddress: "", deliveryNotes: "", deliveryDocument: null });
     },
-    onError: () => {
+    onError: (error: any) => {
+      let errorMsg = "Failed to create delivery";
+      if (error?.message) errorMsg = error.message;
+      if (error?.errors) errorMsg += ": " + error.errors.map((e: any) => e.message).join(", ");
       toast({
         title: "Error",
-        description: "Failed to create delivery",
+        description: errorMsg,
         variant: "destructive",
       });
     },
@@ -529,7 +532,10 @@ export default function Delivery() {
               emptyMessage="No deliveries found. Create deliveries from shipped orders."
               onRowClick={(item) => {
                 if (item.isPendingDelivery) {
-                  setSelectedOrder(item.order);
+                  setSelectedOrder({
+                    ...item.order,
+                    id: item.salesOrderId || item.order.id // Ensure id is UUID
+                  });
                   setDeliveryData({
                     deliveryAddress: item.order.customer?.address || "",
                     deliveryNotes: "",
@@ -679,8 +685,10 @@ export default function Delivery() {
                 <Button
                   onClick={() => {
                     if (selectedOrder && deliveryData.deliveryAddress.trim()) {
+                      // Use salesOrderId if present, else fallback to id
+                      const salesOrderId = selectedOrder.salesOrderId || selectedOrder.id;
                       createDelivery.mutate({
-                        salesOrderId: selectedOrder.id,
+                        salesOrderId,
                         ...deliveryData,
                       });
                     }
@@ -965,7 +973,10 @@ export default function Delivery() {
                     key={order.salesOrderId}
                     className="border border-gray-200 rounded-lg p-4 hover:border-orange-300 hover:bg-orange-50 cursor-pointer transition-colors"
                     onClick={() => {
-                      setSelectedOrder(order.order);
+                      setSelectedOrder({
+                        ...order.order,
+                        id: order.salesOrderId || order.order.id // Ensure id is UUID
+                      });
                       setDeliveryData({
                         deliveryAddress: order.order.customer?.address || "",
                         deliveryNotes: "",
@@ -1021,7 +1032,10 @@ export default function Delivery() {
                           className="border-orange-300 text-orange-600 hover:bg-orange-50"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setSelectedOrder(order.order);
+                            setSelectedOrder({
+                              ...order.order,
+                              id: order.salesOrderId || order.order.id // Ensure id is UUID
+                            });
                             setDeliveryData({
                               deliveryAddress: order.order.customer?.address || "",
                               deliveryNotes: "",

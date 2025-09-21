@@ -262,8 +262,9 @@ export function registerInventoryRoutes(app: Express) {
       const movements = await storage.getStockMovements(filters);
       res.json(movements);
     } catch (error) {
-      console.error("Error fetching stock movements:", error);
-      res.status(500).json({ message: "Failed to fetch stock movements" });
+      const err = error as any;
+      console.error("Error fetching stock movements:", err?.stack || err);
+      res.status(500).json({ message: "Failed to fetch stock movements", error: err?.message || String(err) });
     }
   });
 
@@ -284,14 +285,25 @@ export function registerInventoryRoutes(app: Express) {
     try {
       const movementData = {
         itemId: req.body.itemId,
+        variantId: req.body.variantId,
         movementType: req.body.movementType,
+        referenceType: req.body.referenceType,
+        referenceId: req.body.referenceId,
+        transferNumber: req.body.transferNumber,
         quantityMoved: req.body.quantityMoved,
         quantityBefore: req.body.quantityBefore,
         quantityAfter: req.body.quantityAfter,
+        fromLocation: req.body.fromLocation,
+        toLocation: req.body.toLocation,
         storageLocation: req.body.storageLocation,
+        transferDate: req.body.transferDate,
+        requestedBy: req.body.requestedBy,
+        createdBy: req.body.createdBy || req.body.requestedBy || "system",
         reason: req.body.reason,
         notes: req.body.notes,
-        createdBy: req.body.createdBy || "system",
+        status: req.body.status,
+        unitCost: req.body.unitCost,
+        totalValue: req.body.totalValue,
       };
       const movement = await storage.createStockMovement(movementData);
       res.status(201).json(movement);

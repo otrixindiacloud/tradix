@@ -1,6 +1,7 @@
 import { BaseStorage } from './base.js';
 import { db } from '../db.js';
 import { 
+  physicalStock,
   physicalStockCounts,
   physicalStockCountItems,
   physicalStockScanningSessions,
@@ -25,9 +26,16 @@ import {
   type InsertPhysicalStockAdjustmentItem
 } from '@shared/schema';
 import { eq, and, desc, asc, sql, inArray } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { nanoid } from 'nanoid';
 
 export class PhysicalStockStorage extends BaseStorage {
+  // === PHYSICAL STOCK ITEMS ===
+  async getAllPhysicalStockItems() {
+    // Returns all rows from the physicalStock table
+    // Ensure physicalStock is imported from @shared/schema
+    return await db.select().from(physicalStock);
+  }
   
   // === PHYSICAL STOCK COUNTS ===
   
@@ -51,54 +59,67 @@ export class PhysicalStockStorage extends BaseStorage {
     return physicalStockCount;
   }
 
-  async getPhysicalStockCounts(limit: number = 50, offset: number = 0) {
-    return await db
-      .select({
-        id: physicalStockCounts.id,
-        countNumber: physicalStockCounts.countNumber,
-        description: physicalStockCounts.description,
-        countDate: physicalStockCounts.countDate,
-        storageLocation: physicalStockCounts.storageLocation,
-        countType: physicalStockCounts.countType,
-        status: physicalStockCounts.status,
-        scheduledDate: physicalStockCounts.scheduledDate,
-        startedBy: physicalStockCounts.startedBy,
-        startedAt: physicalStockCounts.startedAt,
-        completedBy: physicalStockCounts.completedBy,
-        completedAt: physicalStockCounts.completedAt,
-        approvedBy: physicalStockCounts.approvedBy,
-        approvedAt: physicalStockCounts.approvedAt,
-        totalItemsExpected: physicalStockCounts.totalItemsExpected,
-        totalItemsCounted: physicalStockCounts.totalItemsCounted,
-        totalDiscrepancies: physicalStockCounts.totalDiscrepancies,
-        notes: physicalStockCounts.notes,
-        createdBy: physicalStockCounts.createdBy,
-        createdAt: physicalStockCounts.createdAt,
-        updatedAt: physicalStockCounts.updatedAt,
-        // User details
-        startedByUser: {
-          id: users.id,
-          firstName: users.firstName,
-          lastName: users.lastName,
-        },
-        completedByUser: {
-          id: users.id,
-          firstName: users.firstName,
-          lastName: users.lastName,
-        },
-        createdByUser: {
-          id: users.id,
-          firstName: users.firstName,
-          lastName: users.lastName,
-        },
-      })
-  .from(physicalStockCounts)
-  .leftJoin(users.as('startedByUser'), eq(physicalStockCounts.startedBy, users.as('startedByUser').id))
-  .leftJoin(users.as('completedByUser'), eq(physicalStockCounts.completedBy, users.as('completedByUser').id))
-  .leftJoin(users.as('createdByUser'), eq(physicalStockCounts.createdBy, users.as('createdByUser').id))
-      .orderBy(desc(physicalStockCounts.createdAt))
-      .limit(limit)
-      .offset(offset);
+  // Aliases for user joins
+  static startedByUser = alias(users, 'startedByUser');
+  static completedByUser = alias(users, 'completedByUser');
+  static createdByUser = alias(users, 'createdByUser');
+
+  async getPhysicalStockCounts(limit?: number, offset?: number) {
+    const startedByUser = PhysicalStockStorage.startedByUser;
+    const completedByUser = PhysicalStockStorage.completedByUser;
+    const createdByUser = PhysicalStockStorage.createdByUser;
+      let query = db
+        .select({
+          id: physicalStockCounts.id,
+          countNumber: physicalStockCounts.countNumber,
+          description: physicalStockCounts.description,
+          countDate: physicalStockCounts.countDate,
+          storageLocation: physicalStockCounts.storageLocation,
+          countType: physicalStockCounts.countType,
+          status: physicalStockCounts.status,
+          scheduledDate: physicalStockCounts.scheduledDate,
+          startedBy: physicalStockCounts.startedBy,
+          startedAt: physicalStockCounts.startedAt,
+          completedBy: physicalStockCounts.completedBy,
+          completedAt: physicalStockCounts.completedAt,
+          approvedBy: physicalStockCounts.approvedBy,
+          approvedAt: physicalStockCounts.approvedAt,
+          totalItemsExpected: physicalStockCounts.totalItemsExpected,
+          totalItemsCounted: physicalStockCounts.totalItemsCounted,
+          totalDiscrepancies: physicalStockCounts.totalDiscrepancies,
+          notes: physicalStockCounts.notes,
+          createdBy: physicalStockCounts.createdBy,
+          createdAt: physicalStockCounts.createdAt,
+          updatedAt: physicalStockCounts.updatedAt,
+          // User details
+          startedByUser: {
+            id: startedByUser.id,
+            firstName: startedByUser.firstName,
+            lastName: startedByUser.lastName,
+          },
+          completedByUser: {
+            id: completedByUser.id,
+            firstName: completedByUser.firstName,
+            lastName: completedByUser.lastName,
+          },
+          createdByUser: {
+            id: createdByUser.id,
+            firstName: createdByUser.firstName,
+            lastName: createdByUser.lastName,
+          },
+        })
+        .from(physicalStockCounts)
+        .leftJoin(startedByUser, eq(physicalStockCounts.startedBy, startedByUser.id))
+        .leftJoin(completedByUser, eq(physicalStockCounts.completedBy, completedByUser.id))
+        .leftJoin(createdByUser, eq(physicalStockCounts.createdBy, createdByUser.id))
+        .orderBy(desc(physicalStockCounts.createdAt));
+
+      if (typeof limit === 'number' && typeof offset === 'number') {
+        query = query.limit(limit).offset(offset);
+      } else if (typeof limit === 'number') {
+        query = query.limit(limit);
+      }
+      return await query;
   }
 
   async getPhysicalStockCountById(id: string): Promise<PhysicalStockCount | null> {
@@ -236,7 +257,13 @@ export class PhysicalStockStorage extends BaseStorage {
 
   async populatePhysicalStockCountItems(physicalStockCountId: string, storageLocation?: string): Promise<number> {
     // Get all inventory items with their current stock levels
-    const query = db
+    // Build where clause
+    const whereClauses = [eq(inventoryItems.isActive, true)];
+    if (storageLocation) {
+      whereClauses.push(eq(inventoryLevels.storageLocation, storageLocation));
+    }
+
+    const inventoryData = await db
       .select({
         inventoryItemId: inventoryItems.id,
         supplierCode: inventoryItems.supplierCode,
@@ -248,13 +275,7 @@ export class PhysicalStockStorage extends BaseStorage {
       })
       .from(inventoryItems)
       .leftJoin(inventoryLevels, eq(inventoryItems.id, inventoryLevels.inventoryItemId))
-      .where(eq(inventoryItems.isActive, true));
-
-    if (storageLocation) {
-      query.where(eq(inventoryLevels.storageLocation, storageLocation));
-    }
-
-    const inventoryData = await query;
+      .where(and(...whereClauses));
 
     let lineNumber = 1;
     const itemsToInsert = inventoryData.map(item => ({
@@ -414,7 +435,9 @@ export class PhysicalStockStorage extends BaseStorage {
 
   // === PHYSICAL STOCK ADJUSTMENTS ===
 
-  async createPhysicalStockAdjustment(data: InsertPhysicalStockAdjustment): Promise<PhysicalStockAdjustment> {
+  async createPhysicalStockAdjustment(
+    data: Omit<InsertPhysicalStockAdjustment, 'adjustmentNumber'>
+  ): Promise<PhysicalStockAdjustment> {
     const adjustmentNumber = this.generateNumber('PSA');
     
     const [adjustment] = await db.insert(physicalStockAdjustments).values({

@@ -410,20 +410,26 @@ export default function Suppliers() {
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards - Enhanced Design */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <Card>
-          <CardContent className="p-6">
+        <Card className="shadow-xl border-0 bg-gradient-to-br from-blue-50 via-white to-indigo-50 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-blue-200/30 rounded-bl-full blur-xl"></div>
+          <div className="absolute bottom-0 left-0 w-16 h-16 bg-indigo-200/20 rounded-tr-full blur-xl"></div>
+          <CardContent className="p-7 flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-900 font-bold">Total Suppliers</p>
-                <p className="text-2xl font-bold text-blue-600" data-testid="stat-total-suppliers">
+                <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-1">Total Suppliers</p>
+                <p className="text-3xl font-extrabold text-blue-700 drop-shadow-sm" data-testid="stat-total-suppliers">
                   {suppliers.length}
                 </p>
               </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Building2 className="h-6 w-6 text-blue-600" />
+              <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center shadow-md border border-blue-200">
+                <Building2 className="h-7 w-7 text-blue-600" />
               </div>
+            </div>
+            <div className="mt-2 flex items-center gap-2">
+              <Badge className="bg-green-900/10 text-green-700 font-semibold px-3 py-1 rounded-full text-xs shadow-sm border border-green-200">Active</Badge>
+              <span className="text-gray-500 text-xs">Supplier records in system</span>
             </div>
           </CardContent>
         </Card>

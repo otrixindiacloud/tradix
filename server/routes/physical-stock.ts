@@ -12,41 +12,41 @@ import { storage } from '../storage/index.js';
 export function registerPhysicalStockRoutes(app: Express) {
   // ===== PHYSICAL STOCK COUNT ROUTES =====
 
-    // Alias for frontend: GET /api/physical-stock
+    // GET /api/physical-stock: Return all physical stock items
     app.get("/api/physical-stock", async (req, res) => {
       try {
-        // Use same logic as /api/physical-stock-counts, but return mapped fields for frontend
-        const counts = await storage.getPhysicalStockCounts(50, 0);
+        const items = await storage.getAllPhysicalStockItems();
         // Map to expected frontend fields
-        const mapped = (Array.isArray(counts) ? counts : []).map((c: any) => ({
-          id: c.id,
-          itemId: c.itemId,
-          itemName: c.itemName || c.itemName || c.description || c.itemCode || "",
-          location: c.location,
-          quantity: c.quantity,
-          lastCounted: c.lastCounted,
-          countedBy: c.countedBy,
-          notes: c.notes,
+        const mapped = (Array.isArray(items) ? items : []).map((item: any) => ({
+          id: item.id,
+          itemId: item.itemId,
+          location: item.location,
+          quantity: item.quantity,
+          lastUpdated: item.lastUpdated,
         }));
         res.json(mapped);
       } catch (error) {
-        console.error("Error fetching physical stock for table:", error);
+        console.error("Error fetching physical stock items:", error);
         res.status(500).json({ message: "Failed to fetch physical stock" });
       }
     });
 
-  // Get all physical stock counts
+  // Get all physical stock items (real DB physical_stock table)
   app.get("/api/physical-stock-counts", async (req, res) => {
     try {
-      const { limit, offset } = req.query;
-      const counts = await storage.getPhysicalStockCounts(
-        limit ? parseInt(limit as string) : 50,
-        offset ? parseInt(offset as string) : 0
-      );
-      res.json(counts);
+      const items = await storage.getAllPhysicalStockItems();
+      // Map to expected frontend fields
+      const mapped = (Array.isArray(items) ? items : []).map((item: any) => ({
+        id: item.id,
+        itemId: item.itemId,
+        location: item.location,
+        quantity: item.quantity,
+        lastUpdated: item.lastUpdated,
+      }));
+      res.json(mapped);
     } catch (error) {
-      console.error("Error fetching physical stock counts:", error);
-      res.status(500).json({ message: "Failed to fetch physical stock counts" });
+      console.error("Error fetching physical stock items:", error);
+      res.status(500).json({ message: "Failed to fetch physical stock items" });
     }
   });
 

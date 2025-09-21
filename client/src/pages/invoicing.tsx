@@ -125,9 +125,9 @@ export default function Invoicing() {
   });
 
   const generateProformaInvoice = useMutation({
-    mutationFn: async (salesOrderId: string) => {
-      // Send invoiceType explicitly for backend compatibility
-      const response = await apiRequest("POST", "/api/invoices/proforma", { salesOrderId, invoiceType: "Proforma" });
+    mutationFn: async ({ salesOrderId, invoiceType }: { salesOrderId: string; invoiceType: string }) => {
+      // Always send both salesOrderId and invoiceType for backend compatibility
+      const response = await apiRequest("POST", "/api/invoices/proforma", { salesOrderId, invoiceType });
       return response.json();
     },
     onSuccess: () => {
@@ -571,9 +571,11 @@ export default function Invoicing() {
               <Button
                 variant="outline"
                 onClick={() => {
+                  // Find a draft invoice with a valid salesOrderId
                   const draftWithSO = invoices?.find((inv: any) => inv.status === "Draft" && inv.salesOrderId);
-                  if (draftWithSO) {
-                    generateProformaInvoice.mutate(draftWithSO.salesOrderId);
+                  if (draftWithSO && draftWithSO.salesOrderId) {
+                    // Pass payload object for backend compatibility
+                    generateProformaInvoice.mutate({ salesOrderId: draftWithSO.salesOrderId, invoiceType: "Proforma" });
                   } else {
                     toast({
                       title: "No Draft Found",

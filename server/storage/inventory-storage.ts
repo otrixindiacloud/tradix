@@ -22,23 +22,23 @@ export class InventoryStorage extends BaseStorage implements IInventoryStorage {
   }): Promise<InventoryItemWithSupplier[]> {
     let query = db
       .select({
-    id: inventoryItems.id,
-    supplierCode: inventoryItems.supplierCode,
-    barcode: inventoryItems.barcode,
-    description: inventoryItems.description,
-    category: inventoryItems.category,
-    unitOfMeasure: inventoryItems.unitOfMeasure,
-    unitCost: inventoryItems.unitCost,
-    quantity: inventoryItems.quantity,
-    reorderThreshold: inventoryItems.reorderThreshold,
-    weight: inventoryItems.weight,
-    dimensions: inventoryItems.dimensions,
-    isActive: inventoryItems.isActive,
-    supplierId: inventoryItems.supplierId,
-    createdAt: inventoryItems.createdAt,
-    updatedAt: inventoryItems.updatedAt,
-    supplierName: suppliers.name,
-    supplier: suppliers
+        id: inventoryItems.id,
+        supplierCode: inventoryItems.supplierCode,
+        barcode: inventoryItems.barcode,
+        description: inventoryItems.description,
+        category: inventoryItems.category,
+        unitOfMeasure: inventoryItems.unitOfMeasure,
+        unitCost: inventoryItems.unitCost,
+        quantity: inventoryItems.quantity,
+        reorderThreshold: inventoryItems.reorderThreshold,
+        weight: inventoryItems.weight,
+        dimensions: inventoryItems.dimensions,
+        isActive: inventoryItems.isActive,
+        supplierId: inventoryItems.supplierId,
+        createdAt: inventoryItems.createdAt,
+        updatedAt: inventoryItems.updatedAt,
+        supplierName: suppliers.name,
+        supplier: suppliers
       })
       .from(inventoryItems)
       .leftJoin(suppliers, eq(inventoryItems.supplierId, suppliers.id));
@@ -127,7 +127,7 @@ export class InventoryStorage extends BaseStorage implements IInventoryStorage {
         unitOfMeasure: inventoryItems.unitOfMeasure,
           costPrice: inventoryItems.costPrice,
           stockQuantity: inventoryItems.stockQuantity,
-          reorderLevel: inventoryItems.reorderLevel,
+          reorderThreshold: inventoryItems.reorderThreshold,
           weight: inventoryItems.weight,
           dimensions: inventoryItems.dimensions,
         isActive: inventoryItems.isActive,
@@ -424,21 +424,22 @@ export class InventoryStorage extends BaseStorage implements IInventoryStorage {
       
       // Handle transfer-specific data mapping
       const mappedMovement = {
-        id: movementId,
-        itemId: movement.itemId || null,
-        variantId: movement.variantId || null,
-        movementType: movement.movementType || 'Transfer',
-        referenceType: movement.referenceType || 'Transfer',
-        referenceId: movement.referenceId || movement.transferNumber || `TRF-${movementId.slice(-8)}`,
-        storageLocation: movement.storageLocation || movement.fromLocation || 'Unknown',
-        quantityBefore: movement.quantityBefore || 0,
-        quantityMoved: movement.quantityMoved,
-        quantityAfter: movement.quantityAfter || (movement.quantityBefore || 0) + movement.quantityMoved,
-        unitCost: movement.unitCost,
-        totalValue: movement.totalValue,
-        notes: movement.notes || movement.reason || 'Stock transfer',
-        createdBy: movement.createdBy || movement.requestedBy || 'system',
-        createdAt: movement.transferDate ? new Date(movement.transferDate) : new Date(),
+  id: movementId,
+  itemId: movement.itemId || null,
+  variantId: movement.variantId || null,
+  movementType: movement.movementType || 'Transfer',
+  referenceType: movement.referenceType || 'Transfer',
+  referenceId: movement.referenceId || movement.transferNumber || `TRF-${movementId.slice(-8)}`,
+  storageLocation: movement.storageLocation || movement.fromLocation || 'Unknown',
+  quantityBefore: movement.quantityBefore || 0,
+  quantityMoved: movement.quantityMoved,
+  quantityAfter: movement.quantityAfter || (movement.quantityBefore || 0) + movement.quantityMoved,
+  unitCost: movement.unitCost,
+  totalValue: movement.totalValue,
+  notes: movement.notes || movement.reason || 'Stock transfer',
+  createdBy: movement.createdBy || movement.requestedBy || 'system',
+  status: movement.status || 'Draft',
+  createdAt: movement.transferDate ? new Date(movement.transferDate) : new Date(),
       };
 
       const result = await this.db
@@ -448,8 +449,9 @@ export class InventoryStorage extends BaseStorage implements IInventoryStorage {
 
       return result[0];
     } catch (error) {
-      console.error('Error creating stock movement:', error);
-      throw error;
+      const err = error as any;
+      console.error('Error creating stock movement:', err?.stack || err);
+      throw err;
     }
   }
 

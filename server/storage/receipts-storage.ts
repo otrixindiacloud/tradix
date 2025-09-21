@@ -1,21 +1,75 @@
+
+import { db } from "../db";
+import { goodsReceiptHeaders, insertGoodsReceiptHeaderSchema } from "@shared/schema";
+import { eq } from "drizzle-orm";
 import { BaseStorage } from "./base-storage";
+import { randomUUID } from "crypto";
 
 export class ReceiptsStorage extends BaseStorage {
-  receipts = [
-    { id: "r-001", receiptNumber: "RCPT-2025-001", receiptDate: "2025-09-01", amount: 1200.0, status: "Pending", receivedBy: "Ali" },
-    { id: "r-002", receiptNumber: "RCPT-2025-002", receiptDate: "2025-09-05", amount: 800.0, status: "Complete", receivedBy: "Sara" }
-  ];
-
   async getAllReceipts() {
-    return this.receipts;
+    // Fetch all receipts from goodsReceiptHeaders table
+    return await db.select().from(goodsReceiptHeaders);
   }
 
   async createReceipt(data: any) {
-    const newReceipt = {
-      id: `r-${Date.now()}`,
-      ...data
+    // Validate and insert new receipt into goodsReceiptHeaders
+    const base: any = { ...data };
+    if (!base.receiptNumber) base.receiptNumber = `RCPT-${new Date().getFullYear()}-${Math.random().toString(36).slice(2,7).toUpperCase()}`;
+    if (!base.id) base.id = randomUUID();
+    if (!base.status) base.status = "Pending";
+    if (!base.receiptDate) base.receiptDate = new Date().toISOString().slice(0,10);
+    // Parse without id (schema omits id)
+    const parseInput = { ...base };
+    delete parseInput.id;
+    let toInsert: any;
+    try {
+      toInsert = insertGoodsReceiptHeaderSchema.parse(parseInput);
+    } catch (zerr) {
+      throw zerr;
+    }
+    const projected = {
+      id: base.id,
+      receiptNumber: toInsert.receiptNumber,
+      supplierLpoId: toInsert.supplierLpoId,
+      supplierId: toInsert.supplierId,
+      receiptDate: toInsert.receiptDate,
+      expectedDeliveryDate: toInsert.expectedDeliveryDate,
+      actualDeliveryDate: toInsert.actualDeliveryDate,
+      receivedBy: toInsert.receivedBy,
+      status: toInsert.status,
+      notes: toInsert.notes,
+      totalItems: toInsert.totalItems,
+      totalQuantityExpected: toInsert.totalQuantityExpected,
+      totalQuantityReceived: toInsert.totalQuantityReceived,
+      discrepancyFlag: toInsert.discrepancyFlag
     };
-    this.receipts.push(newReceipt);
-    return newReceipt;
+    const [inserted] = await db.insert(goodsReceiptHeaders).values(projected).returning();
+    return inserted;
+  }
+
+  async getReceiptById(id: string) {
+    // Fetch a single receipt by ID
+    const [receipt] = await db.select().from(goodsReceiptHeaders).where(eq(goodsReceiptHeaders.id, id));
+    return receipt || null;
+  }
+
+  async updateReceipt(id: string, data: any) {
+    // Update receipt by ID
+    const parseInput = { ...data };
+    delete parseInput.id;
+    let toUpdate: any;
+    try {
+      toUpdate = insertGoodsReceiptHeaderSchema.partial().parse(parseInput);
+    } catch (zerr) {
+      throw zerr;
+    }
+    const [updated] = await db.update(goodsReceiptHeaders).set(toUpdate).where(eq(goodsReceiptHeaders.id, id)).returning();
+    return updated || null;
+  }
+
+  async deleteReceipt(id: string) {
+    // Delete receipt by ID
+    await db.delete(goodsReceiptHeaders).where(eq(goodsReceiptHeaders.id, id));
+    return { success: true };
   }
 }

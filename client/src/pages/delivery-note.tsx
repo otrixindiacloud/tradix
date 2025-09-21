@@ -89,6 +89,7 @@ export default function DeliveryNote() {
   const [selectedDeliveryNote, setSelectedDeliveryNote] = useState<DeliveryNote | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [showPickingDialog, setShowPickingDialog] = useState(false);
   const [showConfirmDeliveryDialog, setShowConfirmDeliveryDialog] = useState(false);
   const [selectedSalesOrderId, setSelectedSalesOrderId] = useState("");
@@ -155,14 +156,14 @@ export default function DeliveryNote() {
   });
 
   // Fetch available sales orders for delivery note creation
+  // Fetch all sales orders for order number selection
   const { data: availableSalesOrders = [] } = useQuery({
-    queryKey: ["available-sales-orders"],
+    queryKey: ["sales-orders-list"],
     queryFn: async () => {
       try {
-        // Try relative URL first, then absolute URL
         let response;
         try {
-          response = await fetch("/api/sales-orders/available-for-delivery", {
+          response = await fetch("/api/sales-orders", {
             credentials: 'include',
             headers: {
               'Content-Type': 'application/json',
@@ -170,7 +171,7 @@ export default function DeliveryNote() {
             }
           });
         } catch (relativeError) {
-          response = await fetch("http://localhost:5000/api/sales-orders/available-for-delivery", {
+          response = await fetch("http://localhost:5000/api/sales-orders", {
             credentials: 'include',
             headers: {
               'Content-Type': 'application/json',
@@ -178,19 +179,21 @@ export default function DeliveryNote() {
             }
           });
         }
-        
         if (!response.ok) {
           const errorText = await response.text();
-          console.warn(`Available sales orders fetch failed: HTTP ${response.status}: ${errorText}`);
-          return []; // Return empty array on error to allow page to load
+          console.warn(`Sales orders fetch failed: HTTP ${response.status}: ${errorText}`);
+          return [];
         }
-        
         const data = await response.json();
-        console.log('Available sales orders fetched:', data.length, 'records');
-        return data as (SalesOrder & { customer?: Customer })[];
+        // Only return orderNumber, id, and customer for selection
+        return (Array.isArray(data) ? data : []).map(order => ({
+          id: order.id,
+          orderNumber: order.orderNumber,
+          customer: order.customer
+        }));
       } catch (error) {
-        console.error('Error fetching available sales orders:', error);
-        return []; // Return empty array on error to allow page to load
+        console.error('Error fetching sales orders:', error);
+        return [];
       }
     }
   });
@@ -202,6 +205,11 @@ export default function DeliveryNote() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["delivery-notes"] });
+      setCurrentPage(1);
+      setSearchTerm("");
+      setStatusFilter("all");
+      setCustomerFilter("");
+      refetch();
       toast({
         title: "Success",
         description: "Delivery note created successfully"
@@ -225,12 +233,18 @@ export default function DeliveryNote() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["delivery-notes"] });
+      setCurrentPage(1);
+      setSearchTerm("");
+      setStatusFilter("all");
+      setCustomerFilter("");
+      refetch();
       toast({
         title: "Success",
         description: "Delivery note updated successfully"
       });
       setShowPickingDialog(false);
       setShowConfirmDeliveryDialog(false);
+      setShowEditDialog(false);
       resetForm();
     },
     onError: (error: any) => {
@@ -263,8 +277,20 @@ export default function DeliveryNote() {
       return;
     }
 
+    // Find selected sales order to get orderNumber
+    const selectedOrder = availableSalesOrders.find(order => order.id === selectedSalesOrderId);
+    if (!selectedOrder || !selectedOrder.orderNumber) {
+      toast({
+        title: "Error",
+        description: "Selected sales order is invalid or missing order number",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const deliveryData = {
       salesOrderId: selectedSalesOrderId,
+      deliveryNumber: selectedOrder.orderNumber,
       deliveryDate: deliveryDate || null,
       deliveryAddress,
       deliveryNotes,
@@ -392,6 +418,7 @@ export default function DeliveryNote() {
         <div className="flex gap-2">
           {row && (
             <>
+              {/* View icon */}
               <Button
                 variant="ghost"
                 size="sm"
@@ -399,10 +426,23 @@ export default function DeliveryNote() {
                   setSelectedDeliveryNote(row);
                   setShowDetailsDialog(true);
                 }}
+                title="View Details"
               >
                 <Eye className="h-4 w-4" />
               </Button>
-              
+              {/* Edit icon */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSelectedDeliveryNote(row);
+                  setShowEditDialog(true);
+                }}
+                title="Edit Delivery Note"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+              {/* Existing picking and confirm delivery actions */}
               {row.status === "Pending" && (
                 <Button
                   variant="ghost"
@@ -415,7 +455,6 @@ export default function DeliveryNote() {
                   <Package className="h-4 w-4" />
                 </Button>
               )}
-              
               {(row.status === "Partial" || row.status === "Complete") && !row.deliveryConfirmedBy && (
                 <Button
                   variant="ghost"
@@ -548,7 +587,7 @@ export default function DeliveryNote() {
           ) : (
             <DataTable
               data={deliveryNotesData}
-              columns={columns}
+              columns={[...columns]}
               className="w-full"
             />
           )}
@@ -568,16 +607,36 @@ export default function DeliveryNote() {
           <div className="space-y-4">
             <div>
               <Label htmlFor="salesOrder">Sales Order *</Label>
+              {/* Single field: search and select sales order */}
               <Select value={selectedSalesOrderId} onValueChange={setSelectedSalesOrderId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select sales order to deliver" />
+                  <SelectValue placeholder="Type or select sales order..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableSalesOrders.map((order) => (
-                    <SelectItem key={order.id} value={order.id}>
-                      {order.orderNumber} - {order.customer?.name}
-                    </SelectItem>
-                  ))}
+                  <div className="px-2 py-2">
+                    <Input
+                      id="salesOrderSearch"
+                      placeholder="Search sales order number or customer..."
+                      value={searchTerm}
+                      onChange={e => setSearchTerm(e.target.value)}
+                      className="mb-2"
+                      autoFocus
+                    />
+                  </div>
+                  {availableSalesOrders
+                    .filter(order => {
+                      const term = searchTerm.trim().toLowerCase();
+                      if (!term) return true;
+                      return (
+                        order.orderNumber?.toLowerCase().includes(term) ||
+                        order.customer?.name?.toLowerCase().includes(term)
+                      );
+                    })
+                    .map(order => (
+                      <SelectItem key={order.id} value={order.id}>
+                        {order.orderNumber} - {order.customer?.name}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -659,9 +718,9 @@ export default function DeliveryNote() {
               {selectedDeliveryNote?.deliveryNumber}
             </DialogDescription>
           </DialogHeader>
-          
           {selectedDeliveryNote && (
             <div className="space-y-6">
+              {/* ...existing details rendering... */}
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <h3 className="font-semibold mb-3">Delivery Information</h3>
@@ -672,7 +731,6 @@ export default function DeliveryNote() {
                     <div><strong>Delivery Date:</strong> {selectedDeliveryNote.deliveryDate ? formatDate(selectedDeliveryNote.deliveryDate) : "Not scheduled"}</div>
                   </div>
                 </div>
-                
                 <div>
                   <h3 className="font-semibold mb-3">Tracking Information</h3>
                   <div className="space-y-2 text-sm">
@@ -683,7 +741,6 @@ export default function DeliveryNote() {
                   </div>
                 </div>
               </div>
-
               {selectedDeliveryNote.deliveryAddress && (
                 <div>
                   <h3 className="font-semibold mb-2">Delivery Address</h3>
@@ -692,7 +749,6 @@ export default function DeliveryNote() {
                   </p>
                 </div>
               )}
-
               {selectedDeliveryNote.deliveryNotes && (
                 <div>
                   <h3 className="font-semibold mb-2">Delivery Notes</h3>
@@ -701,7 +757,6 @@ export default function DeliveryNote() {
                   </p>
                 </div>
               )}
-
               <div className="grid grid-cols-2 gap-6 text-sm">
                 <div>
                   <h3 className="font-semibold mb-2">Picking Information</h3>
@@ -710,7 +765,6 @@ export default function DeliveryNote() {
                     <div><strong>Completed:</strong> {selectedDeliveryNote.pickingCompletedAt ? formatDate(selectedDeliveryNote.pickingCompletedAt) : "Not completed"}</div>
                   </div>
                 </div>
-                
                 <div>
                   <h3 className="font-semibold mb-2">Delivery Confirmation</h3>
                   <div className="space-y-1">
@@ -721,6 +775,97 @@ export default function DeliveryNote() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Delivery Note Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Delivery Note</DialogTitle>
+            <DialogDescription>
+              {selectedDeliveryNote?.deliveryNumber}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedDeliveryNote && (
+            <div className="space-y-4">
+              {/* Example editable fields: deliveryDate, deliveryAddress, deliveryNotes, trackingNumber, carrierName */}
+              <div>
+                <Label htmlFor="editDeliveryDate">Scheduled Delivery Date</Label>
+                <Input
+                  id="editDeliveryDate"
+                  type="datetime-local"
+                  value={deliveryDate || selectedDeliveryNote.deliveryDate || ""}
+                  onChange={e => setDeliveryDate(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="editDeliveryAddress">Delivery Address</Label>
+                <Textarea
+                  id="editDeliveryAddress"
+                  placeholder="Enter delivery address..."
+                  value={deliveryAddress || selectedDeliveryNote.deliveryAddress || ""}
+                  onChange={e => setDeliveryAddress(e.target.value)}
+                  rows={3}
+                />
+              </div>
+              <div>
+                <Label htmlFor="editCarrierName">Carrier/Transporter</Label>
+                <Input
+                  id="editCarrierName"
+                  placeholder="Enter carrier or transporter name"
+                  value={carrierName || selectedDeliveryNote.carrierName || ""}
+                  onChange={e => setCarrierName(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="editTrackingNumber">Tracking Number</Label>
+                <Input
+                  id="editTrackingNumber"
+                  placeholder="Enter tracking number (if available)"
+                  value={trackingNumber || selectedDeliveryNote.trackingNumber || ""}
+                  onChange={e => setTrackingNumber(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="editDeliveryNotes">Delivery Notes</Label>
+                <Textarea
+                  id="editDeliveryNotes"
+                  placeholder="Enter any special delivery instructions..."
+                  value={deliveryNotes || selectedDeliveryNote.deliveryNotes || ""}
+                  onChange={e => setDeliveryNotes(e.target.value)}
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (!selectedDeliveryNote) return;
+                // Prepare update data
+                const updateData = {
+                  deliveryDate: deliveryDate || selectedDeliveryNote.deliveryDate,
+                  deliveryAddress: deliveryAddress || selectedDeliveryNote.deliveryAddress,
+                  deliveryNotes: deliveryNotes || selectedDeliveryNote.deliveryNotes,
+                  trackingNumber: trackingNumber || selectedDeliveryNote.trackingNumber,
+                  carrierName: carrierName || selectedDeliveryNote.carrierName
+                };
+                updateDeliveryStatusMutation.mutate({
+                  id: selectedDeliveryNote.id,
+                  data: updateData
+                });
+                setShowEditDialog(false);
+              }}
+              disabled={updateDeliveryStatusMutation.isPending}
+            >
+              {updateDeliveryStatusMutation.isPending && <LoadingSpinner className="mr-2" />}
+              Save Changes
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
