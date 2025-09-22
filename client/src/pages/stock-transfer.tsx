@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -66,7 +66,7 @@ const getStatusColor = (status: string) => {
     case "Approved":
       return "bg-blue-100 text-blue-800 border-blue-300";
     case "In Transit":
-      return "bg-purple-100 text-purple-800 border-purple-300";
+      return "bg-pink-100 text-white-800 border-purple-300";
     case "Completed":
       return "bg-green-100 text-green-800 border-green-300";
     case "Cancelled":
@@ -82,6 +82,25 @@ export default function StockTransferPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedTransfer, setSelectedTransfer] = useState<any | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+
+  // Reset form with selected transfer data when edit dialog opens
+  React.useEffect(() => {
+    if (showEditDialog && selectedTransfer) {
+      form.reset({
+        transferNumber: selectedTransfer.transferNumber || selectedTransfer.referenceNumber || "",
+        itemId: selectedTransfer.itemId || "",
+        fromLocation: selectedTransfer.fromLocation || "",
+        toLocation: selectedTransfer.toLocation || "",
+        quantity: selectedTransfer.quantityMoved || selectedTransfer.quantity || 0,
+        transferDate: selectedTransfer.transferDate || "",
+        requestedBy: selectedTransfer.requestedBy || selectedTransfer.createdBy || "",
+        reason: selectedTransfer.reason || "",
+        status: selectedTransfer.status || "Draft",
+        notes: selectedTransfer.notes || "",
+      });
+    }
+  }, [showEditDialog, selectedTransfer]);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -298,16 +317,32 @@ export default function StockTransferPage() {
       ),
     },
     {
-      key: "transferRoute",
-      header: "Transfer Route",
+      key: "From Location",
+      header: "From Location",
       render: (value: string, transfer: any) => (
         <div className="flex items-center gap-2">
           <Navigation className="h-4 w-4 text-gray-500" />
           <span className="text-sm">
-            {transfer.fromLocation || transfer.storageLocation || "N/A"} → {transfer.toLocation || "Target Location"}
+            {transfer.fromLocation || transfer.storageLocation || "N/A"} 
           </span>
         </div>
       ),
+    },
+    {
+      key: "To Location",
+      header: "To Location",
+      render: (value: string, transfer: any) => {
+        // Find location name from locations array using toLocation ID from API
+        const loc = locations.find(l => l.id === transfer.toLocation);
+        return (
+          <div className="flex items-center gap-2">
+            <Navigation className="h-4 w-4 text-gray-500" />
+            <span className="text-sm">
+              {loc ? loc.name : transfer.toLocation || "Target Location"}
+            </span>
+          </div>
+        );
+      },
     },
     {
       key: "status",
@@ -347,10 +382,8 @@ export default function StockTransferPage() {
             variant="outline"
             size="sm"
             onClick={() => {
-              toast({
-                title: "Info",
-                description: "Edit functionality will be implemented soon",
-              });
+              setSelectedTransfer(transfer);
+              setShowEditDialog(true);
             }}
           >
             <Edit className="h-4 w-4" />
@@ -859,6 +892,274 @@ export default function StockTransferPage() {
                 </div>
               )}
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Transfer Dialog - all fields editable */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-blue-700 flex items-center gap-2">
+              <ArrowLeftRight className="h-6 w-6 text-blue-500" />
+              Edit Stock Transfer
+            </DialogTitle>
+            <DialogDescription className="text-base text-slate-600 mt-1">
+              Edit all fields and update the selected stock transfer.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedTransfer && (
+            <Form {...form}>
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const formData = form.getValues();
+                  const updatePayload = {
+                    ...selectedTransfer,
+                    ...formData,
+                  };
+                  try {
+                    const response = await apiRequest("PUT", `/api/stock-movements/${selectedTransfer.id || selectedTransfer.referenceId}`, updatePayload);
+                    if (!response.ok) {
+                      const error = await response.json();
+                      throw new Error(error.message || "Failed to update stock transfer");
+                    }
+                    queryClient.invalidateQueries({ queryKey: ["stock-transfers"] });
+                    setShowEditDialog(false);
+                    toast({
+                      title: "Success",
+                      description: "Stock transfer updated successfully",
+                    });
+                  } catch (error: any) {
+                    toast({
+                      title: "Error",
+                      description: error.message || "Failed to update stock transfer",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+                className="space-y-6"
+              >
+                <div className="grid grid-cols-2 gap-6 bg-slate-50 rounded-xl p-4 border border-slate-200/60">
+                  <FormField
+                    control={form.control}
+                    name="transferNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-semibold text-slate-700">Transfer Number</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter transfer number" {...field} defaultValue={selectedTransfer.transferNumber || selectedTransfer.referenceNumber || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="itemId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-semibold text-slate-700">Item</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={selectedTransfer.itemId || ""}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select item" className="text-slate-500" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {items.length === 0 ? (
+                              <div className="px-4 py-2 text-gray-500 text-sm">No items available</div>
+                            ) : (
+                              items.map((item: any) => (
+                                <SelectItem key={item.id} value={item.id}>
+                                  {item.name
+                                    ? item.name
+                                    : item.description
+                                      ? item.description
+                                      : item.itemCode
+                                        ? item.itemCode
+                                        : `Item-${item.id}`}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="fromLocation"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-semibold text-slate-700">From Location</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={selectedTransfer.fromLocation || ""}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select from location" className="text-slate-500" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {locations.map((location) => (
+                              <SelectItem key={location.id} value={location.id}>
+                                {location.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="toLocation"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-semibold text-slate-700">To Location</FormLabel>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          defaultValue={field.value || selectedTransfer.toLocation || ""}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select to location" className="text-slate-500" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {locations.map((location) => (
+                              <SelectItem key={location.id} value={location.id}>
+                                {location.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="quantity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-semibold text-slate-700">Quantity</FormLabel>
+                        <FormControl>
+                          <Input type="number" {...field} defaultValue={selectedTransfer.quantityMoved || selectedTransfer.quantity || 0} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="transferDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-semibold text-slate-700">Transfer Date</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} defaultValue={selectedTransfer.transferDate || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="requestedBy"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-semibold text-slate-700">Requested By</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter person name" {...field} defaultValue={selectedTransfer.requestedBy || selectedTransfer.createdBy || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="reason"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-semibold text-slate-700">Transfer Reason</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={selectedTransfer.reason || ""}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select reason" className="text-slate-500" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Stock Rebalancing">Stock Rebalancing</SelectItem>
+                            <SelectItem value="Production Requirement">Production Requirement</SelectItem>
+                            <SelectItem value="Store Replenishment">Store Replenishment</SelectItem>
+                            <SelectItem value="Quality Control">Quality Control</SelectItem>
+                            <SelectItem value="Maintenance">Maintenance</SelectItem>
+                            <SelectItem value="Emergency Request">Emergency Request</SelectItem>
+                            <SelectItem value="Other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-semibold text-slate-700">Status</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={selectedTransfer.status || field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" className="text-slate-500" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Draft">Draft</SelectItem>
+                          <SelectItem value="Pending Approval">Pending Approval</SelectItem>
+                          <SelectItem value="Approved">Approved</SelectItem>
+                          <SelectItem value="In Transit">In Transit</SelectItem>
+                          <SelectItem value="Completed">Completed</SelectItem>
+                          <SelectItem value="Cancelled">Cancelled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-semibold text-slate-700">Notes</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Enter any additional notes..." rows={3} {...field} defaultValue={selectedTransfer.notes || ""} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex justify-end gap-3 pt-4">
+                  <Button type="button" variant="outline" className="border-gray-400 text-gray-700 hover:bg-gray-100 px-5 py-2 rounded-lg" onClick={() => setShowEditDialog(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md">
+                    Update Transfer
+                  </Button>
+                </div>
+              </form>
+            </Form>
           )}
         </DialogContent>
       </Dialog>

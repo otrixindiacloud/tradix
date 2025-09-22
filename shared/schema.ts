@@ -19,6 +19,9 @@ export const physicalStock = pgTable("physical_stock", {
   location: varchar("location", { length: 128 }),
   quantity: integer("quantity").notNull(),
   lastUpdated: timestamp("last_updated", { withTimezone: true }).defaultNow(),
+  countedBy: varchar("counted_by", { length: 128 }),
+  lastCounted: timestamp("last_counted", { withTimezone: true }),
+  notes: text("notes"),
 });
 
 // Stock Transfer Table
@@ -35,11 +38,13 @@ export const stockTransfer = pgTable("stock_transfer", {
 // Stock Issues Table
 export const stockIssue = pgTable("stock_issue", {
   id: uuid("id").primaryKey().defaultRandom(),
+  issueNumber: varchar("issue_number", { length: 32 }),
   itemId: uuid("item_id").notNull(),
   issuedTo: varchar("issued_to", { length: 128 }),
   quantity: integer("quantity").notNull(),
   issueDate: timestamp("issue_date", { withTimezone: true }).defaultNow(),
   reason: text("reason"),
+  status: varchar("status", { length: 32 }),
 });
 
 // Material Request Table
@@ -52,6 +57,9 @@ export const materialRequest = pgTable("material_request", {
   status: varchar("status", { length: 32 }), // e.g., Pending, Approved, Rejected
   notes: text("notes"),
 });
+
+// Zod schema for Material Request
+export const materialRequestSchema = createInsertSchema(materialRequest).omit({ id: true });
 
 // Inventory Management Table
 export const inventoryItem = pgTable("inventory_item", {

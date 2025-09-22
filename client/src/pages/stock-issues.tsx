@@ -33,7 +33,8 @@ import {
   Package,
   Minus,
   Activity,
-  BarChart3
+  BarChart3,
+  Trash
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import DataTable from "@/components/tables/data-table";
@@ -75,6 +76,7 @@ export default function StockIssuesPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState<any | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
 
   const { toast } = useToast();
@@ -134,19 +136,41 @@ export default function StockIssuesPage() {
   // Create stock issue mutation
   const createIssueMutation = useMutation({
     mutationFn: async (data: StockIssueForm) => {
-      // Map frontend fields to backend expected fields
-      const selectedItem = items.find((item: any) => item.id === data.itemId);
+      // Only send fields expected by backend
+      let issueDate = data.issueDate;
+      // Always send ISO string for backend timestamp
+      if (issueDate && typeof issueDate === "string") {
+        let dateObj;
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(issueDate)) {
+          // DD/MM/YYYY
+          const [day, month, year] = issueDate.split("/");
+          dateObj = new Date(Number(year), Number(month) - 1, Number(day));
+        } else if (/^\d{4}-\d{2}-\d{2}$/.test(issueDate)) {
+          // YYYY-MM-DD
+          dateObj = new Date(issueDate);
+        } else {
+          // Fallback: try to parse
+          dateObj = new Date(issueDate);
+        }
+  issueDate = !dateObj || isNaN(dateObj.getTime()) ? "" : dateObj.toISOString();
+      } else if (!issueDate) {
+  issueDate = "";
+      }
+      // Keep only date part (YYYY-MM-DD)
+      if (issueDate && typeof issueDate === "string" && issueDate.length > 0) {
+        // If ISO string, extract date part
+        const match = issueDate.match(/^\d{4}-\d{2}-\d{2}/);
+        if (match) {
+          issueDate = match[0];
+        }
+      }
       const issueData = {
-        issueNumber: data.issueNumber,
-        itemId: data.itemId,
-        itemCode: selectedItem?.itemCode || selectedItem?.code || undefined,
-        quantity: Number(data.quantityIssued),
-        issuedTo: data.issuedTo,
-        issueDate: data.issueDate,
-        reason: data.purpose, // backend expects 'reason'
-        departmentId: data.departmentId || undefined,
-        notes: data.notes || undefined,
-        status: "Draft",
+  issueNumber: data.issueNumber,
+  itemId: data.itemId,
+  issuedTo: data.issuedTo,
+  quantity: Number(data.quantityIssued),
+  issueDate,
+  reason: data.purpose,
       };
       return await apiRequest("POST", "/api/stock-issues", issueData);
     },
@@ -268,9 +292,9 @@ export default function StockIssuesPage() {
     {
       key: "status",
       header: "Status",
-      render: (value: string) => (
-        <Badge className={`border ${getStatusColor(value || "Draft")}`}>
-          {value || "Draft"}
+      render: (_: any, issue: any) => (
+        <Badge className={`border ${getStatusColor(issue.status || "Draft")}`}>
+          {issue.status || "Draft"}
         </Badge>
       ),
     },
@@ -303,8 +327,8 @@ export default function StockIssuesPage() {
             variant="outline"
             size="sm"
             onClick={() => {
-              // Example edit: update status to Issued
-              updateIssueMutation.mutate({ id: issue.id, data: { status: "Issued" } });
+              setSelectedIssue(issue);
+              setShowEditDialog(true);
             }}
           >
             <Edit className="h-4 w-4" />
@@ -316,7 +340,7 @@ export default function StockIssuesPage() {
               deleteIssueMutation.mutate(issue.id);
             }}
           >
-            <AlertTriangle className="h-4 w-4 text-red-500" />
+            <Trash className="h-4 w-4 text-red-500" />
           </Button>
         </div>
       ),
@@ -626,10 +650,32 @@ export default function StockIssuesPage() {
             isLoading={isLoading}
             emptyMessage="No stock issues found. Create your first stock issue to get started."
           />
-        </CardContent>
-      </Card>
-
+      </CardContent>
+    </Card>
       {/* Issue Details Dialog */}
+      {/* Edit Issue Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Stock Issue</DialogTitle>
+            <DialogDescription>
+              Edit details for Issue #{selectedIssue?.issueNumber || selectedIssue?.referenceNumber || "N/A"}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedIssue && (
+            <EditStockIssueForm
+              issue={selectedIssue}
+              items={items}
+              onClose={() => setShowEditDialog(false)}
+              onSuccess={() => {
+                setShowEditDialog(false);
+                queryClient.invalidateQueries({ queryKey: ["stock-issues"] });
+                toast({ title: "Success", description: "Stock issue updated successfully" });
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
       <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
@@ -691,5 +737,245 @@ export default function StockIssuesPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// Edit form component
+function EditStockIssueForm({ issue, items, onClose, onSuccess }: { issue: any, items: any[], onClose: () => void, onSuccess: () => void }) {
+  const { toast } = useToast();
+  const form = useForm<StockIssueForm>({
+    resolver: zodResolver(stockIssueSchema),
+    defaultValues: {
+      issueNumber: issue.issueNumber || "",
+      itemId: issue.itemId || "",
+      quantityIssued: issue.quantity || 0,
+      issuedTo: issue.issuedTo || "",
+      issueDate: issue.issueDate ? issue.issueDate.split("T")[0] : "",
+      purpose: issue.reason || "",
+      departmentId: issue.departmentId || "",
+      notes: issue.notes || "",
+      status: issue.status || "Draft",
+    },
+  });
+
+  const queryClient = useQueryClient();
+  // Use the main updateIssueMutation from props
+  const { mutate, isPending } = useMutation({
+    mutationFn: async (data: StockIssueForm) => {
+      let issueDate = data.issueDate;
+      if (issueDate && typeof issueDate === "string") {
+        let dateObj;
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(issueDate)) {
+          const [day, month, year] = issueDate.split("/");
+          dateObj = new Date(Number(year), Number(month) - 1, Number(day));
+        } else if (/^\d{4}-\d{2}-\d{2}$/.test(issueDate)) {
+          dateObj = new Date(issueDate);
+        } else {
+          dateObj = new Date(issueDate);
+        }
+        issueDate = !dateObj || isNaN(dateObj.getTime()) ? "" : dateObj.toISOString();
+      } else if (!issueDate) {
+        issueDate = "";
+      }
+      if (issueDate && typeof issueDate === "string" && issueDate.length > 0) {
+        const match = issueDate.match(/^\d{4}-\d{2}-\d{2}/);
+        if (match) {
+          issueDate = match[0];
+        }
+      }
+      const updateData = {
+        issueNumber: data.issueNumber,
+        itemId: data.itemId,
+        issuedTo: data.issuedTo,
+        quantity: Number(data.quantityIssued),
+        issueDate,
+        reason: data.purpose,
+        notes: data.notes,
+        status: data.status,
+      };
+      return await apiRequest("PUT", `/api/stock-issues/${issue.id}`, updateData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["stock-issues"] });
+      onSuccess();
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to update stock issue", variant: "destructive" });
+    },
+  });
+
+  const onSubmit = (data: StockIssueForm) => {
+  mutate(data);
+  };
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="issueNumber"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Issue Number</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter issue number" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="itemId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Item</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select item" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {items.map((item: any) => (
+                      <SelectItem key={item.id} value={item.id}>
+                        {item.description || item.name || item.itemCode}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="status"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Status</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="Draft">Draft</SelectItem>
+                    <SelectItem value="Issued">Issued</SelectItem>
+                    <SelectItem value="Applied">Applied</SelectItem>
+                    <SelectItem value="Cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="quantityIssued"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Quantity to Issue</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    placeholder="Enter quantity"
+                    {...field}
+                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="issueDate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Issue Date</FormLabel>
+                <FormControl>
+                  <Input type="date" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="issuedTo"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Issued To</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter person/department" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="purpose"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Purpose</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select purpose" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="Production">Production</SelectItem>
+                    <SelectItem value="Sales">Sales</SelectItem>
+                    <SelectItem value="Internal Use">Internal Use</SelectItem>
+                    <SelectItem value="Maintenance">Maintenance</SelectItem>
+                    <SelectItem value="Testing">Testing</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <FormField
+          control={form.control}
+          name="notes"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Notes</FormLabel>
+              <FormControl>
+                <Textarea 
+                  placeholder="Enter any additional notes..."
+                  rows={3}
+                  {...field} 
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="flex justify-end gap-3 pt-4">
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={onClose}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isPending}>
+            {isPending ? "Updating..." : "Update Issue"}
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 }

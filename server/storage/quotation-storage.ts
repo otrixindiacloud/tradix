@@ -268,10 +268,10 @@ export class QuotationStorage extends BaseStorage {
                 quotationId: quotation.id,
                 description: enquiryItem.description,
                 quantity: enquiryItem.quantity,
-                costPrice: basePrice.toFixed(4),
-                markup: (markup * 100).toFixed(2),
-                unitPrice: quotedPrice.toFixed(4),
-                lineTotal: totalPrice.toFixed(2),
+                costPrice: basePrice,
+                markup: markup * 100,
+                unitPrice: quotedPrice,
+                lineTotal: totalPrice,
                 notes: enquiryItem.notes || "",
               };
 
@@ -280,7 +280,7 @@ export class QuotationStorage extends BaseStorage {
               createdItems.push(created);
             } else {
               // Use enhanced pricing engine
-              const pricingResult = await enhancedPricingStorage.calculateOptimalPrice(
+              const pricingResult = await enhancedPricingStorage.calculateItemPrice(
                 itemId,
                 enquiry.customerId,
                 enquiryItem.quantity
@@ -290,10 +290,10 @@ export class QuotationStorage extends BaseStorage {
                 quotationId: quotation.id,
                 description: enquiryItem.description,
                 quantity: enquiryItem.quantity,
-                costPrice: pricingResult.costPrice.toFixed(4),
-                markup: pricingResult.markupPercentage.toFixed(2),
-                unitPrice: pricingResult.finalPrice.toFixed(4),
-                lineTotal: (pricingResult.finalPrice * enquiryItem.quantity).toFixed(2),
+                costPrice: pricingResult.costPrice,
+                markup: pricingResult.markupPercentage,
+                unitPrice: pricingResult.finalPrice,
+                lineTotal: pricingResult.finalPrice * enquiryItem.quantity,
                 notes: `${enquiryItem.notes || ""} | Pricing method: ${pricingResult.method} | Factors: ${pricingResult.factors.join(', ')}`,
               };
 
@@ -317,10 +317,10 @@ export class QuotationStorage extends BaseStorage {
               quotationId: quotation.id,
               description: enquiryItem.description,
               quantity: enquiryItem.quantity,
-              costPrice: basePrice.toFixed(4),
-              markup: (markup * 100).toFixed(2),
-              unitPrice: quotedPrice.toFixed(4),
-              lineTotal: totalPrice.toFixed(2),
+              costPrice: basePrice,
+              markup: markup * 100,
+              unitPrice: quotedPrice,
+              lineTotal: totalPrice,
               notes: enquiryItem.notes || "",
             };
 
@@ -385,10 +385,10 @@ export class QuotationStorage extends BaseStorage {
             quotationId: newQuotation.id,
             description: it.description,
             quantity: qty,
-            costPrice: it.costPrice as any,
-            markup: it.markup as any,
-            unitPrice: it.unitPrice as any,
-            lineTotal: lineTotal as any,
+            costPrice: typeof it.costPrice === 'string' ? parseFloat(it.costPrice) : it.costPrice,
+            markup: typeof it.markup === 'string' ? parseFloat(it.markup) : it.markup,
+            unitPrice: typeof it.unitPrice === 'string' ? parseFloat(it.unitPrice) : it.unitPrice,
+            lineTotal: typeof lineTotal === 'string' ? parseFloat(lineTotal) : lineTotal,
             isAccepted: true, // fresh revision assumes active items
             notes: it.notes as any || undefined,
           } as InsertQuotationItem;
@@ -464,6 +464,10 @@ export class QuotationStorage extends BaseStorage {
 
     const updatedItem = {
       ...item,
+      unitPrice: item.unitPrice !== undefined ? String(item.unitPrice) : undefined,
+      costPrice: item.costPrice !== undefined ? String(item.costPrice) : undefined,
+      markup: item.markup !== undefined ? String(item.markup) : undefined,
+      lineTotal: item.lineTotal !== undefined ? String(item.lineTotal) : undefined,
     };
 
     await db
@@ -516,12 +520,22 @@ export class QuotationStorage extends BaseStorage {
   }
 
   async createQuotationApproval(approval: InsertQuotationApproval) {
+    // Ensure approverId is a valid uuid or null
+    const approverId = approval.approverId && typeof approval.approverId === 'string' && approval.approverId.length === 36
+      ? approval.approverId
+      : null;
     const id = this.generateId();
     const now = this.getCurrentTimestamp();
+
+    // Only allow valid status values
+    const allowedApprovalStatuses = ["Pending", "Approved", "Rejected"];
+    const status = allowedApprovalStatuses.includes(approval.status) ? approval.status : "Pending";
 
     const newApproval = {
       ...approval,
       id,
+      approverId,
+      status,
       createdAt: now,
     };
 
@@ -531,7 +545,7 @@ export class QuotationStorage extends BaseStorage {
       "quotation_approval",
       id,
       "created",
-      "system", // Use system as fallback since createdBy doesn't exist in InsertQuotationApproval
+      approverId || "system",
       null,
       newApproval
     );

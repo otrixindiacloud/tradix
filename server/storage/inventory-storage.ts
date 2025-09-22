@@ -12,6 +12,10 @@ export interface InventoryItemWithSupplier extends InventoryItem {
 
 export class InventoryStorage extends BaseStorage implements IInventoryStorage {
   db: any;
+  constructor() {
+    super();
+    this.db = db;
+  }
   async getInventoryItems(filters?: {
     search?: string;
     supplierId?: string;
@@ -20,29 +24,6 @@ export class InventoryStorage extends BaseStorage implements IInventoryStorage {
     limit?: number;
     offset?: number;
   }): Promise<InventoryItemWithSupplier[]> {
-    let query = db
-      .select({
-        id: inventoryItems.id,
-        supplierCode: inventoryItems.supplierCode,
-        barcode: inventoryItems.barcode,
-        description: inventoryItems.description,
-        category: inventoryItems.category,
-        unitOfMeasure: inventoryItems.unitOfMeasure,
-        unitCost: inventoryItems.unitCost,
-        quantity: inventoryItems.quantity,
-        reorderThreshold: inventoryItems.reorderThreshold,
-        weight: inventoryItems.weight,
-        dimensions: inventoryItems.dimensions,
-        isActive: inventoryItems.isActive,
-        supplierId: inventoryItems.supplierId,
-        createdAt: inventoryItems.createdAt,
-        updatedAt: inventoryItems.updatedAt,
-        supplierName: suppliers.name,
-        supplier: suppliers
-      })
-      .from(inventoryItems)
-      .leftJoin(suppliers, eq(inventoryItems.supplierId, suppliers.id));
-    
     const conditions = [];
     if (filters?.search) {
       conditions.push(
@@ -63,7 +44,28 @@ export class InventoryStorage extends BaseStorage implements IInventoryStorage {
     if (filters?.isActive !== undefined) {
       conditions.push(eq(inventoryItems.isActive, filters.isActive));
     }
-    
+
+    let query = db
+      .select({
+        id: inventoryItems.id,
+        supplierCode: inventoryItems.supplierCode,
+        barcode: inventoryItems.barcode,
+        description: inventoryItems.description,
+        category: inventoryItems.category,
+        unitOfMeasure: inventoryItems.unitOfMeasure,
+        weight: inventoryItems.weight,
+        dimensions: inventoryItems.dimensions,
+        isActive: inventoryItems.isActive,
+        supplierId: inventoryItems.supplierId,
+        createdAt: inventoryItems.createdAt,
+        updatedAt: inventoryItems.updatedAt,
+        supplierName: suppliers.name,
+        supplier: suppliers
+      })
+      .from(inventoryItems)
+      .leftJoin(suppliers, eq(inventoryItems.supplierId, suppliers.id))
+      .orderBy(inventoryItems.description);
+
     if (conditions.length > 0) {
       query = query.where(and(...conditions));
     }
@@ -71,9 +73,13 @@ export class InventoryStorage extends BaseStorage implements IInventoryStorage {
       query = query.limit(filters.limit);
     }
     if (filters?.offset) {
-      query = query.offset(filters.offset);
+      // Only call offset if the method exists on the query object
+      if (typeof query.offset === "function") {
+        query = query.offset(filters.offset);
+      }
     }
-    const results = await query.orderBy(inventoryItems.description);
+
+    const results = await query;
     // Transform results to include supplier information
     return results.map(row => ({
       ...row,
@@ -93,9 +99,7 @@ export class InventoryStorage extends BaseStorage implements IInventoryStorage {
         description: inventoryItems.description,
         category: inventoryItems.category,
         unitOfMeasure: inventoryItems.unitOfMeasure,
-        unitCost: inventoryItems.unitCost,
-        stockQuantity: inventoryItems.stockQuantity,
-        reorderThreshold: inventoryItems.reorderThreshold,
+  // Removed invalid columns: unitCost, stockQuantity, reorderThreshold
         weight: inventoryItems.weight,
         dimensions: inventoryItems.dimensions,
         isActive: inventoryItems.isActive,
@@ -125,11 +129,9 @@ export class InventoryStorage extends BaseStorage implements IInventoryStorage {
         description: inventoryItems.description,
         category: inventoryItems.category,
         unitOfMeasure: inventoryItems.unitOfMeasure,
-          costPrice: inventoryItems.costPrice,
-          stockQuantity: inventoryItems.stockQuantity,
-          reorderThreshold: inventoryItems.reorderThreshold,
-          weight: inventoryItems.weight,
-          dimensions: inventoryItems.dimensions,
+  // Removed invalid columns: unitCost, stockQuantity, reorderThreshold
+        weight: inventoryItems.weight,
+        dimensions: inventoryItems.dimensions,
         isActive: inventoryItems.isActive,
         supplierId: inventoryItems.supplierId,
         createdAt: inventoryItems.createdAt,
@@ -157,11 +159,9 @@ export class InventoryStorage extends BaseStorage implements IInventoryStorage {
         description: inventoryItems.description,
         category: inventoryItems.category,
         unitOfMeasure: inventoryItems.unitOfMeasure,
-          costPrice: inventoryItems.costPrice,
-          stockQuantity: inventoryItems.stockQuantity,
-          reorderLevel: inventoryItems.reorderLevel,
-          weight: inventoryItems.weight,
-          dimensions: inventoryItems.dimensions,
+  // Removed invalid columns: unitCost, stockQuantity, reorderLevel
+        weight: inventoryItems.weight,
+        dimensions: inventoryItems.dimensions,
         isActive: inventoryItems.isActive,
         supplierId: inventoryItems.supplierId,
         createdAt: inventoryItems.createdAt,

@@ -442,6 +442,22 @@ export default function DeliveryNote() {
               >
                 <Edit className="h-4 w-4" />
               </Button>
+                {/* Delete icon */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    // TODO: Implement delete logic (confirmation dialog recommended)
+                    toast({
+                      title: "Delete Delivery Note",
+                      description: `Delete action for ${row.deliveryNumber} triggered. Implement logic as needed.`,
+                      variant: "destructive"
+                    });
+                  }}
+                  title="Delete Delivery Note"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               {/* Existing picking and confirm delivery actions */}
               {row.status === "Pending" && (
                 <Button

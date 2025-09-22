@@ -54,7 +54,7 @@ interface Quotation {
   totalAmount: string;
   terms: string;
   notes: string;
-  approvalStatus: string;
+  approvalStatus: "Pending" | "Approved" | "Rejected" ;
   requiredApprovalLevel: string;
   createdAt: string;
 }
@@ -86,6 +86,10 @@ export default function QuotationDetailPage() {
   const [filterDateTo, setFilterDateTo] = useState("");
   const userId = useUserId();
   const { id } = useParams<{ id: string }>();
+  // UUID validation helper
+  function isValidUUID(uuid: string) {
+    return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuid);
+  }
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("overview");
   const [showRevisionDialog, setShowRevisionDialog] = useState(false);
@@ -158,11 +162,20 @@ export default function QuotationDetailPage() {
 
   // Handles both status and approvalStatus updates
   const updateStatusMutation = useMutation({
-    mutationFn: async (payload: { status?: string; approvalStatus?: string }) => {
+    mutationFn: async (payload: { status?: string; approvalStatus?: string; rejectionReason?: string }) => {
       if (isClientViewOnly) throw new Error("Client user cannot perform any changes");
+      if (!isValidUUID(id)) {
+        throw new Error("Invalid quotation ID format. Please check the URL or navigation.");
+      }
+      // Send user id and role headers for backend admin check
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (user?.id) headers["x-user-id"] = user.id;
+      if (user?.role) headers["x-user-role"] = user.role;
       const response = await fetch(`/api/quotations/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(payload),
       });
       if (!response.ok) throw new Error("Failed to update quotation");
@@ -176,10 +189,19 @@ export default function QuotationDetailPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/quotations", id] });
       queryClient.invalidateQueries({ queryKey: ["/api/quotations", id, "history"] });
     },
-    onError: (error: any) => {
+    onError: async (error: any) => {
+      let errorMsg = "Failed to update quotation";
+      if (error?.response) {
+        try {
+          const data = await error.response.json();
+          errorMsg = data?.message ? `${data.message}${data.error ? ": " + data.error : ""}` : errorMsg;
+        } catch {}
+      } else if (error?.message) {
+        errorMsg = error.message;
+      }
       toast({
         title: "Error",
-        description: error.message || "Failed to update quotation",
+        description: errorMsg,
         variant: "destructive",
       });
     },
@@ -482,7 +504,7 @@ export default function QuotationDetailPage() {
               </Button>
             </Link>
             <Button 
-              onClick={() => !isClientViewOnly && updateStatusMutation.mutate({ status: "Accepted" })}
+              onClick={() => !isClientViewOnly && updateStatusMutation.mutate({ approvalStatus: "Approved" })}
               disabled={updateStatusMutation.isPending || isClientViewOnly}
               data-testid="button-accept"
               variant="outline"
@@ -494,7 +516,12 @@ export default function QuotationDetailPage() {
             </Button>
             <Button 
               variant="outline"
-              onClick={() => !isClientViewOnly && updateStatusMutation.mutate({ status: "Rejected" })}
+              onClick={() => {
+                if (!isClientViewOnly) {
+                  const reason = window.prompt("Enter rejection reason:", "Not specified");
+                  updateStatusMutation.mutate({ approvalStatus: "Rejected", rejectionReason: reason || "Not specified" });
+                }
+              }}
               disabled={updateStatusMutation.isPending || isClientViewOnly}
               data-testid="button-reject"
               className="border-red-700 text-red-700 hover:bg-red-50"
@@ -710,40 +737,54 @@ export default function QuotationDetailPage() {
                       : quotation.approvalStatus || "None"}
                   </Badge>
                 </div>
-                {/* Approval Status Update UI */}
-                <div className="flex items-center gap-4 mt-4">
-                  <label htmlFor="approval-status-select" className="text-sm font-medium text-gray-700">Update Approval Status:</label>
-                  <select
-                    id="approval-status-select"
-                    className="border rounded px-2 py-1"
-                    value={quotation.approvalStatus}
-                    onChange={e => {
-                      const value = e.target.value;
-                      let status: string | undefined;
-                      if (value === "Approved") status = "Approved";
-                      else if (value === "Rejected") status = "Rejected";
-                      updateStatusMutation.mutate({ approvalStatus: value, status });
-                    }}
-                    disabled={updateStatusMutation.isPending}
-                  >
-                    <option value="Approved">Approved</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Rejected">Rejected</option>
-                  </select>
-                  <Button
-                    onClick={() => {
-                      const select = document.getElementById('approval-status-select') as HTMLSelectElement;
-                      const value = select.value;
-                      let status: string | undefined;
-                      if (value === "Approved") status = "Approved";
-                      else if (value === "Rejected") status = "Rejected";
-                      updateStatusMutation.mutate({ approvalStatus: value, status });
-                    }}
-                    disabled={updateStatusMutation.isPending}
-                    variant="outline"
-                  >
-                    {updateStatusMutation.isPending ? "Updating..." : "Update Approval"}
-                  </Button>
+                {/* Approval Status Update UI - Modern Segmented Buttons */}
+                <div className="flex flex-col gap-3 mt-4">
+                  <div className="text-sm font-medium text-gray-700 mb-1">Update Approval Status:</div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={quotation.approvalStatus === "Approved" ? "default" : "outline"}
+                      className={quotation.approvalStatus === "Approved" ? "bg-teal-600 text-white" : "border-teal-200 text-teal-700"}
+                      disabled={updateStatusMutation.isPending || user?.role !== "admin" || quotation.approvalStatus === "Approved" || quotation.approvalStatus === "Rejected"}
+                      onClick={() => {
+                        if (user?.role !== "admin") return;
+                        if (quotation.approvalStatus === "Approved" || quotation.approvalStatus === "Rejected") return;
+                        updateStatusMutation.mutate({ approvalStatus: "Approved" });
+                      }}
+                    >
+                      <Check className="h-4 w-4 mr-1" /> Approved
+                    </Button>
+                    <Button
+                      variant={quotation.approvalStatus === "Pending" ? "default" : "outline"}
+                      className={quotation.approvalStatus === "Pending" ? "bg-orange-500 text-white" : "border-orange-500 text-orange-600"}
+                      disabled={updateStatusMutation.isPending || user?.role !== "admin" || quotation.approvalStatus === "Approved" || quotation.approvalStatus === "Rejected"}
+                      onClick={() => {
+                        if (user?.role !== "admin") return;
+                        if (quotation.approvalStatus === "Approved" || quotation.approvalStatus === "Rejected") return;
+                        updateStatusMutation.mutate({ approvalStatus: "Pending" });
+                      }}
+                    >
+                      <Clock className="h-4 w-4 mr-1" /> Pending
+                    </Button>
+                    <Button
+                      variant={quotation.approvalStatus === "Rejected" ? "default" : "outline"}
+                      className={quotation.approvalStatus === "Rejected" ? "bg-red-600 text-white" : "border-red-200 text-red-700"}
+                      disabled={updateStatusMutation.isPending || user?.role !== "admin" || quotation.approvalStatus === "Approved" || quotation.approvalStatus === "Rejected"}
+                      onClick={() => {
+                        if (user?.role !== "admin") return;
+                        if (quotation.approvalStatus === "Approved" || quotation.approvalStatus === "Rejected") return;
+                        const reason = window.prompt("Enter rejection reason:", "Rejected by admin");
+                        updateStatusMutation.mutate({ approvalStatus: "Rejected", rejectionReason: reason || "Rejected by admin" });
+                      }}
+                    >
+                      <X className="h-4 w-4 mr-1" /> Rejected
+                    </Button>
+                  </div>
+                  {updateStatusMutation.isPending && (
+                    <div className="text-xs text-blue-600 mt-2">Updating approval status...</div>
+                  )}
+                  {(quotation.approvalStatus === "Rejected" && quotation.rejectionReason) && (
+                    <div className="text-xs text-red-600 mt-2">Reason: {quotation.rejectionReason}</div>
+                  )}
                 </div>
               </div>
             </CardContent>

@@ -9,6 +9,17 @@ import { generateQuotationPdf } from "../pdf/pdf-utils";
 import { sendPdf } from "../utils/pdf-response";
 
 export function registerQuotationRoutes(app: Express) {
+  // Debug: log every request to /api/quotations/:id
+  app.use("/api/quotations/:id", (req, res, next) => {
+    console.log('[QUOTATION ROUTE DEBUG]', {
+      method: req.method,
+      url: req.originalUrl,
+      headers: req.headers,
+      body: req.body,
+      params: req.params
+    });
+    next();
+  });
   // Quotation routes
   app.get("/api/quotations", async (req, res) => {
     try {
@@ -81,14 +92,20 @@ export function registerQuotationRoutes(app: Express) {
       const userId = req.header('x-user-id') || ((req as any).user && (req as any).user.id) || 'system';
       const role = req.header('x-user-role') || ((req as any).user && (req as any).user.role);
       const now = new Date();
-      console.log('[QUOTATION STATUS UPDATE]', {
+      console.log('[QUOTATION STATUS UPDATE - INCOMING]', {
         userId,
         role,
         payload: req.body,
         params: req.params
       });
-      const quotationData = quotationStatusUpdateSchema.parse(req.body);
-      // Only allow valid status values
+      let quotationData;
+      try {
+        quotationData = quotationStatusUpdateSchema.parse(req.body);
+      } catch (zodErr) {
+        const zErr = zodErr as any;
+        console.error('[QUOTATION STATUS UPDATE - ZOD ERROR]', zErr.errors, 'Payload:', req.body);
+        return res.status(400).json({ message: "Invalid quotation data", errors: zErr.errors, received: req.body });
+      }
       const allowedStatus = ["Draft", "Sent", "Accepted", "Rejected", "Expired"] as const;
       let updateFields: Partial<{ status?: "Draft" | "Sent" | "Accepted" | "Rejected" | "Expired"; approvalStatus?: string; rejectionReason?: string; [k: string]: any }> = {};
       if (quotationData.status && allowedStatus.includes(quotationData.status as typeof allowedStatus[number])) {
@@ -137,15 +154,20 @@ export function registerQuotationRoutes(app: Express) {
       for (const key of allowedKeys) {
         if (key in updateFields) filteredUpdateFields[key] = updateFields[key];
       }
-      const quotation = await storage.updateQuotation(req.params.id, filteredUpdateFields);
-      console.log('[QUOTATION STATUS UPDATED]', quotation);
-      res.json(quotation);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid quotation data", errors: error.errors });
+      console.log('[QUOTATION STATUS UPDATE - FILTERED FIELDS]', filteredUpdateFields);
+      try {
+        const quotation = await storage.updateQuotation(req.params.id, filteredUpdateFields);
+        console.log('[QUOTATION STATUS UPDATED]', quotation);
+        res.json(quotation);
+      } catch (updateErr) {
+        const uErr = updateErr as Error;
+        console.error('[QUOTATION STATUS UPDATE - UPDATE ERROR]', uErr, 'Fields:', filteredUpdateFields);
+        res.status(500).json({ message: "Failed to update quotation", error: uErr.message, fields: filteredUpdateFields });
       }
-      console.error("Error updating quotation:", error);
-      res.status(500).json({ message: "Failed to update quotation" });
+    } catch (error) {
+      const err = error as Error;
+      console.error('[QUOTATION STATUS UPDATE - UNEXPECTED ERROR]', err);
+      res.status(500).json({ message: "Failed to update quotation", error: err.message });
     }
   });
 

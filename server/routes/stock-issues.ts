@@ -31,7 +31,9 @@ router.post("/", async (req, res) => {
     const issue = await storage.createStockIssue(req.body);
     res.json(issue);
   } catch (err) {
-    res.status(500).json({ message: "Failed to create stock issue" });
+    console.error("Stock Issue Creation Error:", err, "Payload:", req.body);
+    const errorMessage = (err instanceof Error && err.message) ? err.message : String(err);
+    res.status(500).json({ message: "Failed to create stock issue", error: errorMessage });
   }
 });
 

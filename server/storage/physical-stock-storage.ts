@@ -30,6 +30,34 @@ import { alias } from 'drizzle-orm/pg-core';
 import { nanoid } from 'nanoid';
 
 export class PhysicalStockStorage extends BaseStorage {
+  async createPhysicalStockItem({ itemId, location, quantity, lastCounted, countedBy, notes }: {
+    itemId: string;
+    location: string;
+    quantity: number;
+    lastCounted: string;
+    countedBy: string;
+    notes?: string;
+  }) {
+    // Insert new record into physical_stock table
+    const [newItem] = await db.insert(physicalStock).values({
+      itemId,
+      location,
+      quantity,
+      lastUpdated: new Date(lastCounted),
+      countedBy,
+      notes,
+    }).returning();
+    // Audit log (optional)
+    await this.logAuditEvent(
+      'physical_stock',
+      newItem.id,
+      'created',
+      countedBy,
+      null,
+      newItem
+    );
+    return newItem;
+  }
   // === PHYSICAL STOCK ITEMS ===
   async getAllPhysicalStockItems() {
     // Returns all rows from the physicalStock table
@@ -115,9 +143,9 @@ export class PhysicalStockStorage extends BaseStorage {
         .orderBy(desc(physicalStockCounts.createdAt));
 
       if (typeof limit === 'number' && typeof offset === 'number') {
-        query = query.limit(limit).offset(offset);
+        return await query.limit(limit).offset(offset);
       } else if (typeof limit === 'number') {
-        query = query.limit(limit);
+        return await query.limit(limit);
       }
       return await query;
   }

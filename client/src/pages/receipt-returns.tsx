@@ -418,7 +418,7 @@ export default function ReceiptReturnsPage() {
             </div>
           </div>
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-            <DialogTrigger>
+            <DialogTrigger asChild>
               <Button variant="outline" className="border-blue-500 text-blue-600 hover:bg-blue-50 shadow-md hover:shadow-lg transition-all duration-200 px-6 py-2.5 font-medium rounded-lg">
                 <Plus className="h-4 w-4 mr-2" />
                 Process Return
@@ -662,18 +662,59 @@ export default function ReceiptReturnsPage() {
                       </FormItem>
                     )}
                   />
-                  <div className="flex justify-end gap-3 pt-4">
-                    <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      variant="default"
-                      disabled={createReturnMutation.isPending}
-                    >
-                      {createReturnMutation.isPending ? "Processing..." : "Process Return"}
-                    </Button>
-                  </div>
+                  {/* Disable Process Return button if required fields are missing */}
+                  {/*
+                    Required fields:
+                      - returnNumber
+                      - goodsReceiptId
+                      - selectedItemId
+                      - selectedReturnQuantity
+                      - returnReason
+                      - returnDate
+                  */}
+                  {(() => {
+                    const values = form.getValues();
+                    const isProcessReturnDisabled =
+                      !values.returnNumber ||
+                      !values.goodsReceiptId ||
+                      !selectedItemId ||
+                      !selectedReturnQuantity ||
+                      !values.returnReason ||
+                      !values.returnDate;
+                    return (
+                      <div className="flex justify-end gap-3 pt-4">
+                        <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>
+                          Cancel
+                        </Button>
+                        {(
+                          createReturnMutation.isPending ||
+                          !form.watch("returnNumber") ||
+                          !form.watch("goodsReceiptId") ||
+                          !selectedItemId ||
+                          !selectedReturnQuantity ||
+                          !form.watch("returnDate") ||
+                          !form.watch("returnReason")
+                        ) && (
+                          <span className="text-xs text-red-500 mr-4">Fill all required fields to enable</span>
+                        )}
+                        <Button
+                          type="submit"
+                          variant="default"
+                          disabled={
+                            createReturnMutation.isPending ||
+                            !form.watch("returnNumber") ||
+                            !form.watch("goodsReceiptId") ||
+                            !selectedItemId ||
+                            !selectedReturnQuantity ||
+                            !form.watch("returnDate") ||
+                            !form.watch("returnReason")
+                          }
+                        >
+                          {createReturnMutation.isPending ? "Processing..." : "Process Return"}
+                        </Button>
+                      </div>
+                    );
+                  })()}
                 </form>
               </Form>
             </DialogContent>

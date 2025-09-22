@@ -23,11 +23,37 @@ export function registerPhysicalStockRoutes(app: Express) {
           location: item.location,
           quantity: item.quantity,
           lastUpdated: item.lastUpdated,
+          countedBy: item.countedBy || null,
+          lastCounted: item.lastCounted || null,
+          notes: item.notes || null,
         }));
         res.json(mapped);
       } catch (error) {
         console.error("Error fetching physical stock items:", error);
         res.status(500).json({ message: "Failed to fetch physical stock" });
+      }
+    });
+
+    // POST /api/physical-stock: Create new physical stock entry
+    app.post("/api/physical-stock", async (req, res) => {
+      try {
+        // Basic validation (should match frontend PhysicalStockForm)
+        const { itemId, location, quantity, lastCounted, countedBy, notes } = req.body;
+        if (!itemId || !location || typeof quantity !== "number" || !lastCounted || !countedBy) {
+          return res.status(400).json({ message: "Missing required fields" });
+        }
+        const newItem = await storage.createPhysicalStockItem({
+          itemId,
+          location,
+          quantity,
+          lastCounted,
+          countedBy,
+          notes,
+        });
+        res.status(201).json(newItem);
+      } catch (error) {
+        console.error("Error creating physical stock item:", error);
+        res.status(500).json({ message: "Failed to create physical stock item" });
       }
     });
 
