@@ -218,7 +218,10 @@ export function PurchaseOrderUpload({
     );
   }
 
-  return (
+  // Check for customer acceptance presence (update logic if acceptedItems is required in schema)
+  const hasAcceptedItems = !!customerAcceptance;
+  
+  return ( 
     <div className="space-y-6">
       {/* Customer Acceptance Info */}
       {customerAcceptance && (
@@ -521,11 +524,14 @@ export function PurchaseOrderUpload({
                 </Button>
                 <Button 
                   type="submit" 
-                  disabled={isUploading || !selectedFile}
+                  disabled={isUploading || !selectedFile || !hasAcceptedItems}
                   data-testid="button-upload-po"
                 >
                   {isUploading ? "Uploading..." : "Upload Purchase Order"}
                 </Button>
+                {!hasAcceptedItems && (
+                  <p className="text-sm text-red-600 pt-2">No accepted quotation items found. Please accept at least one item before uploading a PO.</p>
+                )}
               </div>
             </form>
           </Form>

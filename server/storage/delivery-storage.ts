@@ -10,8 +10,8 @@ import {
   InsertDeliveryItem,
   InsertDeliveryPickingSession,
   InsertDeliveryPickedItem,
-  deliveries,
-  deliveryItems,
+  deliveryNote,
+  deliveryItem,
   deliveryPickingSessions,
   deliveryPickedItems,
   salesOrders,
@@ -34,25 +34,31 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
     try {
       let query = db
         .select()
-        .from(deliveries)
-        .leftJoin(salesOrders, eq(deliveries.salesOrderId, salesOrders.id))
+        .from(deliveryNote)
+        .leftJoin(salesOrders, eq(deliveryNote.salesOrderId, salesOrders.id))
         .leftJoin(customers, eq(salesOrders.customerId, customers.id));
 
+      // Build all filter conditions
+      const conditions: any[] = [];
       if (filters?.status) {
-        query = query.where(eq(deliveries.status, filters.status));
+        conditions.push(eq(deliveryNote.status, filters.status));
       }
       if (filters?.salesOrderId) {
-        query = query.where(eq(deliveries.salesOrderId, filters.salesOrderId));
+        conditions.push(eq(deliveryNote.salesOrderId, filters.salesOrderId));
       }
       if (filters?.dateFrom) {
-        query = query.where(sql`${deliveries.deliveryDate} >= ${filters.dateFrom}`);
+        conditions.push(sql`${deliveryNote.deliveryDate} >= ${filters.dateFrom}`);
       }
       if (filters?.dateTo) {
-        query = query.where(sql`${deliveries.deliveryDate} <= ${filters.dateTo}`);
+        conditions.push(sql`${deliveryNote.deliveryDate} <= ${filters.dateTo}`);
       }
 
-      query = query.orderBy(desc(deliveries.createdAt));
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
 
+      // Drizzle ORM chaining: orderBy, limit, offset must be chained, not reassigned
+      query = query.orderBy(desc(deliveryNote.createdAt));
       if (filters?.limit) {
         query = query.limit(filters.limit);
       }
@@ -62,7 +68,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
 
       const results = await query;
       return results.map(row => ({
-        ...row.deliveries,
+        ...row.delivery_note,
         salesOrder: row.sales_orders ? {
           ...row.sales_orders,
           customer: row.customers
@@ -78,11 +84,21 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
     try {
       const result = await db
         .select()
-        .from(deliveries)
-        .where(eq(deliveries.id, id))
+        .from(deliveryNote)
+        .where(eq(deliveryNote.id, id))
         .limit(1);
 
-      return result[0];
+      // No barcode/supplierCode/description on deliveryNote, remove these lines
+      if (result[0]) {
+        // Cast status to Delivery['status'] type
+        return {
+          ...result[0],
+          status: (['Pending', 'Cancelled', 'Partial', 'Complete'].includes(result[0].status)
+            ? result[0].status
+            : null) as Delivery['status']
+        };
+      }
+      return undefined;
     } catch (error) {
       console.error('Error fetching delivery:', error);
       throw new Error('Failed to fetch delivery');
@@ -93,8 +109,8 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
     try {
       const result = await db
         .select()
-        .from(deliveries)
-        .where(eq(deliveries.deliveryNumber, deliveryNumber))
+        .from(deliveryNote)
+        .where(eq(deliveryNote.deliveryNumber, deliveryNumber))
         .limit(1);
 
       return result[0];
@@ -115,9 +131,11 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
       if ((delivery as any).status && (delivery as any).status.toUpperCase() === 'DRAFT') {
         (delivery as any).status = 'Pending';
       }
+      // Fix status type: must be string, not null
+      if (delivery.status == null) delivery.status = 'Pending';
       const result = await db
-        .insert(deliveries)
-        .values(delivery)
+        .insert(deliveryNote)
+        .values({ ...delivery, status: delivery.status as string })
         .returning();
 
       return result[0];
@@ -129,10 +147,12 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
 
   async updateDelivery(id: string, delivery: Partial<InsertDelivery>): Promise<Delivery> {
     try {
+      // Fix status type: must be string, not null
+      if (delivery.status == null) delivery.status = 'Pending';
       const result = await db
-        .update(deliveries)
-        .set({ ...delivery, updatedAt: new Date() })
-        .where(eq(deliveries.id, id))
+        .update(deliveryNote)
+        .set({ ...delivery, status: delivery.status as string, updatedAt: new Date() })
+        .where(eq(deliveryNote.id, id))
         .returning();
 
       if (result.length === 0) {
@@ -149,8 +169,8 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
   async deleteDelivery(id: string): Promise<void> {
     try {
       await db
-        .delete(deliveries)
-        .where(eq(deliveries.id, id));
+        .delete(deliveryNote)
+        .where(eq(deliveryNote.id, id));
     } catch (error) {
       console.error('Error deleting delivery:', error);
       throw new Error('Failed to delete delivery');
@@ -159,15 +179,15 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
 
   async startDeliveryPicking(deliveryId: string, userId: string): Promise<Delivery> {
     try {
-      const result = await this.db
-        .update(deliveries)
+      const result = await db
+        .update(deliveryNote)
         .set({
           pickingStartedBy: userId,
           pickingStartedAt: new Date(),
           status: 'Partial',
           updatedAt: new Date()
         })
-        .where(eq(deliveries.id, deliveryId))
+        .where(eq(deliveryNote.id, deliveryId))
         .returning();
 
       if (result.length === 0) {
@@ -183,8 +203,8 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
 
   async completeDeliveryPicking(deliveryId: string, userId: string, notes?: string): Promise<Delivery> {
     try {
-      const result = await this.db
-        .update(deliveries)
+      const result = await db
+        .update(deliveryNote)
         .set({
           pickingCompletedBy: userId,
           pickingCompletedAt: new Date(),
@@ -192,7 +212,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
           pickingNotes: notes,
           updatedAt: new Date()
         })
-        .where(eq(deliveries.id, deliveryId))
+        .where(eq(deliveryNote.id, deliveryId))
         .returning();
 
       if (result.length === 0) {
@@ -208,8 +228,8 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
 
   async confirmDelivery(deliveryId: string, confirmedBy: string, signature?: string): Promise<Delivery> {
     try {
-      const result = await this.db
-        .update(deliveries)
+      const result = await db
+        .update(deliveryNote)
         .set({
           deliveryConfirmedBy: confirmedBy,
           deliveryConfirmedAt: new Date(),
@@ -217,7 +237,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
           status: 'Complete',
           updatedAt: new Date()
         })
-        .where(eq(deliveries.id, deliveryId))
+        .where(eq(deliveryNote.id, deliveryId))
         .returning();
 
       if (result.length === 0) {
@@ -234,11 +254,11 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
   // Delivery Item operations
   async getDeliveryItems(deliveryId: string): Promise<DeliveryItem[]> {
     try {
+      // Remove orderBy lineNumber (doesn't exist)
       return await db
         .select()
-        .from(deliveryItems)
-        .where(eq(deliveryItems.deliveryId, deliveryId))
-        .orderBy(deliveryItems.lineNumber);
+        .from(deliveryItem)
+        .where(eq(deliveryItem.deliveryId, deliveryId));
     } catch (error) {
       console.error('Error fetching delivery items:', error);
       throw new Error('Failed to fetch delivery items');
@@ -249,8 +269,8 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
     try {
       const result = await db
         .select()
-        .from(deliveryItems)
-        .where(eq(deliveryItems.id, id))
+        .from(deliveryItem)
+        .where(eq(deliveryItem.id, id))
         .limit(1);
 
       return result[0];
@@ -299,11 +319,13 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
         enriched.totalPrice = enriched.totalPrice || '0.00';
       }
 
+      // Fix unitPrice/totalPrice: must be string, not null
+      enriched.unitPrice = enriched.unitPrice ?? '0.00';
+      enriched.totalPrice = enriched.totalPrice ?? '0.00';
       const result = await db
-        .insert(deliveryItems)
+        .insert(deliveryItem)
         .values(enriched)
         .returning();
-
       return result[0];
     } catch (error) {
       console.error('Error creating delivery item:', error);
@@ -313,10 +335,13 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
 
   async updateDeliveryItem(id: string, item: Partial<InsertDeliveryItem>): Promise<DeliveryItem> {
     try {
+      // Fix unitPrice/totalPrice: must be string, not null
+      if (item.unitPrice == null) item.unitPrice = '0.00';
+      if (item.totalPrice == null) item.totalPrice = '0.00';
       const result = await db
-        .update(deliveryItems)
+        .update(deliveryItem)
         .set({ ...item, updatedAt: new Date() })
-        .where(eq(deliveryItems.id, id))
+        .where(eq(deliveryItem.id, id))
         .returning();
 
       if (result.length === 0) {
@@ -333,8 +358,8 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
   async deleteDeliveryItem(id: string): Promise<void> {
     try {
       await db
-        .delete(deliveryItems)
-        .where(eq(deliveryItems.id, id));
+        .delete(deliveryItem)
+        .where(eq(deliveryItem.id, id));
     } catch (error) {
       console.error('Error deleting delivery item:', error);
       throw new Error('Failed to delete delivery item');
@@ -344,7 +369,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
   async bulkCreateDeliveryItems(items: InsertDeliveryItem[]): Promise<DeliveryItem[]> {
     try {
       const result = await db
-        .insert(deliveryItems)
+        .insert(deliveryItem)
         .values(items)
         .returning();
 
@@ -358,7 +383,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
   // Delivery Picking Session operations
   async getDeliveryPickingSessions(deliveryId: string): Promise<DeliveryPickingSession[]> {
     try {
-      return await this.db
+      return await db
         .select()
         .from(deliveryPickingSessions)
         .where(eq(deliveryPickingSessions.deliveryId, deliveryId))
@@ -371,7 +396,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
 
   async getDeliveryPickingSession(id: string): Promise<DeliveryPickingSession | undefined> {
     try {
-      const result = await this.db
+      const result = await db
         .select()
         .from(deliveryPickingSessions)
         .where(eq(deliveryPickingSessions.id, id))
@@ -386,7 +411,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
 
   async createDeliveryPickingSession(session: InsertDeliveryPickingSession): Promise<DeliveryPickingSession> {
     try {
-      const result = await this.db
+      const result = await db
         .insert(deliveryPickingSessions)
         .values(session)
         .returning();
@@ -400,7 +425,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
 
   async updateDeliveryPickingSession(id: string, session: Partial<InsertDeliveryPickingSession>): Promise<DeliveryPickingSession> {
     try {
-      const result = await this.db
+      const result = await db
         .update(deliveryPickingSessions)
         .set({ ...session, updatedAt: new Date() })
         .where(eq(deliveryPickingSessions.id, id))
@@ -419,12 +444,11 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
 
   async completePickingSession(sessionId: string): Promise<DeliveryPickingSession> {
     try {
-      const result = await this.db
+      const result = await db
         .update(deliveryPickingSessions)
         .set({
           status: 'Completed',
-          completedAt: new Date(),
-          updatedAt: new Date()
+          completedAt: new Date()
         })
         .where(eq(deliveryPickingSessions.id, sessionId))
         .returning();
@@ -443,7 +467,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
   // Delivery Picked Item operations
   async getDeliveryPickedItems(sessionId: string): Promise<DeliveryPickedItem[]> {
     try {
-      return await this.db
+      return await db
         .select()
         .from(deliveryPickedItems)
         .where(eq(deliveryPickedItems.pickingSessionId, sessionId))
@@ -454,9 +478,45 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
     }
   }
 
+  async deleteDeliveryPickingSession(id: string): Promise<void> {
+    try {
+      await db
+        .delete(deliveryPickingSessions)
+        .where(eq(deliveryPickingSessions.id, id));
+    } catch (error) {
+      console.error('Error deleting delivery picking session:', error);
+      throw new Error('Failed to delete delivery picking session');
+    }
+  }
+
+  async deleteDeliveryPickedItem(id: string): Promise<void> {
+    try {
+      await db
+        .delete(deliveryPickedItems)
+        .where(eq(deliveryPickedItems.id, id));
+    } catch (error) {
+      console.error('Error deleting delivery picked item:', error);
+      throw new Error('Failed to delete delivery picked item');
+    }
+  }
+
+  async bulkCreateDeliveryPickedItems(items: InsertDeliveryPickedItem[]): Promise<DeliveryPickedItem[]> {
+    try {
+      const result = await db
+        .insert(deliveryPickedItems)
+        .values(items)
+        .returning();
+
+      return result;
+    } catch (error) {
+      console.error('Error bulk creating delivery picked items:', error);
+      throw new Error('Failed to bulk create delivery picked items');
+    }
+  }
+
   async getDeliveryPickedItem(id: string): Promise<DeliveryPickedItem | undefined> {
     try {
-      const result = await this.db
+      const result = await db
         .select()
         .from(deliveryPickedItems)
         .where(eq(deliveryPickedItems.id, id))
@@ -471,7 +531,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
 
   async createDeliveryPickedItem(item: InsertDeliveryPickedItem): Promise<DeliveryPickedItem> {
     try {
-      const result = await this.db
+      const result = await db
         .insert(deliveryPickedItems)
         .values(item)
         .returning();
@@ -485,7 +545,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
 
   async updateDeliveryPickedItem(id: string, item: Partial<InsertDeliveryPickedItem>): Promise<DeliveryPickedItem> {
     try {
-      const result = await this.db
+      const result = await db
         .update(deliveryPickedItems)
         .set({ ...item, updatedAt: new Date() })
         .where(eq(deliveryPickedItems.id, id))
@@ -504,7 +564,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
 
   async verifyPickedItem(itemId: string, userId: string): Promise<DeliveryPickedItem> {
     try {
-      const result = await this.db
+      const result = await db
         .update(deliveryPickedItems)
         .set({
           verified: true,
@@ -529,7 +589,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
   // Barcode scanning and verification
   async verifyItemBarcode(barcode: string, expectedItemId?: string): Promise<{ valid: boolean; item?: any; message: string }> {
     try {
-      const result = await this.db
+      const result = await db
         .select()
         .from(items)
         .where(eq(items.barcode, barcode))
@@ -561,20 +621,20 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
       }
 
       // Get the delivery item for this barcode
-      const deliveryItem = await this.db
+      const deliveryItemRows = await db
         .select()
-        .from(deliveryItems)
-        .where(eq(deliveryItems.barcode, barcode))
+        .from(deliveryItem)
+        .where(eq(deliveryItem.barcode, barcode))
         .limit(1);
 
-      if (deliveryItem.length === 0) {
+      if (deliveryItemRows.length === 0) {
         throw new Error('Item not found in delivery');
       }
 
       // Create picked item record
       const pickedItem: InsertDeliveryPickedItem = {
         pickingSessionId: sessionId,
-        deliveryItemId: deliveryItem[0].id,
+        deliveryItemId: deliveryItemRows[0].id,
         barcode,
         quantityPicked: quantity,
         storageLocation,
@@ -591,20 +651,20 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
 
   async getAvailableItemsForPicking(deliveryId: string): Promise<any[]> {
     try {
-      const result = await this.db
+      const result = await db
         .select({
-          id: deliveryItems.id,
-          barcode: deliveryItems.barcode,
-          supplierCode: deliveryItems.supplierCode,
-          description: deliveryItems.description,
-          orderedQuantity: deliveryItems.orderedQuantity,
-          pickedQuantity: deliveryItems.pickedQuantity,
-          deliveredQuantity: deliveryItems.deliveredQuantity,
-          storageLocation: deliveryItems.storageLocation
+          id: deliveryItem.id,
+          barcode: deliveryItem.barcode,
+          supplierCode: deliveryItem.supplierCode,
+          description: deliveryItem.description,
+          orderedQuantity: deliveryItem.orderedQuantity,
+          pickedQuantity: deliveryItem.pickedQuantity,
+          deliveredQuantity: deliveryItem.deliveredQuantity,
+          storageLocation: deliveryItem.storageLocation
         })
-        .from(deliveryItems)
-        .where(eq(deliveryItems.deliveryId, deliveryId))
-        .orderBy(deliveryItems.lineNumber);
+        .from(deliveryItem)
+        .where(eq(deliveryItem.deliveryId, deliveryId))
+        .orderBy(deliveryItem.lineNumber);
 
       return result;
     } catch (error) {

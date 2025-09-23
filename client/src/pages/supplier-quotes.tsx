@@ -602,49 +602,57 @@ export default function SupplierQuotesPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 my-6">
-        <Card className="flex flex-row items-start gap-4 p-4 shadow-sm border border-gray-200 bg-white">
-          <div className="rounded-full p-2 mt-1">
-            <Clock className="h-6 w-6 text-orange-600" />
+        {/* Pending */}
+        <Card className="relative flex flex-row items-center gap-4 p-6 shadow-lg border-0 bg-gradient-to-br from-gray-50 via-white to-gray-200 rounded-xl overflow-hidden">
+          <div className="flex items-center justify-center h-16 w-16 rounded-full bg-gradient-to-br from-yellow-400 to-gray-500 shadow-md">
+            <Clock className="h-8 w-8 text-white" />
           </div>
           <div className="flex-1">
-            <div className="text-lg font-bold text-gray-700">Pending</div>
-            <div className="text-2xl font-bold text-gray-900">
+            <div className="text-base font-semibold text-gray-700 tracking-tight">Pending</div>
+            <div className="text-3xl font-extrabold text-gray-900 drop-shadow-sm">
               {supplierQuotes?.filter((q: SupplierQuote) => q.status === "Pending").length || 0}
             </div>
           </div>
+          <div className="absolute right-4 top-4 opacity-10 text-7xl font-black text-gray-300 select-none pointer-events-none">⧗</div>
         </Card>
-        <Card className="flex flex-row items-start gap-4 p-4 shadow-sm border border-gray-200 bg-white">
-          <div className="rounded-full p-2 mt-1">
-            <FileText className="h-6 w-6 text-blue-500" />
+        {/* Received */}
+        <Card className="relative flex flex-row items-center gap-4 p-6 shadow-lg border-0 bg-gradient-to-br from-gray-50 via-white to-gray-200 rounded-xl overflow-hidden">
+          <div className="flex items-center justify-center h-16 w-16 rounded-full bg-gradient-to-br from-blue-500 to-gray-500 shadow-md">
+            <FileText className="h-8 w-8 text-white" />
           </div>
           <div className="flex-1">
-            <div className="text-lg font-bold text-gray-700">Received</div>
-            <div className="text-2xl font-bold text-gray-900">
+            <div className="text-base font-semibold text-gray-700 tracking-tight">Received</div>
+            <div className="text-3xl font-extrabold text-gray-900 drop-shadow-sm">
               {supplierQuotes?.filter((q: SupplierQuote) => q.status === "Received").length || 0}
             </div>
           </div>
+          <div className="absolute right-4 top-4 opacity-10 text-7xl font-black text-gray-300 select-none pointer-events-none">↓</div>
         </Card>
-        <Card className="flex flex-row items-start gap-4 p-4 shadow-sm border border-gray-200 bg-white">
-          <div className="rounded-full p-2 mt-1">
-            <Eye className="h-6 w-6 text-yellow-600" />
+        {/* Under Review */}
+        <Card className="relative flex flex-row items-center gap-4 p-6 shadow-lg border-0 bg-gradient-to-br from-gray-50 via-white to-gray-200 rounded-xl overflow-hidden">
+          <div className="flex items-center justify-center h-16 w-16 rounded-full bg-gradient-to-br from-amber-500 to-gray-500 shadow-md">
+            <Eye className="h-8 w-8 text-white" />
           </div>
           <div className="flex-1">
-            <div className="text-lg font-bold text-gray-700">Under Review</div>
-            <div className="text-2xl font-bold text-gray-900">
+            <div className="text-base font-semibold text-gray-700 tracking-tight">Under Review</div>
+            <div className="text-3xl font-extrabold text-gray-900 drop-shadow-sm">
               {supplierQuotes?.filter((q: SupplierQuote) => q.status === "Under Review").length || 0}
             </div>
           </div>
+          <div className="absolute right-4 top-4 opacity-10 text-7xl font-black text-gray-300 select-none pointer-events-none">👁</div>
         </Card>
-        <Card className="flex flex-row items-start gap-4 p-4 shadow-sm border border-gray-200 bg-white">
-          <div className="rounded-full p-2 mt-1">
-            <CheckCircle className="h-6 w-6 text-green-500" />
+        {/* Approved */}
+        <Card className="relative flex flex-row items-center gap-4 p-6 shadow-lg border-0 bg-gradient-to-br from-gray-50 via-white to-gray-200 rounded-xl overflow-hidden">
+          <div className="flex items-center justify-center h-16 w-16 rounded-full bg-gradient-to-br from-emerald-500 to-gray-500 shadow-md">
+            <CheckCircle className="h-8 w-8 text-white" />
           </div>
           <div className="flex-1">
-            <div className="text-lg font-bold text-gray-700">Approved</div>
-            <div className="text-2xl font-bold text-gray-900">
+            <div className="text-base font-semibold text-gray-700 tracking-tight">Approved</div>
+            <div className="text-3xl font-extrabold text-gray-900 drop-shadow-sm">
               {supplierQuotes?.filter((q: SupplierQuote) => q.status === "Approved").length || 0}
             </div>
           </div>
+          <div className="absolute right-4 top-4 opacity-10 text-7xl font-black text-gray-300 select-none pointer-events-none">✓</div>
         </Card>
       </div>
 

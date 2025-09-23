@@ -44,6 +44,7 @@ export class PhysicalStockStorage extends BaseStorage {
       location,
       quantity,
       lastUpdated: new Date(lastCounted),
+      lastCounted: new Date(lastCounted),
       countedBy,
       notes,
     }).returning();

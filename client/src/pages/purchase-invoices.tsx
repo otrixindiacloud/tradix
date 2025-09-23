@@ -51,7 +51,7 @@ interface PurchaseInvoice {
   purchaseOrderNumber?: string;
   goodsReceiptId?: string;
   goodsReceiptNumber?: string;
-  status: "Draft" | "Pending Approval" | "Approved" | "Paid" | "Partially Paid" | "Overdue" | "Disputed" | "Cancelled";
+  status: "Draft" | "Pending Approval" | "Approved" | "Paid" | "Partially Paid" | "Overdue" | "Discrepancy" | "Cancelled";
   paymentStatus: "Unpaid" | "Partially Paid" | "Paid" | "Overdue";
   invoiceDate: string;
   dueDate: string;
@@ -506,7 +506,7 @@ export default function PurchaseInvoicesPage() {
       case "Paid": return <CheckCircle className="h-4 w-4" />;
       case "Partially Paid": return <Clock className="h-4 w-4" />;
       case "Overdue": return <XCircle className="h-4 w-4" />;
-      case "Disputed": return <AlertTriangle className="h-4 w-4" />;
+      case "Discrepancy": return <AlertTriangle className="h-4 w-4" />;
       case "Cancelled": return <XCircle className="h-4 w-4" />;
       default: return <Clock className="h-4 w-4" />;
     }
@@ -736,7 +736,7 @@ export default function PurchaseInvoicesPage() {
           <div className="flex-1">
             <div className="text-lg font-bold text-gray-700">Total Invoiced</div>
             <div className="text-2xl font-bold text-gray-900">
-              BHD {totalInvoiceAmount.toLocaleString()}
+              BHD {totalInvoiceAmount === 0 ? '0' : ((totalInvoiceAmount/1000).toFixed(1).replace(/\.0$/, "") + 'k')}
             </div>
           </div>
         </Card>
@@ -747,7 +747,7 @@ export default function PurchaseInvoicesPage() {
           <div className="flex-1">
             <div className="text-lg font-bold text-gray-700">Total Paid</div>
             <div className="text-2xl font-bold text-gray-900">
-              BHD {totalPaidAmount.toLocaleString()}
+              BHD {totalPaidAmount === 0 ? '0' : ((totalPaidAmount/1000).toFixed(1).replace(/\.0$/, "") + 'k')}
             </div>
           </div>
         </Card>
@@ -758,7 +758,7 @@ export default function PurchaseInvoicesPage() {
           <div className="flex-1">
             <div className="text-lg font-bold text-gray-700">Outstanding</div>
             <div className="text-2xl font-bold text-gray-900">
-              BHD {totalOutstandingAmount.toLocaleString()}
+              BHD {totalOutstandingAmount === 0 ? '0' : ((totalOutstandingAmount/1000).toFixed(1).replace(/\.0$/, "") + 'k')}
             </div>
           </div>
         </Card>
@@ -824,7 +824,7 @@ export default function PurchaseInvoicesPage() {
                     <SelectItem value="Paid">Paid</SelectItem>
                     <SelectItem value="Partially Paid">Partially Paid</SelectItem>
                     <SelectItem value="Overdue">Overdue</SelectItem>
-                    <SelectItem value="Disputed">Disputed</SelectItem>
+                    <SelectItem value="Discrepancy">Discrepancy</SelectItem>
                     <SelectItem value="Cancelled">Cancelled</SelectItem>
                   </SelectContent>
                 </Select>

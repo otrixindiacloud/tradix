@@ -500,7 +500,8 @@ export default function Inventory() {
               </div>
               <div>
                 <h2 className="text-3xl font-bold text-gray-900 mb-1" data-testid="text-page-title">
-                  Inventory Items
+                  
+                  
                 </h2>
                 <div className="flex items-center gap-3">
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200">

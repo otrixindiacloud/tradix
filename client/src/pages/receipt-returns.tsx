@@ -706,6 +706,7 @@ export default function ReceiptReturnsPage() {
                             !form.watch("goodsReceiptId") ||
                             !selectedItemId ||
                             !selectedReturnQuantity ||
+                            selectedReturnQuantity <= 0 ||
                             !form.watch("returnDate") ||
                             !form.watch("returnReason")
                           }

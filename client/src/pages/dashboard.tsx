@@ -428,8 +428,8 @@ export default function Dashboard() {
               }}
               onViewDetails={() => {
                 setLocation(`/process-flow-details`);
-              }}
-              reflectionCard={currentQuote ? (
+                }}
+                reflectionCard={currentQuote ? (
                 <div className="bg-white rounded-lg shadow border p-4 mt-4 flex items-center justify-between">
                   <div>
                     <div className="flex items-center gap-2 mb-1">

@@ -38,6 +38,7 @@ interface WorkflowStepperProps {
   quotationNumber?: string;
   onMarkComplete?: () => void;
   onViewDetails?: () => void;
+  reflectionCard?: React.ReactNode;
 }
 
 export default function WorkflowStepper({ 

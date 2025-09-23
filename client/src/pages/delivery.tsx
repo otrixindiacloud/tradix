@@ -144,7 +144,7 @@ export default function Delivery() {
       ...delivery,
       order: order,
       orderNumber: order?.orderNumber || 'N/A',
-      customer: order?.customer || { name: 'Unknown', address: 'Unknown' },
+      customer: order?.customer_id || { name: 'Unknown', address: 'Unknown' },
       totalAmount: order?.totalAmount || 0,
       orderDate: order?.orderDate || delivery.createdAt,
     };
@@ -193,11 +193,15 @@ export default function Delivery() {
     {
       key: "customer",
       header: "Customer",
-      render: (customer: any) => (
-        <span className="text-sm font-medium text-gray-900">
-          {customer?.name || "Unknown Customer"}
-        </span>
-      ),
+      render: (_: any, item: any) => {
+        // Show customer_id from sales order
+        const customerId = item.order?.customer?.id || item.customer?.id || "Unknown Customer";
+        return (
+          <span className="text-sm font-medium text-gray-900">
+            {customerId}
+          </span>
+        );
+      },
     },
     {
       key: "totalAmount",
@@ -813,7 +817,7 @@ export default function Delivery() {
                   <div>
                     <span className="text-sm text-gray-600">Customer Name:</span>
                     <span className="ml-2 text-sm font-medium">
-                      {selectedDeliveryForDetails.customer?.name || 'Unknown Customer'}
+                      {selectedDeliveryForDetails.customer?.id || 'Unknown Customer'}
                     </span>
                   </div>
                   <div>
@@ -1000,7 +1004,7 @@ export default function Delivery() {
                           <div>
                             <span className="text-gray-600">Customer:</span>
                             <span className="ml-2 font-medium text-gray-900">
-                              {order.customer?.name || 'Unknown Customer'}
+                              {order.customer_id || 'Unknown Customer'}
                             </span>
                           </div>
                           <div>

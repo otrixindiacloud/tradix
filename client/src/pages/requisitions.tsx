@@ -96,10 +96,17 @@ export default function RequisitionsPage() {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingRequisition, setEditingRequisition] = useState<Requisition | null>(null);
   const [deletingRequisition, setDeletingRequisition] = useState<Requisition | null>(null);
-  const [newRequisition, setNewRequisition] = useState({
+  const [newRequisition, setNewRequisition] = useState<{
+    requestedBy: string;
+    department: string;
+    priority: "Low" | "Medium" | "High" | "Urgent";
+    requiredDate: string;
+    justification: string;
+    notes: string;
+  }>({
     requestedBy: "",
     department: "",
-    priority: "Medium" as const,
+    priority: "Medium",
     requiredDate: "",
     justification: "",
     notes: "",
@@ -587,51 +594,59 @@ export default function RequisitionsPage() {
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Enhanced Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 my-6">
-        <Card className="flex flex-row items-start gap-4 p-4 shadow-sm border border-gray-200 bg-white">
-          <div className="p-2 mt-1">
-            <AlertTriangle className="h-6 w-6 text-orange-600" />
+        {/* Pending Approval */}
+        <Card className="relative flex flex-row items-center gap-4 p-6 shadow-lg border-0 bg-gradient-to-br from-gray-50 via-white to-gray-200 rounded-xl overflow-hidden">
+          <div className="flex items-center justify-center h-16 w-16 rounded-full bg-gradient-to-br from-yellow-400 to-gray-500 shadow-md">
+            <AlertTriangle className="h-8 w-8 text-white" />
           </div>
           <div className="flex-1">
-            <div className="text-lg font-bold text-gray-700">Pending Approval</div>
-            <div className="text-2xl font-bold text-gray-900">
+            <div className="text-base font-semibold text-gray-700 tracking-tight">Pending Approval</div>
+            <div className="text-3xl font-extrabold text-gray-900 drop-shadow-sm">
               {requisitions?.filter((r: Requisition) => r.status === "Pending Approval").length || 0}
             </div>
           </div>
+          <div className="absolute right-4 top-4 opacity-10 text-7xl font-black text-gray-300 select-none pointer-events-none">!</div>
         </Card>
-        <Card className="flex flex-row items-start gap-4 p-4 shadow-sm border border-gray-200 bg-white">
-          <div className="p-2 mt-1">
-            <CheckCircle className="h-6 w-6 text-green-500" />
+        {/* Approved */}
+        <Card className="relative flex flex-row items-center gap-4 p-6 shadow-lg border-0 bg-gradient-to-br from-gray-50 via-white to-gray-200 rounded-xl overflow-hidden">
+          <div className="flex items-center justify-center h-16 w-16 rounded-full bg-gradient-to-br from-emerald-500 to-gray-500 shadow-md">
+            <CheckCircle className="h-8 w-8 text-white" />
           </div>
           <div className="flex-1">
-            <div className="text-lg font-bold text-gray-700">Approved</div>
-            <div className="text-2xl font-bold text-gray-900">
+            <div className="text-base font-semibold text-gray-700 tracking-tight">Approved</div>
+            <div className="text-3xl font-extrabold text-gray-900 drop-shadow-sm">
               {requisitions?.filter((r: Requisition) => r.status === "Approved").length || 0}
             </div>
           </div>
+          <div className="absolute right-4 top-4 opacity-10 text-7xl font-black text-gray-300 select-none pointer-events-none">✓</div>
         </Card>
-        <Card className="flex flex-row items-start gap-4 p-4 shadow-sm border border-gray-200 bg-white">
-          <div className="p-2 mt-1">
-            <Package className="h-6 w-6 text-blue-500" />
+        {/* Processing */}
+        <Card className="relative flex flex-row items-center gap-4 p-6 shadow-lg border-0 bg-gradient-to-br from-gray-50 via-white to-gray-200 rounded-xl overflow-hidden">
+          <div className="flex items-center justify-center h-16 w-16 rounded-full bg-gradient-to-br from-blue-500 to-gray-500 shadow-md">
+            <Package className="h-8 w-8 text-white" />
           </div>
           <div className="flex-1">
-            <div className="text-lg font-bold text-gray-700">Processing</div>
-            <div className="text-2xl font-bold text-gray-900">
+            <div className="text-base font-semibold text-gray-700 tracking-tight">Processing</div>
+            <div className="text-3xl font-extrabold text-gray-900 drop-shadow-sm">
               {requisitions?.filter((r: Requisition) => r.status === "Processing").length || 0}
             </div>
           </div>
+          <div className="absolute right-4 top-4 opacity-10 text-7xl font-black text-gray-300 select-none pointer-events-none">⧗</div>
         </Card>
-        <Card className="flex flex-row items-start gap-4 p-4 shadow-sm border border-gray-200 bg-white">
-          <div className="p-2 mt-1">
-            <Clock className="h-6 w-6 text-red-500" />
+        {/* Urgent */}
+        <Card className="relative flex flex-row items-center gap-4 p-6 shadow-lg border-0 bg-gradient-to-br from-gray-50 via-white to-gray-200 rounded-xl overflow-hidden">
+          <div className="flex items-center justify-center h-16 w-16 rounded-full bg-gradient-to-br from-rose-500 to-gray-500 shadow-md">
+            <Clock className="h-8 w-8 text-white" />
           </div>
           <div className="flex-1">
-            <div className="text-lg font-bold text-gray-700">Urgent</div>
-            <div className="text-2xl font-bold text-gray-900">
+            <div className="text-base font-semibold text-gray-700 tracking-tight">Urgent</div>
+            <div className="text-3xl font-extrabold text-gray-900 drop-shadow-sm">
               {requisitions?.filter((r: Requisition) => r.priority === "Urgent").length || 0}
             </div>
           </div>
+          <div className="absolute right-4 top-4 opacity-10 text-7xl font-black text-gray-300 select-none pointer-events-none">!</div>
         </Card>
       </div>
 

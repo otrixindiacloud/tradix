@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, Filter, Package, Scan, AlertTriangle, Check, Clock, CheckCircle, Truck } from "lucide-react";
+import { Search, Eye, Pencil, Trash, Package, Scan, AlertTriangle, Check, Clock, CheckCircle, Truck } from "lucide-react";
 import DataTable, { Column } from "@/components/tables/data-table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatDate, formatCurrency, getStatusColor } from "@/lib/utils";
@@ -20,6 +20,12 @@ export default function GoodsReceipt() {
     notes: "",
     items: [] as any[],
   });
+  // Dialog state for view/edit/delete actions on Goods Receipt Header
+  const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editForm, setEditForm] = useState<any>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -28,16 +34,32 @@ export default function GoodsReceipt() {
   });
 
   const { data: goodsReceipts } = useQuery({
-    queryKey: ["/api/goods-receipts"],
+    queryKey: ["/api/goods-receipt-headers"],
+  });
+
+  // Mutation for deleting a goods receipt header
+  const deleteGoodsReceipt = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/goods-receipt-headers/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/goods-receipt-headers"] });
+      setDeleteDialogOpen(false);
+      setSelectedReceipt(null);
+      toast({ title: "Deleted", description: "Goods receipt deleted successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to delete goods receipt", variant: "destructive" });
+    },
   });
 
   const createGoodsReceipt = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("POST", "/api/goods-receipts", data);
+      const response = await apiRequest("POST", "/api/goods-receipt-headers", data);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/goods-receipts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/goods-receipt-headers"] });
       queryClient.invalidateQueries({ queryKey: ["/api/supplier-lpos"] });
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
       toast({
@@ -185,7 +207,7 @@ export default function GoodsReceipt() {
       !(Array.isArray(goodsReceipts) ? goodsReceipts : [])?.some((gr: any) => gr.supplierLpoId === lpo.id)
     ).length || 0,
     partial: (Array.isArray(goodsReceipts) ? goodsReceipts : [])?.filter((gr: any) => gr.status === "Partial").length || 0,
-    complete: (Array.isArray(goodsReceipts) ? goodsReceipts : [])?.filter((gr: any) => gr.status === "Complete").length || 0,
+    completed: (Array.isArray(goodsReceipts) ? goodsReceipts : [])?.filter((gr: any) => gr.status === "Completed").length || 0,
     discrepancy: (Array.isArray(goodsReceipts) ? goodsReceipts : [])?.filter((gr: any) => gr.status === "Discrepancy").length || 0,
   };
 
@@ -307,7 +329,7 @@ export default function GoodsReceipt() {
               <div>
                 <p className="text-sm font-bold text-gray-900">Complete Receipt</p>
                 <p className="text-2xl font-bold text-green-600" data-testid="stat-complete-receipt">
-                  {receiptStats.complete}
+                  {receiptStats.completed}
                 </p>
                 <div className="mt-2 text-sm text-gray-600">
                   Fully received shipments
@@ -337,53 +359,288 @@ export default function GoodsReceipt() {
         </Card>
       </div>
 
-      {/* Goods Receipt Table */}
-      <Card>
+      {/* Goods Receipt Table - Goods Receipt Headers (single table only) */}
+      <Card className="mt-8">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Supplier LPOs - Goods Receipt</CardTitle>
-            <div className="flex items-center space-x-2">
-              <div className="relative">
-                <Input
-                  type="text"
-                  placeholder="Search LPOs..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-64 pl-10 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 rounded-md shadow-none"
-                  data-testid="input-search-lpos"
-                />
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              </div>
-              <Button variant="outline" size="icon" data-testid="button-filter">
-                <Filter className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+          <CardTitle>Goods Receipt Headers</CardTitle>
         </CardHeader>
         <CardContent>
           <DataTable
-            data={filteredLpos || []}
-            columns={columns}
+            data={Array.isArray(goodsReceipts) ? goodsReceipts : []}
+            columns={[
+              {
+                key: "receiptNumber",
+                header: "Receipt Number",
+                render: (v: any, row: any) => <span className="font-mono text-xs">{v || row.id}</span>
+              },
+              {
+                key: "lpoNumber",
+                header: "Supplier LPO Number",
+                render: (v: any, row: any) => <span className="font-mono text-xs">{v || row.supplierLpoId}</span>
+              },
+              { key: "storageLocation", header: "Storage Location" },
+              { key: "status", header: "Status", render: (v: any) => {
+           let color = "bg-gray-100 text-gray-700 border-gray-300";
+           if (v === "Draft") color = "bg-yellow-100 text-yellow-700 border-yellow-300";
+           else if (v === "Pending") color = "bg-gray-100 text-gray-700 border-gray-300";
+           else if (v === "Partial") color = "bg-blue-100 text-blue-700 border-blue-300";
+           else if (v === "Complete" || v === "Completed") color = "bg-green-100 text-green-700 border-green-300";
+           else if (v === "Discrepancy") color = "bg-red-100 text-red-700 border-red-300";
+           return <Badge variant="outline" className={color}>{v}</Badge>;
+              } },
+              { key: "createdAt", header: "Created At", render: (v: any) => v ? formatDate(v) : "-" },
+              {
+                key: "actions",
+                header: "Actions",
+                render: (_: any, row: any) => (
+                  <div className="flex items-center gap-2">
+                    <Button size="icon" variant="ghost" onClick={() => { setSelectedReceipt(row); setViewDialogOpen(true); }} title="View">
+                      <Eye className="h-4 w-4 text-blue-600" />
+                    </Button>
+                    <Button size="icon" variant="ghost" onClick={() => { setSelectedReceipt(row); setEditForm({ ...row }); setEditDialogOpen(true); }} title="Edit">
+                      <Pencil className="h-4 w-4 text-green-600" />
+                    </Button>
+                    <Button size="icon" variant="ghost" onClick={() => { setSelectedReceipt(row); setDeleteDialogOpen(true); }} title="Delete">
+                      <Trash className="h-4 w-4 text-red-600" />
+                    </Button>
+                  </div>
+                ),
+              },
+            ]}
             isLoading={isLoading}
-            emptyMessage="No confirmed LPOs ready for goods receipt."
-            onRowClick={(lpo) => {
-              const receipt = (Array.isArray(goodsReceipts) ? goodsReceipts : []).find((gr: any) => gr.supplierLpoId === lpo.id);
-              if (!receipt) {
-                setSelectedLpo(lpo);
-                setReceiptData({
-                  storageLocation: "",
-                  notes: "",
-                  items: lpo.items?.map((item: any) => ({
-                    ...item,
-                    receivedQuantity: item.quantity,
-                    damagedQuantity: 0,
-                  })) || [],
-                });
-              }
-            }}
+            emptyMessage="No goods receipt headers found."
           />
         </CardContent>
       </Card>
+      {/* Dialogs for view/edit/delete actions */}
+      <Dialog open={viewDialogOpen} onOpenChange={(open) => { setViewDialogOpen(open); if (!open) setSelectedReceipt(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <div className="flex items-center gap-2 mb-2">
+              <Eye className="h-5 w-5 text-blue-600" />
+              <DialogTitle className="text-blue-700">Goods Receipt Details</DialogTitle>
+            </div>
+          </DialogHeader>
+          {selectedReceipt && (
+            <div className="space-y-4 p-2">
+              <div className="grid grid-cols-2 gap-4 bg-blue-50 rounded p-3 mb-2">
+                <div><span className="font-semibold text-gray-700">Receipt Number:</span> <span className="font-mono">{selectedReceipt.receiptNumber || selectedReceipt.id}</span></div>
+                <div><span className="font-semibold text-gray-700">LPO Number:</span> <span className="font-mono">{selectedReceipt.lpoNumber || selectedReceipt.supplierLpoNumber}</span></div>
+                <div><span className="font-semibold text-gray-700">Storage Location:</span> {selectedReceipt.storageLocation}</div>
+                <div><span className="font-semibold text-gray-700">Status:</span> {
+                  (() => {
+                    let color = "bg-gray-100 text-gray-700 border-gray-300";
+                    const v = selectedReceipt.status;
+                    if (v === "Draft") color = "bg-yellow-100 text-yellow-700 border-yellow-300";
+                    else if (v === "Pending") color = "bg-gray-100 text-gray-700 border-gray-300";
+                    else if (v === "Partial") color = "bg-blue-100 text-blue-700 border-blue-300";
+                    else if (v === "Complete" || v === "Completed") color = "bg-green-100 text-green-700 border-green-300";
+                    else if (v === "Discrepancy") color = "bg-red-100 text-red-700 border-red-300";
+                    return <Badge className={color}>{v}</Badge>;
+                  })()
+                }</div>
+                <div><span className="font-semibold text-gray-700">Created At:</span> {selectedReceipt.createdAt ? formatDate(selectedReceipt.createdAt) : "-"}</div>
+              </div>
+              {selectedReceipt.notes && (
+                <div className="bg-gray-50 rounded p-2 text-sm text-gray-700"><strong>Notes:</strong> {selectedReceipt.notes}</div>
+              )}
+              {Array.isArray(selectedReceipt.items) && selectedReceipt.items.length > 0 && (
+                <div>
+                  <div className="font-semibold text-gray-700 mb-1">Items</div>
+                  <ul className="text-xs bg-white rounded border p-2">
+                    {selectedReceipt.items.map((item: any, idx: number) => (
+                      <li key={idx} className="mb-1 flex gap-2 items-center">
+                        <Package className="h-3 w-3 text-orange-500" />
+                        <span className="font-mono">{item.barcode}</span> — {item.description || item.itemId} (Qty: {item.quantity})
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+      <Dialog open={editDialogOpen} onOpenChange={(open) => { setEditDialogOpen(open); if (!open) setSelectedReceipt(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <div className="flex items-center gap-2 mb-2">
+              <Pencil className="h-5 w-5 text-green-600" />
+              <DialogTitle className="text-green-700">Edit Goods Receipt</DialogTitle>
+            </div>
+          </DialogHeader>
+          {editForm && (
+            <form
+              className="space-y-4"
+              onSubmit={e => {
+                e.preventDefault();
+                toast({ title: "Edit", description: "Edit functionality not implemented yet." });
+                setEditDialogOpen(false);
+              }}
+            >
+              <div className="grid grid-cols-2 gap-4 bg-green-50 rounded p-3 mb-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Storage Location <span className="text-red-500">*</span></label>
+                  <Input
+                    type="text"
+                    required
+                    value={editForm.storageLocation}
+                    onChange={e => setEditForm({ ...editForm, storageLocation: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Status <span className="text-red-500">*</span></label>
+                  <select
+                    className="w-full border rounded px-2 py-1"
+                    value={editForm.status}
+                    required
+                    onChange={e => setEditForm({ ...editForm, status: e.target.value })}
+                  >
+                    <option value="">Select status</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Partial">Partial</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Discrepancy">Discrepancy</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">LPO Number <span className="text-red-500">*</span></label>
+                  <select
+                    className="w-full border rounded px-2 py-1"
+                    value={editForm.lpoNumber || editForm.supplierLpoId}
+                    required
+                    onChange={e => setEditForm({ ...editForm, lpoNumber: e.target.value })}
+                  >
+                    <option value="">Select LPO Number</option>
+                    {Array.isArray(supplierLpos) && supplierLpos.map((lpo: any) => (
+                      <option key={lpo.id} value={lpo.lpoNumber}>{lpo.lpoNumber}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Receipt Number</label>
+                  <select
+                    className="w-full border rounded px-2 py-1"
+                    value={editForm.receiptNumber || editForm.id}
+                    disabled
+                  >
+                    <option value="">Select Receipt Number</option>
+                    {Array.isArray(goodsReceipts) && goodsReceipts.map((gr: any) => (
+                      <option key={gr.id} value={gr.receiptNumber || gr.id}>{gr.receiptNumber || gr.id}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Notes</label>
+                <Textarea
+                  value={editForm.notes || ""}
+                  onChange={e => setEditForm({ ...editForm, notes: e.target.value })}
+                  rows={2}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Items</label>
+                <div className="border rounded p-2 bg-gray-50">
+                  {Array.isArray(editForm.items) && editForm.items.length > 0 ? (
+                    <ul className="text-xs">
+                      {editForm.items.map((item: any, idx: number) => (
+                        <li key={idx} className="mb-1 flex gap-2 items-center">
+                          <Package className="h-3 w-3 text-orange-500" />
+                          <span className="font-mono">{item.barcode}</span> — {item.description || item.itemId} (Qty: {item.quantity})
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <span className="text-gray-400">No items</span>
+                  )}
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-2">
+                <Button variant="outline" type="button" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+                <Button type="submit">Save</Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+      <Dialog open={deleteDialogOpen} onOpenChange={(open) => { setDeleteDialogOpen(open); if (!open) setSelectedReceipt(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <div className="flex items-center gap-2 mb-2">
+              <Trash className="h-5 w-5 text-red-600" />
+              <DialogTitle className="text-red-700">Delete Goods Receipt</DialogTitle>
+            </div>
+          </DialogHeader>
+          {selectedReceipt && (
+            <div className="space-y-4 p-2">
+              <div className="bg-red-50 rounded p-2 text-sm text-red-700 font-semibold flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-red-500" />
+                Are you sure you want to delete this goods receipt?
+              </div>
+              <div className="text-xs text-gray-500">Receipt ID: <span className="font-mono">{selectedReceipt.id}</span></div>
+              <div className="flex justify-end gap-2 mt-2">
+                <Button variant="outline" type="button" onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+                <Button
+                  variant="destructive"
+                  type="button"
+                  onClick={() => deleteGoodsReceipt.mutate(selectedReceipt.id)}
+                  disabled={deleteGoodsReceipt.isPending}
+                >
+                  {deleteGoodsReceipt.isPending ? "Deleting..." : "Delete"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* View Goods Receipt Header Dialog */}
+      <Dialog open={viewDialogOpen} onOpenChange={(open) => { setViewDialogOpen(open); if (!open) setSelectedReceipt(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Goods Receipt Details</DialogTitle>
+          </DialogHeader>
+          {selectedReceipt && (
+            <div className="space-y-3">
+              <div><strong>Receipt ID:</strong> {selectedReceipt.id}</div>
+              <div><strong>Supplier LPO ID:</strong> {selectedReceipt.supplierLpoId}</div>
+              <div><strong>Storage Location:</strong> {selectedReceipt.storageLocation}</div>
+              <div><strong>Status:</strong> {selectedReceipt.status}</div>
+              <div><strong>Created At:</strong> {selectedReceipt.createdAt ? formatDate(selectedReceipt.createdAt) : "-"}</div>
+              {/* Add more fields as needed */}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      
+
+      {/* Delete Goods Receipt Header Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={(open) => { setDeleteDialogOpen(open); if (!open) setSelectedReceipt(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete Goods Receipt</DialogTitle>
+          </DialogHeader>
+          {selectedReceipt && (
+            <div className="space-y-4">
+              <div>Are you sure you want to delete this goods receipt?</div>
+              <div className="text-xs text-gray-500">Receipt ID: {selectedReceipt.id}</div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" type="button" onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+                <Button
+                  variant="destructive"
+                  type="button"
+                  onClick={() => deleteGoodsReceipt.mutate(selectedReceipt.id)}
+                  disabled={deleteGoodsReceipt.isPending}
+                >
+                  {deleteGoodsReceipt.isPending ? "Deleting..." : "Delete"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Goods Receipt Dialog */}
       <Dialog open={!!selectedLpo} onOpenChange={() => setSelectedLpo(null)}>

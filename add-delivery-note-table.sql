@@ -1,0 +1,53 @@
+-- Create delivery_note table
+CREATE TABLE IF NOT EXISTS delivery_note (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    delivery_number VARCHAR(64) NOT NULL,
+    sales_order_id UUID NOT NULL,
+    delivery_date TIMESTAMP,
+    status VARCHAR(32) NOT NULL DEFAULT 'Pending',
+    delivery_type VARCHAR(32) NOT NULL DEFAULT 'Full',
+    delivery_address TEXT,
+    delivery_notes TEXT,
+    delivery_document TEXT,
+    delivery_document_name VARCHAR(128),
+    delivery_document_size INTEGER,
+    picking_started_by UUID,
+    picking_started_at TIMESTAMP,
+    picking_completed_by UUID,
+    picking_completed_at TIMESTAMP,
+    picking_notes TEXT,
+    delivery_confirmed_by VARCHAR(128),
+    delivery_confirmed_at TIMESTAMP,
+    delivery_signature TEXT,
+    tracking_number VARCHAR(64),
+    carrier_name VARCHAR(64),
+    estimated_delivery_date TIMESTAMP,
+    actual_delivery_date TIMESTAMP,
+    created_by UUID,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Create delivery_item table
+CREATE TABLE IF NOT EXISTS delivery_item (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    delivery_id UUID NOT NULL REFERENCES delivery_note(id) ON DELETE CASCADE,
+    sales_order_item_id UUID NOT NULL,
+    item_id UUID NOT NULL,
+    barcode VARCHAR(64),
+    supplier_code VARCHAR(64),
+    description TEXT,
+    ordered_quantity INTEGER NOT NULL,
+    picked_quantity INTEGER NOT NULL DEFAULT 0,
+    delivered_quantity INTEGER NOT NULL DEFAULT 0,
+    unit_price NUMERIC(12,2),
+    total_price NUMERIC(12,2),
+    picked_by UUID,
+    picked_at TIMESTAMP,
+    storage_location VARCHAR(64),
+    picking_notes TEXT,
+    quality_checked BOOLEAN DEFAULT FALSE,
+    quality_checked_by UUID,
+    quality_checked_at TIMESTAMP,
+    quality_notes TEXT
+);

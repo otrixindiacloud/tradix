@@ -28,7 +28,24 @@ router.get("/:id", async (req, res) => {
 // POST /api/stock-issues
 router.post("/", async (req, res) => {
   try {
-    const issue = await storage.createStockIssue(req.body);
+    const payload = { ...req.body };
+    // Validate and convert issueDate
+    if (payload.issueDate && typeof payload.issueDate === "string") {
+      // Accept ISO or "YYYY-MM-DD HH:mm:ss+00" format
+      let dateObj = null;
+      if (/^\d{4}-\d{2}-\d{2} 00:00:00\+00$/.test(payload.issueDate)) {
+        // Convert to ISO string
+        dateObj = new Date(payload.issueDate.replace(" ", "T"));
+      } else if (!isNaN(Date.parse(payload.issueDate))) {
+        dateObj = new Date(payload.issueDate);
+      }
+      if (dateObj && !isNaN(dateObj.getTime())) {
+        payload.issueDate = dateObj.toISOString();
+      } else {
+        payload.issueDate = null;
+      }
+    }
+    const issue = await storage.createStockIssue(payload);
     res.json(issue);
   } catch (err) {
     console.error("Stock Issue Creation Error:", err, "Payload:", req.body);
@@ -40,7 +57,22 @@ router.post("/", async (req, res) => {
 // PUT /api/stock-issues/:id
 router.put("/:id", async (req, res) => {
   try {
-    const updated = await storage.updateStockIssue(req.params.id, req.body);
+    const payload = { ...req.body };
+    // Validate and convert issueDate
+    if (payload.issueDate && typeof payload.issueDate === "string") {
+      let dateObj = null;
+      if (/^\d{4}-\d{2}-\d{2} 00:00:00\+00$/.test(payload.issueDate)) {
+        dateObj = new Date(payload.issueDate.replace(" ", "T"));
+      } else if (!isNaN(Date.parse(payload.issueDate))) {
+        dateObj = new Date(payload.issueDate);
+      }
+      if (dateObj && !isNaN(dateObj.getTime())) {
+        payload.issueDate = dateObj.toISOString();
+      } else {
+        payload.issueDate = null;
+      }
+    }
+    const updated = await storage.updateStockIssue(req.params.id, payload);
     res.json(updated);
   } catch (err) {
     res.status(500).json({ message: "Failed to update stock issue" });

@@ -82,7 +82,7 @@ interface DeliveryItem {
 
 export default function DeliveryNote() {
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 20;
+  const pageSize = 15;
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [customerFilter, setCustomerFilter] = useState("");
@@ -129,7 +129,7 @@ export default function DeliveryNote() {
           });
         } catch (relativeError) {
           console.log('Relative URL failed, trying absolute URL...');
-          response = await fetch(`http://localhost:5000/api/delivery-notes?${params}`, {
+          response = await fetch(`/api/delivery-notes?${params}`, {
             credentials: 'include',
             headers: {
               'Content-Type': 'application/json',
@@ -171,7 +171,7 @@ export default function DeliveryNote() {
             }
           });
         } catch (relativeError) {
-          response = await fetch("http://localhost:5000/api/sales-orders", {
+          response = await fetch("/api/sales-orders", {
             credentials: 'include',
             headers: {
               'Content-Type': 'application/json',
@@ -587,28 +587,52 @@ export default function DeliveryNote() {
         </CardContent>
       </Card>
 
-      {/* Delivery Notes Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Truck className="h-5 w-5" />
-            Delivery Notes
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
+      {/* Delivery Notes Table - only show if there is data */}
+      {isLoading ? (
+        <Card>
+          <CardContent>
             <div className="flex justify-center py-8">
               <LoadingSpinner />
             </div>
-          ) : (
+          </CardContent>
+        </Card>
+      ) : deliveryNotesData.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Truck className="h-5 w-5" />
+              Delivery Notes
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
             <DataTable
               data={deliveryNotesData}
               columns={[...columns]}
               className="w-full"
             />
-          )}
-        </CardContent>
-      </Card>
+            {/* Pagination Controls */}
+            <div className="flex justify-between items-center mt-4">
+              <Button
+                variant="outline"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(currentPage - 1)}
+              >
+                Previous
+              </Button>
+              <span className="text-sm text-gray-600">
+                Page {currentPage}
+              </span>
+              <Button
+                variant="outline"
+                disabled={deliveryNotesData.length < pageSize}
+                onClick={() => setCurrentPage(currentPage + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {/* Create Delivery Note Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
