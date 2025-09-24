@@ -14,38 +14,37 @@ export class SalesOrderStorage extends BaseStorage implements ISalesOrderStorage
     search?: string;
     pendingSupplierLpo?: boolean;
   }) {
-  const baseQuery = db.select().from(salesOrders);
-  let whereClause: any = undefined;
-
+    // Build query with left join to customers so we can embed minimal customer object
+    const conditions = [] as any[];
     if (filters) {
-      const conditions = [];
-      
-      if (filters.status) {
-        conditions.push(eq(salesOrders.status, filters.status as any));
-      }
-      
-      if (filters.customerId) {
-        conditions.push(eq(salesOrders.customerId, filters.customerId));
-      }
-      
-      if (filters.dateFrom) {
-        conditions.push(sql`${salesOrders.orderDate} >= ${filters.dateFrom}`);
-      }
-      
-      if (filters.dateTo) {
-        conditions.push(sql`${salesOrders.orderDate} <= ${filters.dateTo}`);
-      }
-      
-      if (filters.search) {
-        conditions.push(sql`${salesOrders.orderNumber} ILIKE ${`%${filters.search}%`}`);
-      }
-
-      if (conditions.length > 0) {
-        whereClause = and(...conditions);
-      }
+      if (filters.status) conditions.push(eq(salesOrders.status, filters.status as any));
+      if (filters.customerId) conditions.push(eq(salesOrders.customerId, filters.customerId));
+      if (filters.dateFrom) conditions.push(sql`${salesOrders.orderDate} >= ${filters.dateFrom}`);
+      if (filters.dateTo) conditions.push(sql`${salesOrders.orderDate} <= ${filters.dateTo}`);
+      if (filters.search) conditions.push(sql`${salesOrders.orderNumber} ILIKE ${`%${filters.search}%`}`);
     }
-    const finalQuery = whereClause ? baseQuery.where(whereClause) : baseQuery;
-    return finalQuery.orderBy(desc(salesOrders.createdAt)).limit(limit).offset(offset);
+
+    let query = db
+      .select({ so: salesOrders, cust: customers })
+      .from(salesOrders)
+      .leftJoin(customers, eq(salesOrders.customerId, customers.id));
+
+    // Drizzle ORM chaining: .where() must come after .leftJoin()
+    if (conditions.length) {
+      query = query.where(and(...conditions));
+    }
+
+    const rows = await query.orderBy(desc(salesOrders.createdAt)).limit(limit).offset(offset);
+    // Map to enriched shape with embedded customer + transition flag
+    return rows.map(r => {
+      const c = r.cust ? {
+        id: (r.cust as any).id,
+        name: (r.cust as any).name || (r.cust as any).customerName || (r.cust as any).companyName || (r.cust as any).fullName,
+        customerType: (r.cust as any).customerType || null,
+        address: (r.cust as any).address || (r.cust as any).billingAddress || null,
+      } : null;
+      return { ...r.so, customer: c, __customerEmbedded: true };
+    });
   }
 
   async getSalesOrder(id: string) {
@@ -62,11 +61,32 @@ export class SalesOrderStorage extends BaseStorage implements ISalesOrderStorage
     if (result.length === 0) {
       return null;
     }
-    
-    return {
-      ...result[0].salesOrder,
-      customer: result[0].customer,
-    };
+    const row = result[0];
+    const customer = row.customer
+      ? {
+          id: (row.customer as any).id,
+          name:
+            (row.customer as any).name ||
+            (row.customer as any).customerName ||
+            (row.customer as any).companyName ||
+            (row.customer as any).fullName,
+          email: (row.customer as any).email ?? null,
+          isActive: (row.customer as any).isActive ?? null,
+          createdAt: (row.customer as any).createdAt ?? null,
+          updatedAt: (row.customer as any).updatedAt ?? null,
+          phone: (row.customer as any).phone ?? null,
+          address:
+            (row.customer as any).address ??
+            (row.customer as any).billingAddress ??
+            null,
+          customerType: (row.customer as any).customerType ?? null,
+          vatNumber: (row.customer as any).vatNumber ?? null,
+          trnNumber: (row.customer as any).trnNumber ?? null,
+          companyName: (row.customer as any).companyName ?? null,
+          paymentTerms: (row.customer as any).paymentTerms ?? null,
+        }
+      : null;
+    return { ...row.salesOrder, customer, __customerEmbedded: true };
   }
 
   async createSalesOrder(salesOrder: any) {

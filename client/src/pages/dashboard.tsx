@@ -409,14 +409,121 @@ export default function Dashboard() {
         {/* Sequential Workflow Stepper */}
         {/* Filter quotations by selected customer for process flow */}
         {(() => {
+          // Filter all entities for the selected customer (support both customer?.id and customerId)
+          const filteredEnquiries = selectedCustomerId
+            ? (enquiries || []).filter((e: any) => (e.customer?.id || e.customerId) === selectedCustomerId)
+            : (enquiries || []);
           const filteredQuotations = selectedCustomerId
-            ? (quotations || []).filter((q: any) => q.customer?.id === selectedCustomerId)
+            ? (quotations || []).filter((q: any) => (q.customer?.id || q.customerId) === selectedCustomerId)
             : (quotations || []);
-          const currentQuote = filteredQuotations[0];
+          const filteredOrders = selectedCustomerId
+            ? (salesOrders || []).filter((o: any) => (o.customer?.id || o.customerId) === selectedCustomerId)
+            : (salesOrders || []);
+
+          // Sort by date descending to get the latest entity for each
+          const sortedEnquiries = [...filteredEnquiries].sort((a, b) => new Date(b.enquiryDate || b.createdAt).getTime() - new Date(a.enquiryDate || a.createdAt).getTime());
+          const sortedQuotations = [...filteredQuotations].sort((a, b) => new Date(b.quotationDate || b.createdAt).getTime() - new Date(a.quotationDate || a.createdAt).getTime());
+          const sortedOrders = [...filteredOrders].sort((a, b) => new Date(b.orderDate || b.createdAt).getTime() - new Date(a.orderDate || a.createdAt).getTime());
+
+          // Determine workflow progress
+          let currentStep = 1;
+          let completedSteps: number[] = [];
+          let reflectionCard = null;
+          let currentQuote = sortedQuotations[0];
+          // Step 1: Customer always complete if selected
+          if (selectedCustomerId) {
+            completedSteps.push(1);
+            currentStep = 2;
+          }
+          // Step 2: Enquiry exists
+          if (sortedEnquiries.length > 0) {
+            completedSteps.push(2);
+            currentStep = 3;
+          }
+          // Step 3: Quotation exists
+          if (sortedQuotations.length > 0) {
+            completedSteps.push(3);
+            currentStep = 4;
+            // Check quotation status for further progress
+            const latestQuote = sortedQuotations[0];
+            if (latestQuote.status === "Sent") {
+              completedSteps.push(4);
+              currentStep = 5;
+              reflectionCard = (
+                <div className="bg-white rounded-lg shadow border p-4 mt-4 flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-semibold text-lg text-gray-900">
+                        <span role="img" aria-label="flag">🏁</span> Current Step: Customer Acceptance
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-700 mb-1">
+                      <span className="text-sm">
+                        <FaFileInvoice className="inline-block mr-1 text-gray-500" />
+                        Quote #{latestQuote.quoteNumber} - Waiting for customer response
+                      </span>
+                    </div>
+                    {latestQuote.customer && (
+                      <div className="text-xs text-gray-600">
+                        Customer: <span className="font-medium text-gray-900">{latestQuote.customer.name}</span>
+                        {latestQuote.customer.customerType && (
+                          <span className="ml-2">({latestQuote.customer.customerType})</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="success" onClick={() => setLocation(`/quotations/${latestQuote.id}/acceptance`)}>
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      Mark Complete
+                    </Button>
+                    <Button variant="outline" onClick={() => setLocation(`/quotations/${latestQuote.id}`)}>
+                      <Eye className="h-4 w-4 mr-1" />
+                      View Details
+                    </Button>
+                  </div>
+                </div>
+              );
+            } else if (latestQuote.status === "Accepted") {
+              completedSteps.push(4, 5, 6);
+              currentStep = 7;
+              reflectionCard = (
+                <div className="bg-white rounded-lg shadow border p-4 mt-4 flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-semibold text-lg text-gray-900">
+                        <span role="img" aria-label="flag">✅</span> Current Step: Sales Order
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-700 mb-1">
+                      <span className="text-sm">
+                        <FaFileInvoice className="inline-block mr-1 text-gray-500" />
+                        Quote #{latestQuote.quoteNumber} - Accepted by customer
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="success" onClick={() => setLocation(`/sales-orders/new?fromQuote=${latestQuote.id}`)}>
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      Create Sales Order
+                    </Button>
+                  </div>
+                </div>
+              );
+            }
+            currentQuote = latestQuote;
+          }
+          // Step 7: Sales Order exists
+          if (sortedOrders.length > 0) {
+            completedSteps.push(7);
+            currentStep = 8;
+            // You can extend this logic for further steps (Supplier LPO, Goods Receipt, etc.)
+          }
+
           return (
             <WorkflowStepper
-              currentStep={filteredQuotations.length > 0 ? 3 : 1}
-              completedSteps={filteredQuotations.length > 0 ? [1, 2] : []}
+              currentStep={currentStep}
+              completedSteps={completedSteps}
               quotationId={currentQuote?.id}
               quotationNumber={currentQuote?.quoteNumber || "QT-2024-001"}
               onMarkComplete={() => {
@@ -428,43 +535,8 @@ export default function Dashboard() {
               }}
               onViewDetails={() => {
                 setLocation(`/process-flow-details`);
-                }}
-                reflectionCard={currentQuote ? (
-                <div className="bg-white rounded-lg shadow border p-4 mt-4 flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold text-lg text-gray-900">
-                        <span role="img" aria-label="flag">🏁</span> Current Step: Customer Acceptance
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-700 mb-1">
-                      <span className="text-sm">
-                        <FaFileInvoice className="inline-block mr-1 text-gray-500" />
-                        Quote #{currentQuote.quoteNumber} - Waiting for customer response
-                      </span>
-                    </div>
-                    {/* Show selected customer details */}
-                    {currentQuote.customer && (
-                      <div className="text-xs text-gray-600">
-                        Customer: <span className="font-medium text-gray-900">{currentQuote.customer.name}</span>
-                        {currentQuote.customer.customerType && (
-                          <span className="ml-2">({currentQuote.customer.customerType})</span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="success" onClick={() => setLocation(`/quotations/${currentQuote.id}/acceptance`)}>
-                      <CheckCircle className="h-4 w-4 mr-1" />
-                      Mark Complete
-                    </Button>
-                    <Button variant="outline" onClick={() => setLocation(`/quotations/${currentQuote.id}`)}>
-                      <Eye className="h-4 w-4 mr-1" />
-                      View Details
-                    </Button>
-                  </div>
-                </div>
-              ) : null}
+              }}
+              reflectionCard={reflectionCard}
             />
           );
         })()}

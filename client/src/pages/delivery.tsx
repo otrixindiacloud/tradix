@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -52,7 +52,44 @@ export default function Delivery() {
       return response.json();
     },
   });
+  // Determine if backend already embeds customers (transition period)
+  const deliveriesEmbedded = Array.isArray(deliveries) && deliveries.some((d: any) => d && d.__customerEmbedded);
+  const salesOrdersEmbedded = Array.isArray(salesOrders) && salesOrders.some((o: any) => o && o.__customerEmbedded);
 
+  // Only fetch customers if neither deliveries nor sales orders are enriched
+  const shouldFetchCustomers = !(deliveriesEmbedded || salesOrdersEmbedded);
+
+  const { data: customers = [] } = useQuery({
+    queryKey: ["/api/customers"],
+    queryFn: async () => {
+      if (!shouldFetchCustomers) return [];
+      try {
+        const resp = await fetch("/api/customers");
+        if (!resp.ok) return [];
+        const data = await resp.json();
+        if (Array.isArray(data)) return data;
+        if (Array.isArray((data as any)?.data)) return (data as any).data;
+        if (data && typeof data === 'object') {
+          const vals = Object.values(data).filter(v => typeof v === 'object');
+            if (vals.every((v: any) => v && (v.id || v.name))) return vals;
+        }
+        return [];
+      } catch (e) {
+        console.warn("Failed to load customers for delivery mapping", e);
+        return [];
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: shouldFetchCustomers,
+  });
+
+  const customerMap = useMemo(() => {
+    if (!shouldFetchCustomers) return {} as Record<string, any>;
+    const map: Record<string, any> = {};
+    if (Array.isArray(customers)) customers.forEach((c: any) => { if (c && c.id) map[c.id] = c; });
+    else if (customers && typeof customers === 'object') Object.values(customers as any).forEach((c: any) => { if (c && c.id) map[c.id] = c; });
+    return map;
+  }, [customers, shouldFetchCustomers]);
   const createDelivery = useMutation({
     mutationFn: async (data: any) => {
       // Send as JSON instead of FormData
@@ -140,33 +177,40 @@ export default function Delivery() {
   // Show all deliveries with their associated order information
   const allDeliveriesWithOrders = (Array.isArray(deliveries) ? deliveries : [])?.map((delivery: any) => {
     const order = (Array.isArray(salesOrders) ? salesOrders : [])?.find((o: any) => o.id === delivery.salesOrderId);
-    return {
-      ...delivery,
-      order: order,
-      orderNumber: order?.orderNumber || 'N/A',
-      customer: order?.customer_id || { name: 'Unknown', address: 'Unknown' },
-      totalAmount: order?.totalAmount || 0,
-      orderDate: order?.orderDate || delivery.createdAt,
-    };
+    // Prefer embedded customer on delivery, then sales order
+    let customerObj = delivery.customer || order?.customer;
+    if (!customerObj) {
+      const id = order?.customerId || order?.customer_id || delivery.customerId || delivery.customer_id;
+      if (id) customerObj = customerMap[id] || { id, name: id };
+    }
+    if (!customerObj) customerObj = { id: 'Unknown', name: 'Unknown' };
+    return { ...delivery, order, orderNumber: order?.orderNumber || 'N/A', customer: customerObj, totalAmount: order?.totalAmount || 0, orderDate: order?.orderDate || delivery.createdAt };
   }) || [];
 
   // Also include orders ready for delivery (shipped but no delivery created yet)
-  const ordersReadyForDelivery = (Array.isArray(salesOrders) ? salesOrders : [])?.filter((order: any) => 
-    order.status === "Shipped" && !(Array.isArray(deliveries) ? deliveries : [])?.some((d: any) => d.salesOrderId === order.id)
-  ).map((order: any) => ({
-    id: `pending-${order.id}`,
-    salesOrderId: order.id,
-    status: 'Ready for Delivery',
-    deliveryAddress: order.customer?.address || '',
-    deliveryNotes: '',
-    createdAt: order.orderDate,
-    order: order,
-    orderNumber: order.orderNumber,
-    customer: order.customer,
-    totalAmount: order.totalAmount,
-    orderDate: order.orderDate,
-    isPendingDelivery: true,
-  })) || [];
+  const ordersReadyForDelivery = (Array.isArray(salesOrders) ? salesOrders : [])
+    ?.filter((order: any) => order.status === "Shipped" && !(Array.isArray(deliveries) ? deliveries : [])?.some((d: any) => d.salesOrderId === order.id))
+    .map((order: any) => {
+      let customerObj = order.customer;
+      if (!customerObj) {
+        const id = order.customerId || order.customer_id;
+        if (id) customerObj = customerMap[id] || { id, name: id };
+      }
+      return {
+        id: `pending-${order.id}`,
+        salesOrderId: order.id,
+        status: 'Ready for Delivery',
+        deliveryAddress: customerObj?.address || '',
+        deliveryNotes: '',
+        createdAt: order.orderDate,
+        order,
+        orderNumber: order.orderNumber,
+        customer: customerObj,
+        totalAmount: order.totalAmount,
+        orderDate: order.orderDate,
+        isPendingDelivery: true,
+      };
+    }) || [];
 
   // Combine all deliveries and pending orders
   const allDeliveryData = [...allDeliveriesWithOrders, ...ordersReadyForDelivery];
@@ -194,12 +238,14 @@ export default function Delivery() {
       key: "customer",
       header: "Customer",
       render: (_: any, item: any) => {
-        // Show customer_id from sales order
-        const customerId = item.order?.customer?.id || item.customer?.id || "Unknown Customer";
+        const name = item.customer?.name || item.customer?.customerName || item.customer?.id || 'Unknown';
         return (
-          <span className="text-sm font-medium text-gray-900">
-            {customerId}
-          </span>
+          <div className="flex flex-col leading-tight" data-testid={`cell-customer-${item.id || item.salesOrderId}`}>
+            <span className="text-sm font-medium text-gray-900 truncate max-w-[160px]" title={name}>{name}</span>
+            {item.customer?.id && item.customer?.id !== name && (
+              <span className="text-[10px] text-gray-500 font-mono" title={item.customer.id}>{item.customer.id}</span>
+            )}
+          </div>
         );
       },
     },

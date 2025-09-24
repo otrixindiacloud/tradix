@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { storage } from "../storage";
 import { z } from "zod";
+import { insertShipmentSchema } from "@shared/schema";
 
 export function registerShipmentTrackingRoutes(app: Express) {
   // Get all shipments with filtering
@@ -70,23 +71,22 @@ export function registerShipmentTrackingRoutes(app: Express) {
   app.post("/api/shipments", async (req, res) => {
     try {
       const shipmentData = req.body;
-      
-      // Basic validation
-      if (!shipmentData.carrierName) {
-        return res.status(400).json({ message: "Carrier name is required" });
+  // Use Zod schema for validation
+  const parseResult = insertShipmentSchema.safeParse(shipmentData);
+      if (!parseResult.success) {
+        return res.status(400).json({ message: parseResult.error.errors.map((e: any) => e.message).join(", ") });
       }
-      if (!shipmentData.origin) {
-        return res.status(400).json({ message: "Origin is required" });
+      const validData = parseResult.data;
+      try {
+        const shipment = await storage.createShipment(validData);
+        res.status(201).json(shipment);
+      } catch (err: any) {
+        console.error("Error creating shipment:", err);
+        res.status(500).json({ message: (err && err.message) ? err.message : "Failed to create shipment" });
       }
-      if (!shipmentData.destination) {
-        return res.status(400).json({ message: "Destination is required" });
-      }
-
-      const shipment = await storage.createShipment(shipmentData);
-      res.status(201).json(shipment);
-    } catch (error) {
-      console.error("Error creating shipment:", error);
-      res.status(500).json({ message: "Failed to create shipment" });
+    } catch (error: any) {
+      console.error("Error validating shipment:", error);
+      res.status(500).json({ message: (error && error.message) ? error.message : "Failed to create shipment" });
     }
   });
 

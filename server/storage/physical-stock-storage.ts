@@ -30,11 +30,11 @@ import { alias } from 'drizzle-orm/pg-core';
 import { nanoid } from 'nanoid';
 
 export class PhysicalStockStorage extends BaseStorage {
-  async createPhysicalStockItem({ itemId, location, quantity, lastCounted, countedBy, notes }: {
+  async createPhysicalStockItem({ itemId, location, quantity, lastUpdated, countedBy, notes }: {
     itemId: string;
     location: string;
     quantity: number;
-    lastCounted: string;
+    lastUpdated: string;
     countedBy: string;
     notes?: string;
   }) {
@@ -43,8 +43,7 @@ export class PhysicalStockStorage extends BaseStorage {
       itemId,
       location,
       quantity,
-      lastUpdated: new Date(lastCounted),
-      lastCounted: new Date(lastCounted),
+      lastUpdated: new Date(lastUpdated),
       countedBy,
       notes,
     }).returning();

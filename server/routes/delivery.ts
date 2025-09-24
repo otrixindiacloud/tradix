@@ -56,9 +56,19 @@ export function registerDeliveryRoutes(app: Express) {
       
       // Accept minimal payload; storage will generate deliveryNumber & default status
       if (raw.deliveryNumber === undefined) delete raw.deliveryNumber; // ensure absent so storage layer generates
-      
-      // Use full schema validation but only require salesOrderId
-      const deliveryData = insertDeliverySchema.parse(raw);
+      // The insertDeliverySchema is generated from an expanded deliveries table (not the delivery_note table actually used)
+      // and marks deliveryNumber as required. Frontend intentionally omits deliveryNumber so storage can generate it.
+      // This mismatch caused "Invalid delivery data" errors. We therefore use a relaxed schema here.
+      const createDeliveryInputSchema = z.object({
+        salesOrderId: z.string().uuid("Invalid sales order ID format"),
+        deliveryAddress: z.string().min(1).optional(),
+        deliveryNotes: z.string().optional(),
+        deliveryDate: z.date().optional(),
+        deliveryType: z.string().optional(),
+        status: z.string().optional(), // allow callers to override if needed
+      });
+
+      const deliveryData = createDeliveryInputSchema.parse(raw);
       const delivery = await storage.createDelivery(deliveryData as any);
       res.status(201).json(delivery);
     } catch (error) {

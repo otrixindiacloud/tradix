@@ -10,7 +10,12 @@ import { users } from "../shared/schemas/users-customers";
 import { eq } from "drizzle-orm";
 import bcrypt from 'bcryptjs';
 
+
 const app = express();
+app.use((req, res, next) => {
+  console.log(`[DEBUG][REQ] ${req.method} ${req.originalUrl}`);
+  next();
+});
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 // Attach resolved user id early

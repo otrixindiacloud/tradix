@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Search, Filter, Package, AlertTriangle, TrendingUp, TrendingDown, Scan, Boxes, DollarSign, Lock, XCircle, Warehouse, Plus, Eye, Edit, Trash2 } from "lucide-react";
+import { Search, Filter, Package, AlertTriangle, TrendingUp, TrendingDown, Scan, Boxes, DollarSign, Lock, XCircle, Warehouse, Plus, Eye, Edit, Trash2, CheckCircle } from "lucide-react";
 import DataTable, { Column } from "@/components/tables/data-table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/utils";
@@ -291,11 +291,29 @@ export default function Inventory() {
     });
   };
 
-  // Use inventory items data directly (assuming it includes all necessary fields)
+  // Normalize inventory items so that total stock displays correctly even if backend uses totalStock instead of quantity
   const inventoryWithDetails = inventoryItems?.map((item: any) => {
+    // Prefer explicit totalStock, fallback to quantity
+    const total =
+      typeof item.totalStock === "number"
+        ? item.totalStock
+        : typeof item.quantity === "number"
+          ? item.quantity
+          : 0;
+    const reserved =
+      typeof item.reservedQuantity === "number"
+        ? item.reservedQuantity
+        : typeof item.reserved === "number"
+          ? item.reserved
+          : 0;
+    const available = Math.max(0, (typeof item.availableQuantity === "number" ? item.availableQuantity : total - reserved));
     return {
       ...item,
-      availableQuantity: (item.quantity || 0) - (item.reservedQuantity || 0),
+      // Ensure both fields are set for downstream components
+      totalStock: total,
+      quantity: total, // DataTable column keyed on "quantity"
+      reservedQuantity: reserved,
+      availableQuantity: available,
     };
   });
 
@@ -358,9 +376,12 @@ export default function Inventory() {
     {
       key: "quantity",
       header: "Total Stock",
-      render: (value: number) => (
-        <span className="text-sm font-medium">{value || 0}</span>
-      ),
+      render: (value: number, item: any) => {
+        const total = value ?? item.totalStock ?? 0;
+        return (
+          <span className="text-sm font-medium" data-testid={`cell-total-stock-${item.id}`}>{total}</span>
+        );
+      },
       className: "text-center",
     },
     {
@@ -399,28 +420,42 @@ export default function Inventory() {
     {
       key: "stockStatus",
       header: "Status",
-      render: (_, item: any) => {
-        if (item.availableQuantity <= 0) {
-          return (
-            <Badge variant="destructive">
-              <AlertTriangle className="h-3 w-3 mr-1" />
-              Out of Stock
-            </Badge>
-          );
-        } else if (item.availableQuantity <= 10) {
-          return (
-            <Badge className="underline decoration-orange-500 text-orange-700">
-              <AlertTriangle className="h-3 w-3 mr-1" />
-              Low Stock
-            </Badge>
-          );
+      render: (_: any, item: any) => {
+        const available = item.availableQuantity ?? 0;
+        // Multi-tier thresholds for richer status feedback
+        // 0 => Out, 1-3 => Critical, 4-10 => Low, >10 => In Stock
+        let status: string;
+        let classes = "";
+        let icon: JSX.Element | null = null;
+
+        if (available <= 0) {
+          status = "Out of Stock";
+          classes = "bg-red-50 text-red-700 border border-red-200";
+          icon = <AlertTriangle className="h-3 w-3 mr-1 text-red-600" />;
+        } else if (available <= 3) {
+          status = "Critical Low";
+          classes = "bg-red-600 text-black-900 border border-red-200  animate-pulse";
+          icon = <AlertTriangle className="h-3 w-3 mr-1 text-black-900" />;
+        } else if (available <= 10) {
+          status = "Low Stock";
+          classes = "bg-amber-50 text-amber-700 border border-amber-200";
+          icon = <AlertTriangle className="h-3 w-3 mr-1 text-amber-600" />;
         } else {
-          return (
-            <Badge className="underline decoration-green-500 text-green-700">
-              In Stock
-            </Badge>
-          );
+          status = "In Stock";
+          classes = "bg-green-50 text-green-700 border border-green-200";
+          icon = <CheckCircle className="h-3 w-3 mr-1 text-green-600" />;
         }
+
+        return (
+          <span
+            className={`inline-flex items-center px-2 py-1 rounded-full text-[11px] font-medium leading-none gap-1 ${classes}`}
+            title={`Available: ${available}`}
+            data-testid={`badge-stock-status-${item.id}`}
+          >
+            {icon}
+            {status}
+          </span>
+        );
       },
     },
     {
@@ -501,7 +536,7 @@ export default function Inventory() {
               <div>
                 <h2 className="text-3xl font-bold text-gray-900 mb-1" data-testid="text-page-title">
                   
-                  
+                  Inventory Items 
                 </h2>
                 <div className="flex items-center gap-3">
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200">

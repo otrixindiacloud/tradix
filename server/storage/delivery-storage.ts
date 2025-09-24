@@ -22,6 +22,17 @@ import {
 import { eq, and, desc, sql } from 'drizzle-orm';
 
 export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
+  // Normalize a delivery item record so non-nullable string fields never contain null
+  private normalizeDeliveryItemRecord<T extends Partial<DeliveryItem>>(rec: T): T & Pick<DeliveryItem, 'barcode' | 'supplierCode' | 'description' | 'unitPrice' | 'totalPrice'> {
+    return {
+      ...rec,
+      barcode: (rec as any).barcode ?? '',
+      supplierCode: (rec as any).supplierCode ?? '',
+      description: (rec as any).description ?? '',
+      unitPrice: (rec as any).unitPrice ?? '0.00',
+      totalPrice: (rec as any).totalPrice ?? '0.00'
+    };
+  }
   // Delivery operations
   async getDeliveries(filters?: {
     status?: string;
@@ -32,12 +43,6 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
     offset?: number;
   }): Promise<any[]> {
     try {
-      let query = db
-        .select()
-        .from(deliveryNote)
-        .leftJoin(salesOrders, eq(deliveryNote.salesOrderId, salesOrders.id))
-        .leftJoin(customers, eq(salesOrders.customerId, customers.id));
-
       // Build all filter conditions
       const conditions: any[] = [];
       if (filters?.status) {
@@ -53,12 +58,19 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
         conditions.push(sql`${deliveryNote.deliveryDate} <= ${filters.dateTo}`);
       }
 
+      let query = db
+        .select()
+        .from(deliveryNote);
+
       if (conditions.length > 0) {
         query = query.where(and(...conditions));
       }
 
-      // Drizzle ORM chaining: orderBy, limit, offset must be chained, not reassigned
-      query = query.orderBy(desc(deliveryNote.createdAt));
+      query = query
+        .leftJoin(salesOrders, eq(deliveryNote.salesOrderId, salesOrders.id))
+        .leftJoin(customers, eq(salesOrders.customerId, customers.id))
+        .orderBy(desc(deliveryNote.createdAt));
+
       if (filters?.limit) {
         query = query.limit(filters.limit);
       }
@@ -67,38 +79,57 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
       }
 
       const results = await query;
-      return results.map(row => ({
-        ...row.delivery_note,
-        salesOrder: row.sales_orders ? {
-          ...row.sales_orders,
-          customer: row.customers
-        } : null
-      }));
+      return results.map(row => {
+        const rawCust: any = (row as any).customers;
+        const customer = rawCust ? {
+          id: rawCust.id,
+          name: rawCust.name || rawCust.customerName || rawCust.companyName || rawCust.fullName || rawCust.customer_name || null,
+          customerType: rawCust.customerType || rawCust.customer_type || null,
+          address: rawCust.address || rawCust.billingAddress || rawCust.billing_address || null
+        } : null;
+        const so: any = (row as any).sales_orders;
+        return {
+          ...(row as any).delivery_note,
+          salesOrder: so ? { ...so, customer } : null,
+          customer,
+          __customerEmbedded: true
+        };
+      });
     } catch (error) {
       console.error('Error fetching deliveries:', error);
       throw new Error('Failed to fetch deliveries');
     }
   }
 
-  async getDelivery(id: string): Promise<Delivery | undefined> {
+  async getDelivery(id: string): Promise<any | undefined> {
     try {
       const result = await db
         .select()
         .from(deliveryNote)
+        .leftJoin(salesOrders, eq(deliveryNote.salesOrderId, salesOrders.id))
+        .leftJoin(customers, eq(salesOrders.customerId, customers.id))
         .where(eq(deliveryNote.id, id))
         .limit(1);
 
-      // No barcode/supplierCode/description on deliveryNote, remove these lines
-      if (result[0]) {
-        // Cast status to Delivery['status'] type
-        return {
-          ...result[0],
-          status: (['Pending', 'Cancelled', 'Partial', 'Complete'].includes(result[0].status)
-            ? result[0].status
-            : null) as Delivery['status']
-        };
-      }
-      return undefined;
+      const first = result[0];
+      if (!first) return undefined;
+      const row: any = first;
+      const rawCust: any = row.customers;
+      const customer = rawCust ? {
+        id: rawCust.id,
+        name: rawCust.name || rawCust.customerName || rawCust.companyName || rawCust.fullName || rawCust.customer_name || null,
+        customerType: rawCust.customerType || rawCust.customer_type || null,
+        address: rawCust.address || rawCust.billingAddress || rawCust.billing_address || null
+      } : null;
+      const allowedStatuses = ['Pending', 'Cancelled', 'Partial', 'Complete'];
+      const statusNorm = allowedStatuses.includes(row.delivery_note.status) ? row.delivery_note.status : 'Pending';
+      return {
+        ...row.delivery_note,
+        status: statusNorm as Delivery['status'],
+        salesOrder: row.sales_orders ? { ...row.sales_orders, customer } : null,
+        customer,
+        __customerEmbedded: true
+      };
     } catch (error) {
       console.error('Error fetching delivery:', error);
       throw new Error('Failed to fetch delivery');
@@ -113,7 +144,14 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
         .where(eq(deliveryNote.deliveryNumber, deliveryNumber))
         .limit(1);
 
-      return result[0];
+      if (!result[0]) return undefined;
+      // Normalize status to allowed union type
+      const allowedStatuses = ['Pending', 'Cancelled', 'Partial', 'Complete'];
+      const statusNorm = allowedStatuses.includes(result[0].status) ? result[0].status : null;
+      return {
+        ...result[0],
+        status: statusNorm as Delivery['status']
+      };
     } catch (error) {
       console.error('Error fetching delivery by number:', error);
       throw new Error('Failed to fetch delivery by number');
@@ -133,12 +171,34 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
       }
       // Fix status type: must be string, not null
       if (delivery.status == null) delivery.status = 'Pending';
+      // Remove null values and only include fields defined in the schema
+      const allowedFields = [
+        'id', 'deliveryNumber', 'salesOrderId', 'deliveryDate', 'deliveryType', 'deliveryAddress',
+        'status', 'pickingStartedBy', 'pickingStartedAt', 'pickingCompletedBy', 'pickingCompletedAt',
+        'pickingNotes', 'deliveryConfirmedBy', 'deliveryConfirmedAt', 'deliverySignature',
+        'createdAt', 'createdBy', 'updatedAt', 'updatedBy'
+      ];
+      const sanitized: any = {};
+      for (const key of allowedFields) {
+        if (delivery[key as keyof typeof delivery] !== undefined && delivery[key as keyof typeof delivery] !== null) {
+          sanitized[key] = delivery[key as keyof typeof delivery];
+        }
+      }
+      // Always set status as string
+      sanitized.status = delivery.status as string;
       const result = await db
         .insert(deliveryNote)
-        .values({ ...delivery, status: delivery.status as string })
+        .values(sanitized)
         .returning();
 
-      return result[0];
+      // Return the result as is, since Delivery type does not have barcode, supplierCode, or description
+      // Ensure status is cast to the allowed union type
+      return {
+        ...result[0],
+        status: (['Pending', 'Cancelled', 'Partial', 'Complete'].includes(result[0].status)
+          ? result[0].status
+          : null) as Delivery['status']
+      };
     } catch (error) {
       console.error('Error creating delivery:', error);
       throw new Error('Failed to create delivery');
@@ -151,7 +211,12 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
       if (delivery.status == null) delivery.status = 'Pending';
       const result = await db
         .update(deliveryNote)
-        .set({ ...delivery, status: delivery.status as string, updatedAt: new Date() })
+        .set({ 
+          ...Object.fromEntries(
+            Object.entries({ ...delivery, status: delivery.status as string, updatedAt: new Date() })
+              .filter(([key, value]) => value !== null)
+          )
+        })
         .where(eq(deliveryNote.id, id))
         .returning();
 
@@ -159,7 +224,12 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
         throw new Error('Delivery not found');
       }
 
-      return result[0];
+      // Normalize status to allowed union type
+      const allowedStatuses = ['Pending', 'Cancelled', 'Partial', 'Complete'];
+      return {
+        ...result[0],
+        status: allowedStatuses.includes(result[0].status) ? result[0].status as Delivery['status'] : null
+      };
     } catch (error) {
       console.error('Error updating delivery:', error);
       throw new Error('Failed to update delivery');
@@ -255,10 +325,11 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
   async getDeliveryItems(deliveryId: string): Promise<DeliveryItem[]> {
     try {
       // Remove orderBy lineNumber (doesn't exist)
-      return await db
+      const items = await db
         .select()
         .from(deliveryItem)
         .where(eq(deliveryItem.deliveryId, deliveryId));
+      return items.map(i => this.normalizeDeliveryItemRecord(i));
     } catch (error) {
       console.error('Error fetching delivery items:', error);
       throw new Error('Failed to fetch delivery items');
@@ -272,8 +343,8 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
         .from(deliveryItem)
         .where(eq(deliveryItem.id, id))
         .limit(1);
-
-      return result[0];
+      if (!result[0]) return undefined;
+      return this.normalizeDeliveryItemRecord(result[0]);
     } catch (error) {
       console.error('Error fetching delivery item:', error);
       throw new Error('Failed to fetch delivery item');
@@ -322,11 +393,17 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
       // Fix unitPrice/totalPrice: must be string, not null
       enriched.unitPrice = enriched.unitPrice ?? '0.00';
       enriched.totalPrice = enriched.totalPrice ?? '0.00';
-      const result = await db
-        .insert(deliveryItem)
-        .values(enriched)
-        .returning();
-      return result[0];
+      const result = await db.insert(deliveryItem).values(enriched).returning();
+      if (!result[0] || !result[0].id) {
+        throw new Error('Failed to create delivery item: missing id');
+      }
+      // Convert all nulls to undefined for fields expected as string | undefined
+      const normalizedInput = Object.fromEntries(
+        Object.entries(result[0]).map(([k, v]) =>
+          v === null ? [k, undefined] : [k, v]
+        )
+      );
+      return this.normalizeDeliveryItemRecord(normalizedInput) as DeliveryItem;
     } catch (error) {
       console.error('Error creating delivery item:', error);
       throw new Error('Failed to create delivery item');
@@ -338,17 +415,9 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
       // Fix unitPrice/totalPrice: must be string, not null
       if (item.unitPrice == null) item.unitPrice = '0.00';
       if (item.totalPrice == null) item.totalPrice = '0.00';
-      const result = await db
-        .update(deliveryItem)
-        .set({ ...item, updatedAt: new Date() })
-        .where(eq(deliveryItem.id, id))
-        .returning();
-
-      if (result.length === 0) {
-        throw new Error('Delivery item not found');
-      }
-
-      return result[0];
+      const result = await db.update(deliveryItem).set({ ...item }).where(eq(deliveryItem.id, id)).returning();
+      if (!result[0]) throw new Error('Delivery item not found');
+      return this.normalizeDeliveryItemRecord(result[0]);
     } catch (error) {
       console.error('Error updating delivery item:', error);
       throw new Error('Failed to update delivery item');
@@ -368,12 +437,8 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
 
   async bulkCreateDeliveryItems(items: InsertDeliveryItem[]): Promise<DeliveryItem[]> {
     try {
-      const result = await db
-        .insert(deliveryItem)
-        .values(items)
-        .returning();
-
-      return result;
+      const result = await db.insert(deliveryItem).values(items).returning();
+      return result.map(r => this.normalizeDeliveryItemRecord(r));
     } catch (error) {
       console.error('Error bulk creating delivery items:', error);
       throw new Error('Failed to bulk create delivery items');
@@ -427,7 +492,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
     try {
       const result = await db
         .update(deliveryPickingSessions)
-        .set({ ...session, updatedAt: new Date() })
+        .set({ ...session })
         .where(eq(deliveryPickingSessions.id, id))
         .returning();
 
@@ -547,7 +612,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
     try {
       const result = await db
         .update(deliveryPickedItems)
-        .set({ ...item, updatedAt: new Date() })
+        .set({ ...item })
         .where(eq(deliveryPickedItems.id, id))
         .returning();
 
@@ -569,8 +634,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
         .set({
           verified: true,
           verifiedBy: userId,
-          verifiedAt: new Date(),
-          updatedAt: new Date()
+          verifiedAt: new Date()
         })
         .where(eq(deliveryPickedItems.id, itemId))
         .returning();
@@ -663,8 +727,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
           storageLocation: deliveryItem.storageLocation
         })
         .from(deliveryItem)
-        .where(eq(deliveryItem.deliveryId, deliveryId))
-        .orderBy(deliveryItem.lineNumber);
+        .where(eq(deliveryItem.deliveryId, deliveryId));
 
       return result;
     } catch (error) {

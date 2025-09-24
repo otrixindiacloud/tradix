@@ -46,7 +46,7 @@ const stockIssueSchema = z.object({
   itemId: z.string().min(1, "Item is required"),
   quantityIssued: z.number().min(1, "Quantity must be greater than 0"),
   issuedTo: z.string().min(1, "Issued to is required"),
-  issueDate: z.string().min(1, "Issue date is required"),
+  issueDate: z.string().min(1, "Issue date is required").or(z.null()),
   purpose: z.string().min(1, "Purpose is required"),
   departmentId: z.string().optional(),
   notes: z.string().optional(),
@@ -136,30 +136,35 @@ export default function StockIssuesPage() {
   // Create stock issue mutation
   const createIssueMutation = useMutation({
     mutationFn: async (data: StockIssueForm) => {
-      // Only send fields expected by backend
-      let issueDate = data.issueDate;
-      if (issueDate && typeof issueDate === "string") {
-        if (/^\d{4}-\d{2}-\d{2}$/.test(issueDate)) {
-          // Already correct format
-        } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(issueDate)) {
-          // DD/MM/YYYY
-          const [day, month, year] = issueDate.split("/");
-          const dateObj = new Date(Number(year), Number(month) - 1, Number(day));
-          issueDate = !dateObj || isNaN(dateObj.getTime()) ? "" : dateObj.toISOString().slice(0, 10);
-        } else {
-          // Try to parse
-          const dateObj = new Date(issueDate);
-          issueDate = !dateObj || isNaN(dateObj.getTime()) ? "" : dateObj.toISOString().slice(0, 10);
+      // Always send ISO string or null for issueDate
+      let validDate = null;
+      if (data.issueDate) {
+        const d: unknown = data.issueDate;
+        if (typeof d === "string") {
+          if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+            validDate = new Date(d).toISOString();
+          } else if (/^\d{2}-\d{2}-\d{4}$/.test(d)) {
+            const [day, month, year] = d.split("-");
+            const dateObj = new Date(Number(year), Number(month) - 1, Number(day));
+            validDate = !dateObj || isNaN(dateObj.getTime()) ? null : dateObj.toISOString();
+          } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) {
+            const [day, month, year] = d.split("/");
+            const dateObj = new Date(Number(year), Number(month) - 1, Number(day));
+            validDate = !dateObj || isNaN(dateObj.getTime()) ? null : dateObj.toISOString();
+          } else {
+            const dateObj = new Date(d);
+            validDate = !dateObj || isNaN(dateObj.getTime()) ? null : dateObj.toISOString();
+          }
+        } else if (typeof d === "object" && d !== null && d instanceof Date && !isNaN(d.getTime())) {
+          validDate = d.toISOString();
         }
-      } else {
-        issueDate = "";
       }
       const issueData = {
         issueNumber: data.issueNumber,
         itemId: data.itemId,
         issuedTo: data.issuedTo,
         quantity: Number(data.quantityIssued),
-        issueDate,
+        issueDate: validDate,
         reason: data.purpose,
         notes: data.notes,
         departmentId: data.departmentId,
@@ -228,22 +233,23 @@ export default function StockIssuesPage() {
 
   const onSubmit = (data: StockIssueForm) => {
     // Validate date before submit
+    // Always convert to ISO string for backend
     let issueDate = data.issueDate;
     let validDate = "";
-    if (issueDate && typeof issueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(issueDate)) {
-      // Convert to full timestamp with timezone
-      validDate = `${issueDate} 00:00:00+00`;
-    } else if (issueDate && /^\d{2}\/\d{2}\/\d{4}$/.test(issueDate)) {
-      const [day, month, year] = issueDate.split("/");
-      const dateObj = new Date(Number(year), Number(month) - 1, Number(day));
-      if (!dateObj || isNaN(dateObj.getTime())) {
-        validDate = "";
+    if (issueDate && typeof issueDate === "string") {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(issueDate)) {
+        validDate = new Date(issueDate).toISOString();
+      } else if (/^\d{2}-\d{2}-\d{4}$/.test(issueDate)) {
+        const [day, month, year] = issueDate.split("-");
+        const dateObj = new Date(Number(year), Number(month) - 1, Number(day));
+        validDate = !dateObj || isNaN(dateObj.getTime()) ? "" : dateObj.toISOString();
+      } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(issueDate)) {
+        const [day, month, year] = issueDate.split("/");
+        const dateObj = new Date(Number(year), Number(month) - 1, Number(day));
+        validDate = !dateObj || isNaN(dateObj.getTime()) ? "" : dateObj.toISOString();
       } else {
-        // Format as YYYY-MM-DD 00:00:00+00
-        const yyyy = dateObj.getUTCFullYear();
-        const mm = String(dateObj.getUTCMonth() + 1).padStart(2, '0');
-        const dd = String(dateObj.getUTCDate()).padStart(2, '0');
-        validDate = `${yyyy}-${mm}-${dd} 00:00:00+00`;
+        const dateObj = new Date(issueDate);
+        validDate = !dateObj || isNaN(dateObj.getTime()) ? "" : dateObj.toISOString();
       }
     } else {
       validDate = "";
@@ -283,7 +289,7 @@ export default function StockIssuesPage() {
       render: (_: any, issue: any) => (
         <div className="flex items-center gap-2">
           <Package className="h-4 w-4 text-gray-500" />
-          <span>{issue.itemName || issue.itemCode || issue.itemId || "N/A"}</span>
+          <span>{issue.itemName || "N/A"}</span>
         </div>
       ),
     },
@@ -470,7 +476,7 @@ export default function StockIssuesPage() {
                         <FormItem>
                           <FormLabel>Issue Date</FormLabel>
                           <FormControl>
-                            <Input type="date" {...field} />
+                            <Input type="date" {...field} value={field.value ?? ""} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -780,24 +786,28 @@ function EditStockIssueForm({ issue, items, onClose, onSuccess }: { issue: any, 
   // Use the main updateIssueMutation from props
   const { mutate, isPending } = useMutation({
     mutationFn: async (data: StockIssueForm) => {
-      // Match create logic: always send 'YYYY-MM-DD 00:00:00+00' format
-      let issueDate = data.issueDate;
-      let validDate = "";
-      if (issueDate && typeof issueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(issueDate)) {
-        validDate = `${issueDate} 00:00:00+00`;
-      } else if (issueDate && /^\d{2}\/\d{2}\/\d{4}$/.test(issueDate)) {
-        const [day, month, year] = issueDate.split("/");
-        const dateObj = new Date(Number(year), Number(month) - 1, Number(day));
-        if (!dateObj || isNaN(dateObj.getTime())) {
-          validDate = "";
-        } else {
-          const yyyy = dateObj.getUTCFullYear();
-          const mm = String(dateObj.getUTCMonth() + 1).padStart(2, '0');
-          const dd = String(dateObj.getUTCDate()).padStart(2, '0');
-          validDate = `${yyyy}-${mm}-${dd} 00:00:00+00`;
+      // Always send ISO string or null for backend
+      let validDate = null;
+      if (data.issueDate) {
+        const d: unknown = data.issueDate;
+        if (typeof d === "string") {
+          if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+            validDate = new Date(d).toISOString();
+          } else if (/^\d{2}-\d{2}-\d{4}$/.test(d)) {
+            const [day, month, year] = d.split("-");
+            const dateObj = new Date(Number(year), Number(month) - 1, Number(day));
+            validDate = !dateObj || isNaN(dateObj.getTime()) ? null : dateObj.toISOString();
+          } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) {
+            const [day, month, year] = d.split("/");
+            const dateObj = new Date(Number(year), Number(month) - 1, Number(day));
+            validDate = !dateObj || isNaN(dateObj.getTime()) ? null : dateObj.toISOString();
+          } else {
+            const dateObj = new Date(d);
+            validDate = !dateObj || isNaN(dateObj.getTime()) ? null : dateObj.toISOString();
+          }
+        } else if (typeof d === "object" && d !== null && d instanceof Date && !isNaN(d.getTime())) {
+          validDate = d.toISOString();
         }
-      } else {
-        validDate = "";
       }
       const updateData = {
         issueNumber: data.issueNumber,
@@ -915,7 +925,7 @@ function EditStockIssueForm({ issue, items, onClose, onSuccess }: { issue: any, 
               <FormItem>
                 <FormLabel>Issue Date</FormLabel>
                 <FormControl>
-                  <Input type="date" {...field} />
+                  <Input type="date" {...field} value={field.value ?? ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

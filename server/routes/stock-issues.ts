@@ -1,4 +1,6 @@
 import { Router } from "express";
+
+console.log("[DEBUG] stock-issues route loaded");
 import { StockIssuesStorage } from "../storage/stock-issues-storage";
 
 const router = Router();
@@ -6,6 +8,7 @@ const storage = new StockIssuesStorage();
 
 // GET /api/stock-issues
 router.get("/", async (req, res) => {
+  console.log("[DEBUG] GET /api/stock-issues called");
   try {
     const issues = await storage.getAllStockIssues();
     res.json(issues);
@@ -29,21 +32,28 @@ router.get("/:id", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const payload = { ...req.body };
-    // Validate and convert issueDate
-    if (payload.issueDate && typeof payload.issueDate === "string") {
-      // Accept ISO or "YYYY-MM-DD HH:mm:ss+00" format
-      let dateObj = null;
-      if (/^\d{4}-\d{2}-\d{2} 00:00:00\+00$/.test(payload.issueDate)) {
-        // Convert to ISO string
-        dateObj = new Date(payload.issueDate.replace(" ", "T"));
-      } else if (!isNaN(Date.parse(payload.issueDate))) {
-        dateObj = new Date(payload.issueDate);
-      }
-      if (dateObj && !isNaN(dateObj.getTime())) {
+    // Robustly handle issueDate
+    console.log("[DEBUG][POST] Received issueDate:", payload.issueDate, "Type:", typeof payload.issueDate);
+    if (!payload.issueDate) {
+      payload.issueDate = null;
+    } else if (typeof payload.issueDate === "string") {
+      const dateObj = new Date(payload.issueDate);
+      if (dateObj instanceof Date && !isNaN(dateObj.getTime())) {
         payload.issueDate = dateObj.toISOString();
       } else {
+        console.warn("[WARN][POST] Invalid date string for issueDate:", payload.issueDate);
         payload.issueDate = null;
       }
+    } else if (payload.issueDate instanceof Date) {
+      if (!isNaN(payload.issueDate.getTime()) && typeof payload.issueDate.toISOString === "function") {
+        payload.issueDate = payload.issueDate.toISOString();
+      } else {
+        console.warn("[WARN][POST] Invalid Date object for issueDate:", payload.issueDate);
+        payload.issueDate = null;
+      }
+    } else {
+      console.warn("[WARN][POST] Unexpected type for issueDate:", payload.issueDate, typeof payload.issueDate);
+      payload.issueDate = null;
     }
     const issue = await storage.createStockIssue(payload);
     res.json(issue);
@@ -58,19 +68,28 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const payload = { ...req.body };
-    // Validate and convert issueDate
-    if (payload.issueDate && typeof payload.issueDate === "string") {
-      let dateObj = null;
-      if (/^\d{4}-\d{2}-\d{2} 00:00:00\+00$/.test(payload.issueDate)) {
-        dateObj = new Date(payload.issueDate.replace(" ", "T"));
-      } else if (!isNaN(Date.parse(payload.issueDate))) {
-        dateObj = new Date(payload.issueDate);
-      }
-      if (dateObj && !isNaN(dateObj.getTime())) {
+    // Robustly handle issueDate
+    console.log("[DEBUG][PUT] Received issueDate:", payload.issueDate, "Type:", typeof payload.issueDate);
+    if (!payload.issueDate) {
+      payload.issueDate = null;
+    } else if (typeof payload.issueDate === "string") {
+      const dateObj = new Date(payload.issueDate);
+      if (dateObj instanceof Date && !isNaN(dateObj.getTime())) {
         payload.issueDate = dateObj.toISOString();
       } else {
+        console.warn("[WARN][PUT] Invalid date string for issueDate:", payload.issueDate);
         payload.issueDate = null;
       }
+    } else if (payload.issueDate instanceof Date) {
+      if (!isNaN(payload.issueDate.getTime()) && typeof payload.issueDate.toISOString === "function") {
+        payload.issueDate = payload.issueDate.toISOString();
+      } else {
+        console.warn("[WARN][PUT] Invalid Date object for issueDate:", payload.issueDate);
+        payload.issueDate = null;
+      }
+    } else {
+      console.warn("[WARN][PUT] Unexpected type for issueDate:", payload.issueDate, typeof payload.issueDate);
+      payload.issueDate = null;
     }
     const updated = await storage.updateStockIssue(req.params.id, payload);
     res.json(updated);

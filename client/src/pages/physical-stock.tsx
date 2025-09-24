@@ -38,7 +38,7 @@ const physicalStockSchema = z.object({
   itemId: z.string().min(1, "Item is required"),
   location: z.string().min(1, "Location is required"),
   quantity: z.number().min(0, "Quantity must be 0 or more"),
-  lastCounted: z.string().min(1, "Date is required"),
+  lastUpdated: z.string().min(1, "Date is required"),
   countedBy: z.string().min(1, "Counted by is required"),
   notes: z.string().optional(),
 });
@@ -132,14 +132,19 @@ export default function PhysicalStockPage() {
       itemId: "",
       location: "",
       quantity: 0,
-      lastCounted: "",
+  lastUpdated: "",
       countedBy: "",
       notes: "",
     },
   });
 
   const onSubmit = (data: PhysicalStockForm) => {
-    createStockMutation.mutate(data);
+    // Convert lastUpdated from 'YYYY-MM-DD' to ISO string for backend
+    const payload = {
+      ...data,
+      lastUpdated: data.lastUpdated ? new Date(data.lastUpdated).toISOString() : "",
+    };
+    createStockMutation.mutate(payload);
   };
 
   // Filter
@@ -181,7 +186,7 @@ export default function PhysicalStockPage() {
       ),
     },
     {
-      key: "lastCounted",
+  key: "lastUpdated",
       header: "Last Counted",
       render: (value: string) => (
         <div className="flex items-center gap-2">
@@ -343,7 +348,7 @@ export default function PhysicalStockPage() {
                     />
                     <FormField
                       control={form.control}
-                      name="lastCounted"
+                      name="lastUpdated"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Last Counted</FormLabel>
@@ -535,7 +540,7 @@ export default function PhysicalStockPage() {
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Last Counted</Label>
                     <p className="text-sm font-medium">
-                      {selectedStock.lastCounted ? formatDate(selectedStock.lastCounted) : "N/A"}
+                      {selectedStock.lastUpdated ? formatDate(selectedStock.lastUpdated) : "N/A"}
                     </p>
                   </div>
                   <div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,9 @@ import {
   Truck,
   FileText,
   History,
-  Filter
+  Filter,
+  LayoutGrid,
+  List
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { 
@@ -607,6 +609,10 @@ function InventoryItemsTab() {
 function StockLevelsTab() {
   const [selectedLocation, setSelectedLocation] = useState("");
   const [showLowStock, setShowLowStock] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  // UI enhancements for Total Stock Distribution section
+  const [itemSearch, setItemSearch] = useState("");
+  const [viewMode, setViewMode] = useState<'bar' | 'compact'>('bar');
 
   const { data: stockLevels = [], isLoading } = useQuery({
     queryKey: ["/api/inventory-levels", { location: selectedLocation, lowStock: showLowStock }],
@@ -623,7 +629,68 @@ function StockLevelsTab() {
     enabled: true,
   });
 
+  // Fetch inventory items to enrich stock level cards with descriptive data
+  const { data: invItems = [] } = useQuery({
+    queryKey: ["/api/inventory-items", { basic: true }],
+    queryFn: async () => {
+      try {
+        const params = new URLSearchParams();
+        params.append('isActive', 'true');
+        // fetch all; filtering will be client-side for now
+        const resp = await fetch(`/api/inventory-items?${params.toString()}`, { credentials: "include" });
+        if (!resp.ok) return [];
+        return resp.json();
+      } catch (e) {
+        console.error("Failed to load inventory items for stock status summary", e);
+        return [];
+      }
+    },
+    // Always enabled for summary; lightweight list used only for display
+    enabled: true,
+  });
+
+  // Map for quick lookup by item id
+  const inventoryItemMap = useMemo(() => {
+    const map: Record<string, any> = {};
+    (invItems as any[]).forEach((it: any) => { if (it?.id) map[it.id] = it; });
+    return map;
+  }, [invItems]);
+
   const locations = Array.from(new Set((stockLevels as any[]).map((level: any) => level.storageLocation).filter(Boolean)));
+
+  // Category list derived from inventory items for new summary bar chart
+  const invCategories = useMemo(() => {
+    const set = new Set<string>();
+    (invItems as any[]).forEach((it: any) => { if (it?.category) set.add(it.category); });
+    return Array.from(set).sort();
+  }, [invItems]);
+
+  // Filtered items for bar visualization (totalStock field)
+  const filteredInvItems = useMemo(() => {
+    const list = Array.isArray(invItems) ? (invItems as any[]) : [];
+    return list
+      .filter(it => (categoryFilter === 'all' || !categoryFilter) ? true : it.category === categoryFilter)
+      .map(it => ({
+        id: it.id,
+        description: it.description || it.supplierCode || it.id,
+        category: it.category || 'Uncategorized',
+        totalStock: typeof it.totalStock === 'number' ? it.totalStock : (it.quantityOnHand ?? it.quantity ?? 0),
+      }));
+  }, [invItems, categoryFilter]);
+
+  const maxTotalStock = useMemo(() => filteredInvItems.reduce((m, it) => it.totalStock > m ? it.totalStock : m, 0), [filteredInvItems]);
+
+  // Derive highest / lowest stock summaries (by available quantity)
+  const { highestStock, lowestStock, maxAvailable } = useMemo(() => {
+    const levels = Array.isArray(stockLevels) ? [...(stockLevels as any[])] : [];
+    if (levels.length === 0) return { highestStock: [], lowestStock: [], maxAvailable: 0 };
+    const sortedDesc = [...levels].sort((a, b) => (b.quantityAvailable || 0) - (a.quantityAvailable || 0));
+    const sortedAsc = [...levels].sort((a, b) => (a.quantityAvailable || 0) - (b.quantityAvailable || 0));
+    const top = sortedDesc.slice(0, 5);
+    const bottom = sortedAsc.slice(0, 5);
+    const maxAvail = top[0]?.quantityAvailable || 0;
+    return { highestStock: top, lowestStock: bottom, maxAvailable: maxAvail };
+  }, [stockLevels]);
 
   return (
     <div className="space-y-6" data-testid="stock-levels-tab">
@@ -653,7 +720,254 @@ function StockLevelsTab() {
           />
           <Label htmlFor="showLowStock">Show only low stock items</Label>
         </div>
+
+        {/* Category Filter for Total Stock Bar Chart */}
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger className="w-52" data-testid="select-inventory-category-filter">
+            <SelectValue placeholder="Filter by category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {invCategories.map(cat => (
+              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
+
+      {/* Global Stock Status Summary */}
+      {(highestStock.length > 0 || lowestStock.length > 0) && (
+        <Card className="border border-gray-200" data-testid="stock-status-summary">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-gray-600" />
+              Stock Status Summary
+            </CardTitle>
+            <CardDescription className="text-xs">Top and bottom stocked items (by available quantity)</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Highest Stock */}
+              <div>
+                <h4 className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">Highest Stock</h4>
+                <div className="space-y-2" data-testid="highest-stock-list">
+                  {highestStock.map((lvl: any) => {
+                    const pct = maxAvailable ? Math.min(100, (lvl.quantityAvailable / maxAvailable) * 100) : 0;
+                    const item = inventoryItemMap[lvl.itemId];
+                    return (
+                      <div key={lvl.id || lvl.itemId} className="space-y-1" data-testid={`highest-stock-item-${lvl.itemId}`}>
+                        <div className="flex justify-between text-[10px] text-gray-600 font-medium">
+                          <span className="truncate max-w-[140px]" title={item?.description || lvl.itemId}>{item?.description || lvl.itemId}</span>
+                          <span className="font-mono text-gray-800">{lvl.quantityAvailable}</span>
+                        </div>
+                        <div className="relative h-2.5 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className="absolute left-0 top-0 h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 transition-all"
+                            style={{ width: pct + '%' }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {highestStock.length === 0 && (
+                    <div className="text-[10px] text-gray-400 italic">No data</div>
+                  )}
+                </div>
+              </div>
+              {/* Lowest Stock */}
+              <div>
+                <h4 className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">Lowest Stock</h4>
+                <div className="space-y-2" data-testid="lowest-stock-list">
+                  {lowestStock.map((lvl: any) => {
+                    // Use maxAvailable for consistent scaling across both lists
+                    const pct = maxAvailable ? Math.min(100, (lvl.quantityAvailable / maxAvailable) * 100) : 0;
+                    const item = inventoryItemMap[lvl.itemId];
+                    const isLow = lvl.quantityAvailable < lvl.reorderLevel;
+                    return (
+                      <div key={lvl.id || lvl.itemId} className="space-y-1" data-testid={`lowest-stock-item-${lvl.itemId}`}>
+                        <div className="flex justify-between text-[10px] text-gray-600 font-medium">
+                          <span className="truncate max-w-[140px]" title={item?.description || lvl.itemId}>{item?.description || lvl.itemId}</span>
+                          <span className={`font-mono ${isLow ? 'text-red-600' : 'text-gray-800'}`}>{lvl.quantityAvailable}</span>
+                        </div>
+                        <div className="relative h-2.5 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className={`absolute left-0 top-0 h-full transition-all ${
+                              isLow
+                                ? 'bg-gradient-to-r from-red-500 to-orange-500'
+                                : 'bg-gradient-to-r from-emerald-500 to-green-600'
+                            }`}
+                            style={{ width: pct + '%' }}
+                          />
+                          {/* Reorder marker */}
+                          {lvl.reorderLevel > 0 && maxAvailable > 0 && (
+                            <div
+                              className="absolute top-0 bottom-0 w-0.5 bg-orange-400/80"
+                              style={{ left: `${Math.min(100, (lvl.reorderLevel / maxAvailable) * 100)}%` }}
+                              title={`Reorder Level: ${lvl.reorderLevel}`}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {lowestStock.length === 0 && (
+                    <div className="text-[10px] text-gray-400 italic">No data</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Enhanced: Total Stock Distribution (Inventory Items) */}
+      {filteredInvItems.length > 0 && (() => {
+        const displayItems = filteredInvItems
+          .filter(it => itemSearch ? it.description.toLowerCase().includes(itemSearch.toLowerCase()) : true)
+          .sort((a,b) => b.totalStock - a.totalStock);
+        const totalItemsCount = filteredInvItems.length;
+        const aggregateStock = filteredInvItems.reduce((s,i) => s + (i.totalStock || 0), 0);
+        const avgStock = totalItemsCount ? Math.round(aggregateStock / totalItemsCount) : 0;
+        return (
+          <Card className="border border-gray-200" data-testid="total-stock-distribution">
+            <CardHeader className="pb-3 border-b border-gray-100/80 bg-gradient-to-r from-slate-50 to-white rounded-t-lg">
+              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4 text-blue-600" />
+                    Total Stock by Item {categoryFilter !== 'all' && (<span className="text-xs font-normal text-gray-500">({categoryFilter})</span>)}
+                  </CardTitle>
+                  <CardDescription className="text-[11px] mt-0.5">Distribution of total on-hand stock across inventory items. Search, filter or toggle view.</CardDescription>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                  <div className="relative flex-1 min-w-[160px]">
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                    <Input
+                      value={itemSearch}
+                      onChange={(e) => setItemSearch(e.target.value)}
+                      placeholder="Search items..."
+                      className="pl-7 h-8 text-xs"
+                      data-testid="input-search-total-stock"
+                    />
+                  </div>
+                  <div className="flex items-center justify-end gap-1 bg-gray-50 rounded-md p-1 border border-gray-200">
+                    <Button
+                      type="button"
+                      variant={viewMode === 'bar' ? 'default' : 'ghost'}
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => setViewMode('bar')}
+                      data-testid="button-view-bar"
+                      title="Bar view"
+                    >
+                      <LayoutGrid className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={viewMode === 'compact' ? 'default' : 'ghost'}
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => setViewMode('compact')}
+                      data-testid="button-view-compact"
+                      title="Compact list view"
+                    >
+                      <List className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              {/* KPI Row */}
+              <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mt-3" data-testid="total-stock-kpis">
+                <div className="col-span-1 bg-white/70 border border-gray-200 rounded-md px-3 py-2 flex flex-col">
+                  <span className="text-[10px] uppercase tracking-wide text-gray-500">Items</span>
+                  <span className="text-sm font-semibold text-gray-800">{totalItemsCount}</span>
+                </div>
+                <div className="col-span-1 bg-white/70 border border-gray-200 rounded-md px-3 py-2 flex flex-col">
+                  <span className="text-[10px] uppercase tracking-wide text-gray-500">Aggregate</span>
+                  <span className="text-sm font-semibold text-gray-800" title="Total stock across items">{aggregateStock}</span>
+                </div>
+                <div className="col-span-1 bg-white/70 border border-gray-200 rounded-md px-3 py-2 flex flex-col">
+                  <span className="text-[10px] uppercase tracking-wide text-gray-500">Average</span>
+                  <span className="text-sm font-semibold text-gray-800">{avgStock}</span>
+                </div>
+                <div className="col-span-1 bg-white/70 border border-gray-200 rounded-md px-3 py-2 flex flex-col">
+                  <span className="text-[10px] uppercase tracking-wide text-gray-500">Maximum</span>
+                  <span className="text-sm font-semibold text-gray-800">{maxTotalStock}</span>
+                </div>
+                <div className="col-span-1 bg-white/70 border border-gray-200 rounded-md px-3 py-2 flex flex-col">
+                  <span className="text-[10px] uppercase tracking-wide text-gray-500">&gt; 70%</span>
+                  <span className="text-sm font-semibold bg-gradient-to-r from-indigo-500 to-blue-500 text-transparent bg-clip-text">{displayItems.filter(i => maxTotalStock ? (i.totalStock / maxTotalStock) * 100 >= 70 : false).length}</span>
+                </div>
+                <div className="col-span-1 bg-white/70 border border-gray-200 rounded-md px-3 py-2 flex flex-col">
+                  <span className="text-[10px] uppercase tracking-wide text-gray-500">&lt; 40%</span>
+                  <span className="text-sm font-semibold text-rose-600">{displayItems.filter(i => maxTotalStock ? (i.totalStock / maxTotalStock) * 100 < 40 : false).length}</span>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-3">
+              {/* Scrollable list */}
+              <div className="max-h-80 overflow-y-auto pr-1 custom-scrollbar" data-testid="total-stock-scroll">
+                <div className={viewMode === 'bar' ? 'space-y-3' : 'grid grid-cols-2 md:grid-cols-3 gap-3'}>
+                  {displayItems.map(it => {
+                    const pct = maxTotalStock ? (it.totalStock / maxTotalStock) * 100 : 0;
+                    // Determine color band
+                    let barColor = 'from-sky-500 via-blue-500 to-indigo-600';
+                    if (pct < 40) barColor = 'from-rose-500 via-red-500 to-orange-500';
+                    else if (pct < 70) barColor = 'from-amber-400 via-yellow-400 to-orange-500';
+                    if (viewMode === 'compact') {
+                      return (
+                        <div
+                          key={it.id}
+                          className="group border border-gray-200 rounded-md px-2 py-2 bg-white hover:shadow-sm transition cursor-default"
+                          data-testid={`total-stock-item-${it.id}`}
+                        >
+                          <div className="flex justify-between items-start gap-2">
+                            <div className="min-w-0">
+                              <div className="text-[11px] font-medium text-gray-800 truncate" title={it.description}>{it.description}</div>
+                              <div className="text-[10px] text-gray-500">{Math.round(pct)}% of max</div>
+                            </div>
+                            <div className="text-[11px] font-mono text-gray-700">{it.totalStock}</div>
+                          </div>
+                          <div className="mt-1 relative h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div className={`absolute left-0 top-0 h-full bg-gradient-to-r ${barColor}`} style={{ width: pct + '%' }} />
+                          </div>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div key={it.id} className="space-y-1" data-testid={`total-stock-item-${it.id}`}> 
+                        <div className="flex justify-between text-[10px] text-gray-600 font-medium">
+                          <span className="truncate max-w-[180px]" title={it.description}>{it.description}</span>
+                          <span className="font-mono text-gray-800">{it.totalStock}</span>
+                        </div>
+                        <div className="relative h-2.5 bg-gray-200 rounded-full overflow-hidden group">
+                          <div
+                            className={`absolute left-0 top-0 h-full bg-gradient-to-r ${barColor} transition-all`}
+                            style={{ width: pct + '%' }}
+                          />
+                          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-[9px] font-medium text-white/90">
+                            {Math.round(pct)}%
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {displayItems.length === 0 && (
+                    <div className="text-[10px] text-gray-400 italic">No items match search</div>
+                  )}
+                </div>
+              </div>
+              {/* Legend */}
+                <div className="mt-4 flex flex-wrap items-center gap-4 text-[10px] text-gray-500 border-t border-gray-100 pt-3" data-testid="total-stock-legend">
+                <div className="flex items-center gap-1"><span className="h-2 w-5 rounded bg-gradient-to-r from-rose-500 to-orange-500" /> <span>&lt; 40%</span></div>
+                <div className="flex items-center gap-1"><span className="h-2 w-5 rounded bg-gradient-to-r from-amber-400 to-orange-500" /> <span>40-69%</span></div>
+                <div className="flex items-center gap-1"><span className="h-2 w-5 rounded bg-gradient-to-r from-indigo-500 to-blue-500" /> <span>≥ 70%</span></div>
+                <div className="ml-auto text-[9px] italic">Relative to max item stock = {maxTotalStock}</div>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* Stock Levels Grid */}
       {isLoading ? (
@@ -799,6 +1113,44 @@ function StockLevelsTab() {
                     </div>
                     
                     {/* Stock Status Summary */}
+                    <div className="mt-3 border-t border-gray-100 pt-3">
+                      <div className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                        <BarChart3 className="h-3 w-3 text-gray-500" />
+                        Stock Status Summary
+                      </div>
+                      {(() => {
+                        const item = inventoryItemMap[level.itemId];
+                        if (!item) {
+                          return (
+                            <div className="text-[10px] text-gray-400 italic" data-testid={`stock-summary-missing-${level.itemId}`}>
+                              Item details unavailable
+                            </div>
+                          );
+                        }
+                        return (
+                          <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] leading-relaxed" data-testid={`stock-summary-${level.itemId}`}>
+                            <div className="text-gray-500">Description:</div>
+                            <div className="font-medium truncate" title={item.description}>{item.description || '—'}</div>
+                            <div className="text-gray-500">Supplier Code:</div>
+                            <div className="font-mono text-blue-700">{item.supplierCode || '—'}</div>
+                            <div className="text-gray-500">Category:</div>
+                            <div>{item.category || '—'}</div>
+                            <div className="text-gray-500">Unit:</div>
+                            <div>{item.unitOfMeasure || '—'}</div>
+                            {item.barcode && (
+                              <>
+                                <div className="text-gray-500">Barcode:</div>
+                                <div className="font-mono" title={item.barcode}>{item.barcode}</div>
+                              </>
+                            )}
+                            <div className="text-gray-500">Active:</div>
+                            <div className={item.isActive ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                              {item.isActive ? 'Yes' : 'No'}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
                     <div className="pt-2 border-t border-gray-100">
                       <div className="flex justify-between items-center text-xs">
                         <span className="text-gray-500">Fill Rate:</span>
@@ -818,18 +1170,6 @@ function StockLevelsTab() {
             );
           })}
         </div>
-      )}
-
-      {(stockLevels as any[]).length === 0 && !isLoading && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <BarChart3 className="h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No stock levels found</h3>
-            <p className="text-gray-600 text-center">
-              Stock levels will appear here once you have inventory items and stock movements.
-            </p>
-          </CardContent>
-        </Card>
       )}
     </div>
   );

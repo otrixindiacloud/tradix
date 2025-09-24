@@ -31,6 +31,7 @@ export function registerSalesOrderRoutes(app: Express) {
       });
 
       const salesOrders = await storage.getSalesOrders(limit, offset, Object.keys(filters).length > 0 ? filters : undefined);
+      // Each sales order now includes { customer, __customerEmbedded: true }
       res.json(salesOrders);
     } catch (error) {
       console.error("Error fetching sales orders:", error);
@@ -44,6 +45,7 @@ export function registerSalesOrderRoutes(app: Express) {
       if (!salesOrder) {
         return res.status(404).json({ message: "Sales order not found" });
       }
+      // Single sales order enriched with embedded customer + transition flag
       res.json(salesOrder);
     } catch (error) {
       console.error("Error fetching sales order:", error);

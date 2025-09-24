@@ -71,9 +71,8 @@ export const physicalStock = pgTable("physical_stock", {
   itemId: uuid("item_id").notNull(),
   location: varchar("location", { length: 128 }),
   quantity: integer("quantity").notNull(),
-  lastUpdated: timestamp("last_updated", { withTimezone: true }).defaultNow(),
+    lastUpdated: timestamp("last_updated", { withTimezone: true }).defaultNow(),
   countedBy: varchar("counted_by", { length: 128 }),
-  lastCounted: timestamp("last_counted", { withTimezone: true }),
   notes: text("notes"),
 });
 

@@ -86,6 +86,7 @@ export default function ReceiptReturnsPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedReturn, setSelectedReturn] = useState<any | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  // Local state for item and quantity selection in dialogs
   const [selectedItemId, setSelectedItemId] = useState<string>("");
   const [selectedReturnQuantity, setSelectedReturnQuantity] = useState<number>(0);
 
@@ -237,8 +238,16 @@ export default function ReceiptReturnsPage() {
     },
   });
 
-  const form = useForm<ReceiptReturnForm>({
-    resolver: zodResolver(receiptReturnSchema),
+  // Extend form schema to include itemId and returnQuantity
+  const extendedReceiptReturnSchema = receiptReturnSchema.extend({
+    itemId: z.string().min(1, "Item is required"),
+    returnQuantity: z.coerce.number().min(1, "Quantity must be at least 1"),
+  });
+
+  type ExtendedReceiptReturnForm = z.infer<typeof extendedReceiptReturnSchema>;
+
+  const form = useForm<ExtendedReceiptReturnForm>({
+    resolver: zodResolver(extendedReceiptReturnSchema),
     defaultValues: {
       returnNumber: "",
       goodsReceiptId: "",
@@ -246,10 +255,12 @@ export default function ReceiptReturnsPage() {
       returnDate: "",
       status: "Draft",
       notes: "",
+      itemId: "",
+      returnQuantity: 0,
     },
   });
 
-  const onSubmit = (data: ReceiptReturnForm) => {
+  const onSubmit = (data: ExtendedReceiptReturnForm) => {
     // Find supplierId from selected goods receipt
     const selectedReceipt = goodsReceipts.find((r: any) => r.id === data.goodsReceiptId);
     const supplierId = selectedReceipt?.supplierId || "";
@@ -257,10 +268,10 @@ export default function ReceiptReturnsPage() {
     createReturnMutation.mutate(payload, {
       onSuccess: (createdReturn: any) => {
         // Create supplierReturnItem for the returned item
-        if (createdReturn && createdReturn.id && selectedItemId && selectedReturnQuantity) {
+        if (createdReturn && createdReturn.id && data.itemId && data.returnQuantity) {
           const itemPayload: ReceiptReturnItemForm = {
-            itemId: selectedItemId,
-            quantityReturned: selectedReturnQuantity,
+            itemId: data.itemId,
+            quantityReturned: data.returnQuantity,
             unitCost: undefined,
             totalCost: undefined,
             returnReason: data.returnReason,
@@ -288,39 +299,43 @@ export default function ReceiptReturnsPage() {
   // Table columns
   const columns = [
     {
-      key: "returnNumber",
+      key: "return_number",
       header: "Return Number",
       render: (value: string) => (
         <span className="font-mono text-sm font-medium">{value || "N/A"}</span>
       ),
     },
     {
-      key: "itemName",
-      header: "Item",
-      render: (value: string, returnItem: any) => (
-        <div className="flex items-center gap-2">
-          <Package className="h-4 w-4 text-gray-500" />
-          <span>{value || returnItem.itemCode || "N/A"}</span>
-        </div>
-      ),
-    },
-    {
-      key: "returnQuantity",
-      header: "Return Qty",
+      key: "goods_receipt_id",
+      header: "Goods Receipt ID",
       render: (value: string) => (
-        <div className="flex items-center gap-2">
-          <Undo2 className="h-4 w-4 text-orange-500" />
-          <span className="font-medium text-orange-600">{value || "0"}</span>
-        </div>
+        <span className="font-mono text-xs">{value || "N/A"}</span>
       ),
     },
     {
-      key: "returnReason",
-      header: "Reason",
+      key: "supplier_id",
+      header: "Supplier ID",
+      render: (value: string) => (
+        <span className="font-mono text-xs">{value || "N/A"}</span>
+      ),
+    },
+    {
+      key: "return_reason",
+      header: "Return Reason",
       render: (value: string) => (
         <div className="flex items-center gap-2">
           <AlertCircle className="h-4 w-4 text-gray-500" />
           <span className="truncate max-w-[150px]" title={value}>{value || "N/A"}</span>
+        </div>
+      ),
+    },
+    {
+      key: "return_date",
+      header: "Return Date",
+      render: (value: string) => (
+        <div className="flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-gray-500" />
+          <span>{value ? formatDate(value) : "N/A"}</span>
         </div>
       ),
     },
@@ -334,13 +349,10 @@ export default function ReceiptReturnsPage() {
       ),
     },
     {
-      key: "returnDate",
-      header: "Return Date",
+      key: "notes",
+      header: "Notes",
       render: (value: string) => (
-        <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-gray-500" />
-          <span>{value ? formatDate(value) : "N/A"}</span>
-        </div>
+        <span className="truncate max-w-[200px]">{value || ""}</span>
       ),
     },
     {
@@ -365,14 +377,14 @@ export default function ReceiptReturnsPage() {
               setEditForm(returnItem);
               setShowEditDialog(true);
               // Prefill form values
-              form.setValue("returnNumber", returnItem.returnNumber || "");
-              form.setValue("goodsReceiptId", returnItem.goodsReceiptId || "");
-              form.setValue("returnReason", returnItem.returnReason || "");
-              form.setValue("returnDate", returnItem.returnDate || "");
+              form.setValue("returnNumber", returnItem.return_number || "");
+              form.setValue("goodsReceiptId", returnItem.goods_receipt_id || "");
+              form.setValue("returnReason", returnItem.return_reason || "");
+              form.setValue("returnDate", returnItem.return_date || "");
               form.setValue("status", returnItem.status || "Draft");
               form.setValue("notes", returnItem.notes || "");
-              setSelectedItemId(returnItem.itemId || "");
-              setSelectedReturnQuantity(returnItem.returnQuantity || 0);
+              setSelectedItemId("");
+              setSelectedReturnQuantity(0);
             }}
           >
             <Edit className="h-4 w-4" />
@@ -381,7 +393,7 @@ export default function ReceiptReturnsPage() {
             variant="outline"
             size="sm"
             onClick={() => {
-              if (confirm(`Are you sure you want to delete return ${returnItem.returnNumber}?`)) {
+              if (confirm(`Are you sure you want to delete return ${returnItem.return_number}?`)) {
                 deleteReturnMutation.mutate(returnItem.id);
               }
             }}
@@ -539,46 +551,61 @@ export default function ReceiptReturnsPage() {
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <FormItem>
-                      <FormLabel>Item <span className="text-red-500">*</span></FormLabel>
-                      <Select required onValueChange={setSelectedItemId} defaultValue={selectedItemId}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select item" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {items.length === 0 ? (
-                            <div className="px-4 py-2 text-gray-500 text-sm">No items available</div>
-                          ) : (
-                            items.map((item: any) => (
-                              <SelectItem key={item.id} value={item.id}>
-                                {item.name
-                                  ? item.name
-                                  : item.description
-                                    ? item.description
-                                    : item.itemCode
-                                      ? item.itemCode
-                                      : `Item-${item.id}`}
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </FormItem>
-                    <FormItem>
-                      <FormLabel>Return Quantity <span className="text-red-500">*</span></FormLabel>
-                      <FormControl>
-                        <Input
-                          required
-                          type="number"
-                          min={1}
-                          placeholder="Enter quantity"
-                          value={selectedReturnQuantity}
-                          onChange={e => setSelectedReturnQuantity(Number(e.target.value))}
-                        />
-                      </FormControl>
-                    </FormItem>
+                    <FormField
+                      control={form.control}
+                      name="itemId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Item <span className="text-red-500">*</span></FormLabel>
+                          <Select required onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select item" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {items.length === 0 ? (
+                                <div className="px-4 py-2 text-gray-500 text-sm">No items available</div>
+                              ) : (
+                                items.map((item: any) => (
+                                  <SelectItem key={item.id} value={item.id}>
+                                    {item.name
+                                      ? item.name
+                                      : item.description
+                                        ? item.description
+                                        : item.itemCode
+                                          ? item.itemCode
+                                          : `Item-${item.id}`}
+                                  </SelectItem>
+                                ))
+                              )}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="returnQuantity"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Return Quantity <span className="text-red-500">*</span></FormLabel>
+                          <FormControl>
+                            <Input
+                              required
+                              type="number"
+                              min={1}
+                              placeholder="Enter quantity"
+                              {...field}
+                              value={field.value}
+                              onChange={e => field.onChange(Number(e.target.value))}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
@@ -662,60 +689,18 @@ export default function ReceiptReturnsPage() {
                       </FormItem>
                     )}
                   />
-                  {/* Disable Process Return button if required fields are missing */}
-                  {/*
-                    Required fields:
-                      - returnNumber
-                      - goodsReceiptId
-                      - selectedItemId
-                      - selectedReturnQuantity
-                      - returnReason
-                      - returnDate
-                  */}
-                  {(() => {
-                    const values = form.getValues();
-                    const isProcessReturnDisabled =
-                      !values.returnNumber ||
-                      !values.goodsReceiptId ||
-                      !selectedItemId ||
-                      !selectedReturnQuantity ||
-                      !values.returnReason ||
-                      !values.returnDate;
-                    return (
-                      <div className="flex justify-end gap-3 pt-4">
-                        <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>
-                          Cancel
-                        </Button>
-                        {(
-                          createReturnMutation.isPending ||
-                          !form.watch("returnNumber") ||
-                          !form.watch("goodsReceiptId") ||
-                          !selectedItemId ||
-                          !selectedReturnQuantity ||
-                          !form.watch("returnDate") ||
-                          !form.watch("returnReason")
-                        ) && (
-                          <span className="text-xs text-red-500 mr-4">Fill all required fields to enable</span>
-                        )}
-                        <Button
-                          type="submit"
-                          variant="default"
-                          disabled={
-                            createReturnMutation.isPending ||
-                            !form.watch("returnNumber") ||
-                            !form.watch("goodsReceiptId") ||
-                            !selectedItemId ||
-                            !selectedReturnQuantity ||
-                            selectedReturnQuantity <= 0 ||
-                            !form.watch("returnDate") ||
-                            !form.watch("returnReason")
-                          }
-                        >
-                          {createReturnMutation.isPending ? "Processing..." : "Process Return"}
-                        </Button>
-                      </div>
-                    );
-                  })()}
+                  <div className="flex justify-end gap-3 pt-4">
+                    <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      
+                      disabled={createReturnMutation.isPending}
+                    >
+                      {createReturnMutation.isPending ? "Processing..." : "Process Return"}
+                    </Button>
+                  </div>
                 </form>
               </Form>
             </DialogContent>

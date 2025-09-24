@@ -117,6 +117,7 @@ export default function ShipmentTrackingPage() {
   const [newShipment, setNewShipment] = useState({
     salesOrderNumber: "",
     carrierId: "",
+    carrierName: "",
     serviceType: "Standard" as "Standard" | "Express" | "Overnight" | "Economy",
     priority: "Medium" as "Low" | "Medium" | "High" | "Urgent",
     origin: "",
@@ -263,12 +264,23 @@ export default function ShipmentTrackingPage() {
   // Create shipment mutation
   const createShipment = useMutation({
     mutationFn: async (data: typeof newShipment) => {
+      // Omit empty string fields and convert estimatedDelivery to Date if present
+      const payload: Record<string, any> = {};
+      Object.entries(data).forEach(([key, value]) => {
+        if (key === 'estimatedDelivery') {
+          if (typeof value === 'string' && value) {
+            payload.estimatedDelivery = new Date(value);
+          }
+        } else if (value !== "") {
+          payload[key] = value;
+        }
+      });
       const response = await fetch('/api/shipments', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -288,6 +300,7 @@ export default function ShipmentTrackingPage() {
       setNewShipment({
         salesOrderNumber: "",
         carrierId: "",
+        carrierName: "",
         serviceType: "Standard",
         priority: "Medium",
         origin: "",
@@ -302,10 +315,10 @@ export default function ShipmentTrackingPage() {
         specialInstructions: "",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to create shipment",
+        description: error?.message || "Failed to create shipment",
         variant: "destructive",
       });
     },
@@ -966,7 +979,8 @@ export default function ShipmentTrackingPage() {
 
       {/* Enhanced New Shipment Dialog */}
       <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" aria-describedby="new-shipment-description">
+          <p id="new-shipment-description" className="sr-only">Fill in the form to create a new shipment record.</p>
           <DialogHeader className="pb-4 border-b">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
@@ -997,7 +1011,14 @@ export default function ShipmentTrackingPage() {
                   <Label htmlFor="carrierId" className="text-sm font-medium text-gray-700">Carrier *</Label>
                   <Select
                     value={newShipment.carrierId}
-                    onValueChange={(value) => setNewShipment({ ...newShipment, carrierId: value })}
+                    onValueChange={(value) => {
+                      const selectedCarrier = carriers.find((c: any) => c.id === value);
+                      setNewShipment({
+                        ...newShipment,
+                        carrierId: value,
+                        carrierName: selectedCarrier ? selectedCarrier.name : ""
+                      });
+                    }}
                   >
                     <SelectTrigger className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg">
                       <SelectValue placeholder="Select carrier" />
@@ -1242,7 +1263,8 @@ export default function ShipmentTrackingPage() {
 
       {/* Track Shipment Dialog */}
       <Dialog open={showTrackingDialog} onOpenChange={setShowTrackingDialog}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" aria-describedby="track-shipment-description">
+          <p id="track-shipment-description" className="sr-only">Track the status and location of your shipment in real time.</p>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 text-xl font-semibold text-gray-800">
               <div className="h-8 w-8 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center">

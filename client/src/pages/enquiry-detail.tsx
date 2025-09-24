@@ -568,12 +568,18 @@ export default function EnquiryDetail() {
               setRfqLoading(true);
               let allSuccess = true;
               let errorMessages = [];
+              // Build a map for quick lookup of supplier name by id
+              const supplierMap = (suppliers || []).reduce((acc: Record<string, any>, s: any) => {
+                acc[s.id] = s;
+                return acc;
+              }, {});
               for (const supplierId of selectedSuppliers) {
                 try {
+                  const supplierName = supplierMap[supplierId]?.name || '';
                   const response = await fetch('/api/customer-quotes', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ enquiryId: enquiry.id, customerId: enquiry.customerId, supplierId })
+                    body: JSON.stringify({ enquiryId: enquiry.id, customerId: enquiry.customerId, supplierId, supplierName })
                   });
                   // Force supplier quotes table to refresh
                   queryClient.invalidateQueries({ queryKey: ["/api/supplier-quotes"] });

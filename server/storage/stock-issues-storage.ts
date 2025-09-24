@@ -1,11 +1,26 @@
 
 import { db } from "../db";
-import { stockIssue } from "../../shared/schema";
+import { stockIssue, inventoryItem } from "../../shared/schema";
 import { eq } from "drizzle-orm";
 
 export class StockIssuesStorage {
   async getAllStockIssues() {
-    return await db.select().from(stockIssue);
+    // Join stockIssue with inventoryItem to get item description
+    const results = await db
+      .select({
+        id: stockIssue.id,
+        issueNumber: stockIssue.issueNumber,
+        itemId: stockIssue.itemId,
+        quantity: stockIssue.quantity,
+        // issuedBy: stockIssue.issuedBy, // Removed: not present in schema
+        issueDate: stockIssue.issueDate,
+        status: stockIssue.status,
+        itemName: inventoryItem.description,
+        itemCode: inventoryItem.barcode,
+      })
+      .from(stockIssue)
+      .leftJoin(inventoryItem, eq(stockIssue.itemId, inventoryItem.id));
+    return results;
   }
 
   async getStockIssueById(id: string) {

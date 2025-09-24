@@ -24,7 +24,6 @@ export function registerPhysicalStockRoutes(app: Express) {
           quantity: item.quantity,
           lastUpdated: item.lastUpdated,
           countedBy: item.countedBy || null,
-          lastCounted: item.lastCounted || null,
           notes: item.notes || null,
         }));
         res.json(mapped);
@@ -38,15 +37,15 @@ export function registerPhysicalStockRoutes(app: Express) {
     app.post("/api/physical-stock", async (req, res) => {
       try {
         // Basic validation (should match frontend PhysicalStockForm)
-        const { itemId, location, quantity, lastCounted, countedBy, notes } = req.body;
-        if (!itemId || !location || typeof quantity !== "number" || !lastCounted || !countedBy) {
+        const { itemId, location, quantity, lastUpdated, countedBy, notes } = req.body;
+        if (!itemId || !location || typeof quantity !== "number" || !lastUpdated || !countedBy) {
           return res.status(400).json({ message: "Missing required fields" });
         }
         const newItem = await storage.createPhysicalStockItem({
           itemId,
           location,
           quantity,
-          lastCounted,
+          lastUpdated,
           countedBy,
           notes,
         });

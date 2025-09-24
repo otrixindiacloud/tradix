@@ -25,6 +25,57 @@ export class ShipmentStorage extends BaseStorage implements IShipmentStorage {
     offset?: number;
   }): Promise<any[]> {
     try {
+      // Apply filters
+      const conditions = [];
+
+      if (filters?.status) {
+        // Only allow valid enum values for status
+        const allowedStatuses = [
+          'Pending',
+          'Delivered',
+          'Cancelled',
+          'Picked Up',
+          'In Transit',
+          'Out for Delivery',
+          'Delayed',
+          'Lost'
+        ] as const;
+        if (allowedStatuses.includes(filters.status as any)) {
+          conditions.push(eq(shipments.status, filters.status as typeof allowedStatuses[number]));
+        }
+      }
+      if (filters?.priority) {
+        const allowedPriorities = ['Low', 'Medium', 'High', 'Urgent'] as const;
+        if (allowedPriorities.includes(filters.priority as any)) {
+          conditions.push(eq(shipments.priority, filters.priority as typeof allowedPriorities[number]));
+        }
+      }
+      if (filters?.carrierId) {
+        conditions.push(eq(shipments.carrierId, filters.carrierId));
+      }
+      if (filters?.serviceType) {
+        const allowedServiceTypes = ['Standard', 'Express', 'Overnight', 'Economy'] as const;
+        if (allowedServiceTypes.includes(filters.serviceType as any)) {
+          conditions.push(eq(shipments.serviceType, filters.serviceType as typeof allowedServiceTypes[number]));
+        }
+      }
+      if (filters?.search) {
+        conditions.push(
+          or(
+            ilike(shipments.shipmentNumber, `%${filters.search}%`),
+            ilike(shipments.trackingNumber, `%${filters.search}%`),
+            ilike(salesOrders.orderNumber, `%${filters.search}%`),
+            ilike(customers.name, `%${filters.search}%`)
+          )
+        );
+      }
+      if (filters?.dateFrom) {
+        conditions.push(sql`${shipments.createdAt} >= ${filters.dateFrom}`);
+      }
+      if (filters?.dateTo) {
+        conditions.push(sql`${shipments.createdAt} <= ${filters.dateTo}`);
+      }
+
       let query = db
         .select({
           id: shipments.id,
@@ -68,44 +119,13 @@ export class ShipmentStorage extends BaseStorage implements IShipmentStorage {
         .leftJoin(customers, eq(salesOrders.customerId, customers.id))
         .leftJoin(suppliers, eq(shipments.supplierId, suppliers.id));
 
-      // Apply filters
-      const conditions = [];
-
-      if (filters?.status) {
-        conditions.push(eq(shipments.status, filters.status));
-      }
-      if (filters?.priority) {
-        conditions.push(eq(shipments.priority, filters.priority));
-      }
-      if (filters?.carrierId) {
-        conditions.push(eq(shipments.carrierId, filters.carrierId));
-      }
-      if (filters?.serviceType) {
-        conditions.push(eq(shipments.serviceType, filters.serviceType));
-      }
-      if (filters?.search) {
-        conditions.push(
-          or(
-            ilike(shipments.shipmentNumber, `%${filters.search}%`),
-            ilike(shipments.trackingNumber, `%${filters.search}%`),
-            ilike(salesOrders.orderNumber, `%${filters.search}%`),
-            ilike(customers.name, `%${filters.search}%`)
-          )
-        );
-      }
-      if (filters?.dateFrom) {
-        conditions.push(sql`${shipments.createdAt} >= ${filters.dateFrom}`);
-      }
-      if (filters?.dateTo) {
-        conditions.push(sql`${shipments.createdAt} <= ${filters.dateTo}`);
-      }
-
       if (conditions.length > 0) {
         query = query.where(and(...conditions));
       }
 
       query = query.orderBy(desc(shipments.createdAt));
 
+      // Move limit/offset after all joins
       if (filters?.limit) {
         query = query.limit(filters.limit);
       }
@@ -278,15 +298,19 @@ export class ShipmentStorage extends BaseStorage implements IShipmentStorage {
       await this.logAuditEvent(
         'shipment',
         result[0].id,
-        'create',
-        'Shipment created',
-        shipmentData.createdBy
+        'created',
+        shipmentData.createdBy,
+        null,
+        result[0]
       );
 
       return await this.getShipment(result[0].id);
     } catch (error) {
       console.error('Error creating shipment:', error);
-      throw new Error('Failed to create shipment');
+      if (error instanceof Error && error.message) {
+        throw new Error(error.message);
+      }
+      throw error;
     }
   }
 
@@ -306,13 +330,13 @@ export class ShipmentStorage extends BaseStorage implements IShipmentStorage {
         throw new Error('Shipment not found');
       }
 
-      // Log audit event
       await this.logAuditEvent(
         'shipment',
         id,
-        'update',
-        'Shipment updated',
-        shipmentData.updatedBy
+        'updated',
+        shipmentData.updatedBy,
+        null,
+        result[0]
       );
 
       return await this.getShipment(id);
@@ -333,13 +357,13 @@ export class ShipmentStorage extends BaseStorage implements IShipmentStorage {
       if (result.length === 0) {
         throw new Error('Shipment not found');
       }
-
-      // Log audit event
       await this.logAuditEvent(
         'shipment',
         id,
-        'delete',
-        'Shipment deleted'
+        'deleted',
+        undefined,
+        null,
+        null
       );
     } catch (error) {
       console.error('Error deleting shipment:', error);

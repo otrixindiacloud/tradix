@@ -435,15 +435,6 @@ export default function SupplierQuotesPage() {
       ),
     },
     {
-      key: "priority",
-      header: "Priority",
-      render: (value: string) => (
-        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getPriorityColor(value)}`}>
-          {value}
-        </span>
-      ),
-    },
-    {
       key: "status",
       header: "Status",
       render: (value: string) => (
@@ -467,22 +458,22 @@ export default function SupplierQuotesPage() {
         </div>
       ),
     },
-    {
-      key: "evaluationScore",
-      header: "Score",
-      className: "text-center",
-      render: (value: number | undefined) => (
-        <div className="text-center">
-          {value ? (
-            <Badge className={value >= 8 ? "bg-green-500 text-white" : value >= 6 ? "bg-yellow-500 text-white" : "bg-red-500 text-white"}>
-              {value}/10
-            </Badge>
-          ) : (
-            <span className="text-gray-400">-</span>
-          )}
-        </div>
-      ),
-    },
+    // {
+    //   key: "evaluationScore",
+    //   header: "Score",
+    //   className: "text-center",
+    //   render: (value: number | undefined) => (
+    //     <div className="text-center">
+    //       {value ? (
+    //         <Badge className={value >= 8 ? "bg-green-500 text-white" : value >= 6 ? "bg-yellow-500 text-white" : "bg-red-500 text-white"}>
+    //           {value}/10
+    //         </Badge>
+    //       ) : (
+    //         <span className="text-gray-400">-</span>
+    //       )}
+    //     </div>
+    //   ),
+    // },
     {
       key: "validUntil",
       header: "Valid Until",
@@ -543,9 +534,15 @@ export default function SupplierQuotesPage() {
     },
   ];
 
+  // Sort by createdAt descending (latest first)
+  const sortedQuotes = [...supplierQuotes].sort((a, b) => {
+    const aDate = new Date(a.createdAt).getTime();
+    const bDate = new Date(b.createdAt).getTime();
+    return bDate - aDate;
+  });
   // Pagination logic
-  const totalPages = Math.ceil(supplierQuotes.length / pageSize);
-  const paginatedQuotes = supplierQuotes.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const totalPages = Math.ceil(sortedQuotes.length / pageSize);
+  const paginatedQuotes = sortedQuotes.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div className="space-y-6">

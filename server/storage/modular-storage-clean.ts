@@ -30,9 +30,7 @@ import { BaseStorage } from './base.js';
 // while stub methods are being incrementally added. Once all interface methods
 // are implemented, we can re-add `implements IStorage` for full type safety.
 export class ModularStorage extends BaseStorage {
-  async getAllPhysicalStockItems() {
-    return this.physicalStockStorage.getAllPhysicalStockItems();
-  }
+  // ...existing code...
   private userStorage: UserStorage;
   private customerStorage: CustomerStorage;
   private supplierStorage: SupplierStorage;
@@ -928,6 +926,14 @@ export class ModularStorage extends BaseStorage {
   }
 
   // Physical Stock operations - delegate to PhysicalStockStorage
+  async getAllPhysicalStockItems() {
+    return this.physicalStockStorage.getAllPhysicalStockItems();
+  }
+
+  async createPhysicalStockItem(data: Parameters<PhysicalStockStorage['createPhysicalStockItem']>[0]) {
+    return this.physicalStockStorage.createPhysicalStockItem(data);
+  }
+
   async getPhysicalStockCounts(limit?: number, offset?: number) {
     return this.physicalStockStorage.getPhysicalStockCounts(limit, offset);
   }

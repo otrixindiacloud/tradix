@@ -160,19 +160,27 @@ export default function QuotationDetailPage() {
   const updateStatusMutation = useMutation({
     mutationFn: async (payload: { status?: string; approvalStatus?: string }) => {
       if (isClientViewOnly) throw new Error("Client user cannot perform any changes");
-      // Send user id and role headers for backend admin check
+      // Always send user id and role headers for backend admin check
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
+        ...(user?.id ? { "x-user-id": user.id } : {}),
+        ...(user?.role ? { "x-user-role": user.role } : {}),
       };
-      if (user?.id) headers["x-user-id"] = user.id;
-      if (user?.role) headers["x-user-role"] = user.role;
       const response = await fetch(`/api/quotations/${id}`, {
         method: "PUT",
         headers,
         body: JSON.stringify(payload),
       });
-      if (!response.ok) throw new Error("Failed to update quotation");
-      return response.json();
+      let result;
+      try {
+        result = await response.json();
+      } catch (e) {
+        result = {};
+      }
+      if (!response.ok) {
+        throw new Error(result.message || result.error || "Failed to update quotation");
+      }
+      return result;
     },
     onSuccess: () => {
       toast({
