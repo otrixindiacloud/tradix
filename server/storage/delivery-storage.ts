@@ -41,6 +41,7 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
     dateTo?: string;
     limit?: number;
     offset?: number;
+    search?: string;
   }): Promise<any[]> {
     try {
       // Build all filter conditions
@@ -60,16 +61,21 @@ export class DeliveryStorage extends BaseStorage implements IDeliveryStorage {
 
       let query = db
         .select()
-        .from(deliveryNote);
+        .from(deliveryNote)
+        .leftJoin(salesOrders, eq(deliveryNote.salesOrderId, salesOrders.id))
+        .leftJoin(customers, eq(salesOrders.customerId, customers.id));
+
+      // Apply search if provided (on deliveryNumber, trackingNumber, customer name)
+      if (filters?.search) {
+        const term = `%${filters.search.toLowerCase()}%`;
+        conditions.push(sql`(lower(${deliveryNote.deliveryNumber}) like ${term} OR lower(${deliveryNote.trackingNumber}) like ${term})`);
+      }
 
       if (conditions.length > 0) {
         query = query.where(and(...conditions));
       }
 
-      query = query
-        .leftJoin(salesOrders, eq(deliveryNote.salesOrderId, salesOrders.id))
-        .leftJoin(customers, eq(salesOrders.customerId, customers.id))
-        .orderBy(desc(deliveryNote.createdAt));
+      query = query.orderBy(desc(deliveryNote.createdAt));
 
       if (filters?.limit) {
         query = query.limit(filters.limit);

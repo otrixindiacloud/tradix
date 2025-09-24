@@ -106,16 +106,14 @@ export default function DeliveryNote() {
 
   // Fetch delivery notes
   const { data: deliveryNotesData = [], isLoading, error, refetch } = useQuery({
-    queryKey: ["delivery-notes", currentPage, searchTerm, statusFilter, customerFilter],
+  queryKey: ["delivery-notes", currentPage, searchTerm, statusFilter, customerFilter],
     queryFn: async () => {
       try {
-        const params = new URLSearchParams({
-          page: currentPage.toString(),
-          pageSize: pageSize.toString(),
-          ...(searchTerm && { search: searchTerm }),
-          ...(statusFilter && statusFilter !== "all" && { status: statusFilter }),
-          ...(customerFilter && { customer: customerFilter })
-        });
+        const params = new URLSearchParams();
+        params.set('page', currentPage.toString());
+        params.set('pageSize', pageSize.toString());
+        if (searchTerm) params.set('search', searchTerm);
+        if (statusFilter && statusFilter !== 'all') params.set('status', statusFilter);
         
         // Try relative URL first (for production), then absolute URL (for development)
         let response;
@@ -587,52 +585,52 @@ export default function DeliveryNote() {
         </CardContent>
       </Card>
 
-      {/* Delivery Notes Table - only show if there is data */}
-      {isLoading ? (
-        <Card>
-          <CardContent>
-            <div className="flex justify-center py-8">
-              <LoadingSpinner />
-            </div>
-          </CardContent>
-        </Card>
-      ) : deliveryNotesData.length > 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Truck className="h-5 w-5" />
-              Delivery Notes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <DataTable
-              data={deliveryNotesData}
-              columns={[...columns]}
-              className="w-full"
-            />
-            {/* Pagination Controls */}
-            <div className="flex justify-between items-center mt-4">
-              <Button
-                variant="outline"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(currentPage - 1)}
-              >
-                Previous
+      {/* Delivery Notes Table with empty state */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Truck className="h-5 w-5" />
+            Delivery Notes
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex justify-center py-8"><LoadingSpinner /></div>
+          ) : deliveryNotesData.length > 0 ? (
+            <>
+              <DataTable
+                data={deliveryNotesData}
+                columns={[...columns]}
+                className="w-full"
+              />
+              <div className="flex justify-between items-center mt-4">
+                <Button
+                  variant="outline"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-gray-600">Page {currentPage}</span>
+                <Button
+                  variant="outline"
+                  disabled={deliveryNotesData.length < pageSize}
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                >
+                  Next
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-12 text-sm text-gray-500 space-y-4">
+              <p>No delivery notes found. Create a new delivery note to get started.</p>
+              <Button variant="outline" onClick={() => setShowCreateDialog(true)}>
+                <Plus className="h-4 w-4 mr-2" /> Create Delivery Note
               </Button>
-              <span className="text-sm text-gray-600">
-                Page {currentPage}
-              </span>
-              <Button
-                variant="outline"
-                disabled={deliveryNotesData.length < pageSize}
-                onClick={() => setCurrentPage(currentPage + 1)}
-              >
-                Next
-              </Button>
             </div>
-          </CardContent>
-        </Card>
-      ) : null}
+          )}
+        </CardContent>
+      </Card>
 
       {/* Create Delivery Note Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>

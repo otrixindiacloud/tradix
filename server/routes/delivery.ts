@@ -250,14 +250,31 @@ export function registerDeliveryRoutes(app: Express) {
   // Delivery Notes routes (aliases to delivery routes for UI consistency)
   app.get("/api/delivery-notes", async (req, res) => {
     try {
-      const { customerId, status, dateFrom, dateTo, limit, offset, search } = req.query;
+      // Accept both legacy limit/offset and page/pageSize params
+      const { customerId, status, dateFrom, dateTo, limit, offset, search, page, pageSize, salesOrderId } = req.query as any;
+
+      let resolvedLimit: number | undefined = limit ? parseInt(limit, 10) : undefined;
+      let resolvedOffset: number | undefined = offset ? parseInt(offset, 10) : undefined;
+
+      if (pageSize) {
+        const ps = parseInt(pageSize, 10);
+        if (!isNaN(ps)) resolvedLimit = ps;
+      }
+      if (page) {
+        const pg = parseInt(page, 10);
+        if (!isNaN(pg) && resolvedLimit) {
+          resolvedOffset = (pg - 1) * resolvedLimit;
+        }
+      }
+
       const filters = {
-        customerId: customerId as string,
         status: status as string,
+        salesOrderId: salesOrderId as string,
         dateFrom: dateFrom as string,
         dateTo: dateTo as string,
-        limit: limit ? parseInt(limit as string) : undefined,
-        offset: offset ? parseInt(offset as string) : undefined,
+        limit: resolvedLimit,
+        offset: resolvedOffset,
+        search: (search as string) || undefined
       };
       const deliveries = await storage.getDeliveries(filters);
       res.json(deliveries);
