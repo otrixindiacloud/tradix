@@ -77,6 +77,10 @@ export default function Invoicing() {
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
   const [deliverySearch, setDeliverySearch] = useState("");
   const [invoiceType, setInvoiceType] = useState("Standard");
+  // Quick Proforma dialog state
+  const [showQuickProformaDialog, setShowQuickProformaDialog] = useState(false);
+  const [quickProformaSearch, setQuickProformaSearch] = useState("");
+  const [selectedDraftInvoiceId, setSelectedDraftInvoiceId] = useState<string | null>(null);
 
   const createInvoice = useMutation({
     mutationFn: async ({ deliveryId, invoiceType }: { deliveryId: string; invoiceType: string }) => {
@@ -127,8 +131,18 @@ export default function Invoicing() {
   const generateProformaInvoice = useMutation({
     mutationFn: async ({ salesOrderId, invoiceType }: { salesOrderId: string; invoiceType: string }) => {
       // Always send both salesOrderId and invoiceType for backend compatibility
-      const response = await apiRequest("POST", "/api/invoices/proforma", { salesOrderId, invoiceType });
-      return response.json();
+      const response = await apiRequest("POST", "/api/invoices/generate-proforma", { salesOrderId, invoiceType });
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch (e) {
+        // Likely received HTML (SyntaxError). Convert to structured error.
+        throw new Error('Server returned non-JSON response while generating proforma. Check server logs.');
+      }
+      if (!response.ok) {
+        throw new Error(data?.message || 'Failed to generate proforma invoice');
+      }
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
@@ -137,7 +151,8 @@ export default function Invoicing() {
         description: "Proforma invoice generated successfully",
       });
     },
-    onError: () => {
+    onError: (err: any) => {
+      console.error('Proforma generation failed', err);
       toast({
         title: "Error",
         description: "Failed to generate proforma invoice",
@@ -197,6 +212,37 @@ export default function Invoicing() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleGenerateQuickProforma = () => {
+    if (!selectedDraftInvoiceId) {
+      toast({ title: 'Select Invoice', description: 'Please select a draft invoice first.', variant: 'destructive' });
+      return;
+    }
+    const invoice = (enrichedInvoices || []).find((inv: any) => inv.id === selectedDraftInvoiceId);
+    if (!invoice || !invoice.salesOrderId) {
+      toast({ title: 'Invalid Selection', description: 'Selected invoice missing linked Sales Order.', variant: 'destructive' });
+      return;
+    }
+    generateProformaInvoice.mutate(
+      { salesOrderId: invoice.salesOrderId, invoiceType: 'Proforma' },
+      {
+        onSuccess: (data: any) => {
+          // Attempt auto-download of generated proforma if backend returns new invoice id/number
+            // Expect data to include invoice or id; fallback to refetch result later
+            const newInvoiceId = data?.invoice?.id || data?.id;
+            const newInvoiceNumber = data?.invoice?.invoiceNumber || data?.invoiceNumber || 'PROFORMA';
+            if (newInvoiceId) {
+              // Delay a moment to ensure backend persistence
+              setTimeout(() => {
+                downloadInvoicePDF(newInvoiceId, newInvoiceNumber, 'Proforma');
+              }, 600);
+            }
+          setShowQuickProformaDialog(false);
+          setSelectedDraftInvoiceId(null);
+        },
+      }
+    );
   };
 
   const exportInvoices = (format: 'csv' | 'excel') => {
@@ -329,6 +375,9 @@ export default function Invoicing() {
       } : invoice.customer || { name: 'Unknown Customer', customerType: '-' }
     };
   });
+
+  // Draft invoices eligible for quick proforma generation (must have linked Sales Order)
+  const draftInvoicesWithSO = (enrichedInvoices || []).filter((inv: any) => inv.status === 'Draft' && inv.salesOrderId);
 
   const filteredInvoices = enrichedInvoices?.filter((invoice: any) => {
     const matchesSearch = invoice.invoiceNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -571,18 +620,7 @@ export default function Invoicing() {
               <Button
                 variant="outline"
                 onClick={() => {
-                  // Find a draft invoice with a valid salesOrderId
-                  const draftWithSO = invoices?.find((inv: any) => inv.status === "Draft" && inv.salesOrderId);
-                  if (draftWithSO && draftWithSO.salesOrderId) {
-                    // Pass payload object for backend compatibility
-                    generateProformaInvoice.mutate({ salesOrderId: draftWithSO.salesOrderId, invoiceType: "Proforma" });
-                  } else {
-                    toast({
-                      title: "No Draft Found",
-                      description: "No draft invoice with Sales Order available for proforma generation.",
-                      variant: "destructive",
-                    });
-                  }
+                  setShowQuickProformaDialog(true);
                 }}
                 disabled={generateProformaInvoice.isPending}
                 data-testid="button-generate-proforma-quick"
@@ -1005,7 +1043,7 @@ export default function Invoicing() {
                   {selectedInvoice?.salesOrderId && (
                     <Button
                       variant="outline"
-                      onClick={() => generateProformaInvoice.mutate(selectedInvoice.salesOrderId)}
+                      onClick={() => generateProformaInvoice.mutate({ salesOrderId: selectedInvoice.salesOrderId, invoiceType: 'Proforma' })}
                       disabled={generateProformaInvoice.isPending}
                       data-testid="button-generate-proforma-from-invoice"
                     >
@@ -1107,6 +1145,87 @@ export default function Invoicing() {
             </div>
             <div className="flex justify-end">
               <Button variant="outline" onClick={() => setShowGenerateDialog(false)} data-testid="button-close-generate-dialog">Close</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Quick Proforma Generation Dialog */}
+      <Dialog open={showQuickProformaDialog} onOpenChange={setShowQuickProformaDialog}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Quick Proforma Generation</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-sm text-gray-600">
+              Select a draft invoice (must be linked to a Sales Order) to generate a Proforma PDF instantly.
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                placeholder="Search draft invoices..."
+                value={quickProformaSearch}
+                onChange={(e) => setQuickProformaSearch(e.target.value)}
+                data-testid="input-search-quick-proforma"
+              />
+            </div>
+            <div className="max-h-72 overflow-y-auto border rounded-md divide-y" data-testid="list-draft-invoices-quick-proforma">
+              {draftInvoicesWithSO
+                .filter((inv: any) => {
+                  if (!quickProformaSearch) return true;
+                  const term = quickProformaSearch.toLowerCase();
+                  return (
+                    inv.invoiceNumber?.toLowerCase().includes(term) ||
+                    inv.salesOrder?.orderNumber?.toLowerCase().includes(term) ||
+                    inv.customer?.name?.toLowerCase().includes(term)
+                  );
+                })
+                .map((inv: any) => (
+                  <div
+                    key={inv.id}
+                    className={`p-3 flex items-center justify-between cursor-pointer hover:bg-gray-50 ${selectedDraftInvoiceId === inv.id ? 'bg-blue-50' : ''}`}
+                    onClick={() => setSelectedDraftInvoiceId(inv.id)}
+                    data-testid={`quick-proforma-invoice-${inv.id}`}
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 flex items-center gap-2">
+                        <span className="font-mono">{inv.invoiceNumber}</span>
+                        <Badge variant="outline" className="bg-gray-100">Draft</Badge>
+                      </p>
+                      <p className="text-xs text-gray-600">
+                        SO: {inv.salesOrder?.orderNumber} · {inv.customer?.name} · Value {formatCurrency(inv.totalAmount || inv.subtotal || 0)}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {selectedDraftInvoiceId === inv.id && (
+                        <span className="text-xs text-blue-600 font-medium">Selected</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              {draftInvoicesWithSO.length === 0 && (
+                <div className="p-4 text-sm text-gray-500" data-testid="empty-no-draft-invoices">No eligible draft invoices found.</div>
+              )}
+            </div>
+            <div className="flex justify-between items-center">
+              <div className="text-xs text-gray-500">
+                {draftInvoicesWithSO.length} draft invoice(s) with Sales Orders available
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowQuickProformaDialog(false)}
+                  data-testid="button-close-quick-proforma-dialog"
+                >
+                  Close
+                </Button>
+                <Button
+                  onClick={handleGenerateQuickProforma}
+                  disabled={generateProformaInvoice.isPending || !selectedDraftInvoiceId}
+                  data-testid="button-generate-quick-proforma-confirm"
+                >
+                  {generateProformaInvoice.isPending ? 'Generating...' : 'Generate & Download'}
+                </Button>
+              </div>
             </div>
           </div>
         </DialogContent>

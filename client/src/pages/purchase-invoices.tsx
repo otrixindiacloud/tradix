@@ -91,6 +91,12 @@ interface PurchaseInvoiceItem {
   goodsReceiptItemId?: string;
 }
 
+// Minimal supplier shape for selection
+interface Supplier {
+  id: string;
+  name: string;
+}
+
 type NewPurchaseInvoice = {
   supplierId: string;
   supplierInvoiceNumber: string;
@@ -239,11 +245,15 @@ export default function PurchaseInvoicesPage() {
     }
   ];
 
-  const mockSuppliers = [
-    { id: "sup-001", name: "Tech Solutions LLC" },
-    { id: "sup-002", name: "Office Supplies Co" },
-    { id: "sup-003", name: "Industrial Equipment Ltd" },
-  ];
+  // Suppliers fetched from API
+  const { data: suppliers = [], isLoading: suppliersLoading, error: suppliersError } = useQuery<Supplier[]>({
+    queryKey: ["/api/suppliers"],
+    queryFn: async () => {
+      const resp = await fetch("/api/suppliers");
+      if (!resp.ok) throw new Error("Failed to load suppliers");
+      return resp.json();
+    }
+  });
 
   const { data: purchaseInvoices = [], isLoading, error } = useQuery<PurchaseInvoice[]>({
     queryKey: ["/api/purchase-invoices", filters],
@@ -265,58 +275,44 @@ export default function PurchaseInvoicesPage() {
     },
   });
 
-  // Create purchase invoice mutation
+  // Create purchase invoice mutation (API based)
   const createPurchaseInvoice = useMutation({
     mutationFn: async (data: NewPurchaseInvoice) => {
-      // Mock implementation - replace with actual API call
-      const supplier = mockSuppliers.find(s => s.id === data.supplierId);
-      const newInvoiceData: PurchaseInvoice = {
-        id: `pi-${Date.now()}`,
-        invoiceNumber: `PI-2024-${String(mockPurchaseInvoices.length + 1).padStart(3, '0')}`,
-        supplierName: supplier?.name || "Unknown Supplier",
-        ...data,
-        status: "Draft",
-        paymentStatus: "Unpaid",
-        subtotal: "0.00",
-        taxAmount: "0.00",
-        discountAmount: "0.00",
-        totalAmount: "0.00",
-        paidAmount: "0.00",
-        remainingAmount: "0.00",
-        attachments: [],
-        itemCount: 0,
-        isRecurring: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      mockPurchaseInvoices.push(newInvoiceData);
-      return newInvoiceData;
+      const payload: Record<string, any> = {};
+      Object.entries(data).forEach(([k, v]) => { if (v !== "") payload[k] = v; });
+      if (payload.invoiceDate) payload.invoiceDate = new Date(payload.invoiceDate);
+      if (payload.dueDate) payload.dueDate = new Date(payload.dueDate);
+      if (!payload.invoiceNumber) payload.invoiceNumber = `PI-TEMP-${Date.now()}`; // backend may override
+      try { console.debug('Create Purchase Invoice Payload', payload); } catch {}
+      const resp = await fetch('/api/purchase-invoices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.message || 'Failed to create purchase invoice');
+      }
+      return resp.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/purchase-invoices"] });
-      toast({
-        title: "Success",
-        description: "Purchase invoice created successfully",
-      });
+      queryClient.invalidateQueries({ queryKey: ['/api/purchase-invoices'] });
+      toast({ title: 'Success', description: 'Purchase invoice created successfully' });
       setShowNewDialog(false);
       setNewInvoice({
-        supplierId: "",
-        supplierInvoiceNumber: "",
-        purchaseOrderNumber: "",
-        invoiceDate: "",
-        dueDate: "",
-        paymentTerms: "",
-        currency: "BHD",
-        notes: "",
+        supplierId: '',
+        supplierInvoiceNumber: '',
+        purchaseOrderNumber: '',
+        invoiceDate: '',
+        dueDate: '',
+        paymentTerms: '',
+        currency: 'BHD',
+        notes: '',
       });
     },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to create purchase invoice",
-        variant: "destructive",
-      });
-    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error?.message || 'Failed to create purchase invoice', variant: 'destructive' });
+    }
   });
 
   // Process payment mutation
@@ -651,19 +647,7 @@ export default function PurchaseInvoicesPage() {
           >
             <Eye className="h-4 w-4" />
           </Button>
-          {(invoice.paymentStatus === "Unpaid" || invoice.paymentStatus === "Partially Paid") && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                handlePayment(invoice);
-              }}
-              data-testid={`button-pay-${invoice.id}`}
-            >
-              <CreditCard className="h-4 w-4 text-green-600" />
-            </Button>
-          )}
+          
           <Button
             variant="ghost"
             size="sm"
@@ -719,10 +703,10 @@ export default function PurchaseInvoicesPage() {
             </div>
           </div>
           <div className="flex gap-2">
-              <Button onClick={() => toast({ title: 'Read-only', description: 'Creation of purchase invoices is not available yet.' })} className="border-blue-500 bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-200" data-testid="button-new-purchase-invoice">
+              {/* <Button onClick={() => setShowNewDialog(true)} className="border-blue-500 bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-200" data-testid="button-new-purchase-invoice">
                 <Plus className="h-4 w-4" />
                 New Invoice
-              </Button>
+              </Button> */}
           </div>
         </div>
       </div>
@@ -1013,7 +997,16 @@ export default function PurchaseInvoicesPage() {
                     <SelectValue placeholder="Select supplier" />
                   </SelectTrigger>
                   <SelectContent>
-                    {mockSuppliers.map(supplier => (
+                    {suppliersLoading && (
+                      <div className="p-2 text-sm text-gray-500">Loading suppliers...</div>
+                    )}
+                    {suppliersError && !suppliersLoading && (
+                      <div className="p-2 text-sm text-red-500">Failed to load suppliers</div>
+                    )}
+                    {!suppliersLoading && !suppliersError && suppliers.length === 0 && (
+                      <div className="p-2 text-sm text-gray-500">No suppliers found</div>
+                    )}
+                    {!suppliersLoading && !suppliersError && suppliers.map(supplier => (
                       <SelectItem key={supplier.id} value={supplier.id}>
                         {supplier.name}
                       </SelectItem>

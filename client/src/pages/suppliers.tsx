@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Eye, Edit, Trash2, Building2, Filter, Search } from "lucide-react";
+import { Plus, Eye, Edit, Trash2, Building2, Filter, Search, CheckCircle } from "lucide-react";
 import DataTable, { Column } from "@/components/tables/data-table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -428,7 +428,13 @@ export default function Suppliers() {
               </div>
             </div>
             <div className="mt-2 flex items-center gap-2">
-              <Badge className="bg-green-900/10 text-green-700 font-semibold px-3 py-1 rounded-full text-xs shadow-sm border border-green-200">Active</Badge>
+              <Badge
+                variant="outline"
+                className="border-green-500 text-green-600 font-medium px-2.5 py-1 rounded-full text-xs flex items-center gap-1.5 bg-transparent shadow-none"
+              >
+                <CheckCircle className="h-3 w-3" />
+                Active
+              </Badge>
               <span className="text-gray-500 text-xs">Supplier records in system</span>
             </div>
           </CardContent>

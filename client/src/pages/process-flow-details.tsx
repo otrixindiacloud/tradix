@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { formatDate } from "date-fns";
@@ -22,6 +22,7 @@ import {
   Send,
   X
 } from "lucide-react";
+import jsPDF from "jspdf";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -34,21 +35,21 @@ import { WORKFLOW_STEPS } from "@/lib/constants";
 interface ProcessFlowDetails {
   currentStep: number;
   completedSteps: number[];
-  quotationId: string;
-  quotationNumber: string;
-  enquiryId: string;
-  enquiryNumber: string;
-  customerId: string;
-  customerName: string;
-  customerType: string;
+  quotationId?: string;
+  quotationNumber?: string;
+  enquiryId?: string;
+  enquiryNumber?: string;
+  customerId?: string;
+  customerName?: string;
+  customerType?: string;
   status: string;
   totalValue: number;
-  createdAt: string;
-  lastUpdated: string;
-  estimatedCompletion: string;
+  createdAt?: string;
+  lastUpdated?: string;
+  estimatedCompletion?: string;
   priority: "Low" | "Medium" | "High" | "Urgent";
-  assignedTo: string;
-  notes: string;
+  assignedTo?: string;
+  notes?: string;
 }
 
 interface StepDetails {
@@ -66,169 +67,224 @@ interface StepDetails {
 export default function ProcessFlowDetailsPage() {
   const [, navigate] = useLocation();
 
-  // Mock data - in real implementation, this would come from API
-  const { data: processFlow, isLoading } = useQuery({
-    queryKey: ["/api/process-flow/details"],
+  // Dynamic data queries
+  const { data: customersData, isLoading: customersLoading } = useQuery({
+    queryKey: ["/api/customers"],
     queryFn: async () => {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const res = await fetch("/api/customers");
+      if (!res.ok) throw new Error("Failed to fetch customers");
+      return res.json();
+    }
+  });
+
+  const { data: enquiriesData, isLoading: enquiriesLoading } = useQuery({
+    queryKey: ["/api/enquiries"],
+    queryFn: async () => {
+      const res = await fetch("/api/enquiries");
+      if (!res.ok) throw new Error("Failed to fetch enquiries");
+      return res.json();
+    }
+  });
+
+  const { data: quotationsData, isLoading: quotationsLoading } = useQuery({
+    queryKey: ["/api/quotations"],
+    queryFn: async () => {
+      const res = await fetch("/api/quotations");
+      if (!res.ok) throw new Error("Failed to fetch quotations");
+      return res.json();
+    }
+  });
+
+  const { data: ordersData, isLoading: ordersLoading } = useQuery({
+    queryKey: ["/api/sales-orders"],
+    queryFn: async () => {
+      const res = await fetch("/api/sales-orders");
+      if (!res.ok) throw new Error("Failed to fetch sales orders");
+      return res.json();
+    }
+  });
+
+  // Parse optional query params for customerId or quotationId
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  const customerIdParam = searchParams.get('customerId');
+  const quotationIdParam = searchParams.get('quotationId');
+
+  // Extract arrays
+  const customers = customersData?.customers || customersData || [];
+  const enquiries = enquiriesData?.enquiries || enquiriesData || [];
+  const quotations = quotationsData?.quotations || quotationsData || [];
+  const salesOrders = ordersData?.salesOrders || ordersData || [];
+
+  // Determine base customer / quotation context
+  const { processFlow, stepDetails, recentActivities } = useMemo(() => {
+    if (customersLoading || enquiriesLoading || quotationsLoading || ordersLoading) {
+      return { processFlow: null, stepDetails: [] as StepDetails[], recentActivities: [] as any[] };
+    }
+
+    // Identify target quotation or customer
+    let targetQuotation: any = null;
+    if (quotationIdParam) {
+      targetQuotation = quotations.find((q: any) => q.id === quotationIdParam || q.quoteNumber === quotationIdParam);
+    }
+    if (!targetQuotation) {
+      // Filter by customer if provided
+      const filtQuotations = customerIdParam
+        ? quotations.filter((q: any) => (q.customer?.id || q.customerId) === customerIdParam)
+        : quotations;
+      // Pick latest by date
+      targetQuotation = [...filtQuotations].sort((a: any, b: any) => new Date(b.quotationDate || b.createdAt).getTime() - new Date(a.quotationDate || a.createdAt).getTime())[0];
+    }
+
+    const customerId = customerIdParam || (targetQuotation?.customer?.id || targetQuotation?.customerId);
+    const customer = customers.find((c: any) => c.id === customerId) || targetQuotation?.customer;
+    const customerName = customer?.name;
+    const customerType = customer?.customerType || customer?.classification || 'Unknown';
+
+    // Related enquiry: try match by enquiryId stored on quotation if present, else latest enquiry for customer
+    let relatedEnquiry = null;
+    if (targetQuotation?.enquiryId) {
+      relatedEnquiry = enquiries.find((e: any) => e.id === targetQuotation.enquiryId);
+    }
+    if (!relatedEnquiry && customerId) {
+      const customerEnquiries = enquiries.filter((e: any) => (e.customer?.id || e.customerId) === customerId);
+      relatedEnquiry = [...customerEnquiries].sort((a: any, b: any) => new Date(b.enquiryDate || b.createdAt).getTime() - new Date(a.enquiryDate || a.createdAt).getTime())[0];
+    }
+
+    // Sales order related to quotation
+    const relatedSalesOrder = targetQuotation ? salesOrders.find((o: any) => o.quoteId === targetQuotation.id || o.quotationId === targetQuotation.id) : null;
+
+    // Build completed steps logic (mirrors dashboard dynamic logic)
+    let completedSteps: number[] = [];
+    let currentStep = 1;
+    if (customerId) { completedSteps.push(1); currentStep = 2; }
+    if (relatedEnquiry) { completedSteps.push(2); currentStep = 3; }
+    if (targetQuotation) {
+      completedSteps.push(3); currentStep = 4;
+      const status = targetQuotation.status;
+      if (status === 'Sent') { completedSteps.push(4); currentStep = 5; }
+      else if (status === 'Accepted') { completedSteps.push(4,5,6); currentStep = 7; }
+      else if (status === 'Rejected' || status === 'Rejected by Customer' || status === 'Expired') { /* stay at 4 */ }
+      else if (status === 'Approved') { /* waiting to send */ }
+    }
+    if (relatedSalesOrder) { completedSteps.push(7); currentStep = 8; }
+
+    // Build processFlow object
+    const processFlow: ProcessFlowDetails = {
+      currentStep,
+      completedSteps,
+      quotationId: targetQuotation?.id,
+      quotationNumber: targetQuotation?.quoteNumber,
+      enquiryId: relatedEnquiry?.id,
+      enquiryNumber: relatedEnquiry?.enquiryNumber,
+      customerId,
+      customerName,
+      customerType,
+      status: targetQuotation?.status || 'Draft',
+      totalValue: targetQuotation?.totalAmount || targetQuotation?.grandTotal || 0,
+      createdAt: targetQuotation?.createdAt || relatedEnquiry?.createdAt,
+      lastUpdated: targetQuotation?.updatedAt || targetQuotation?.createdAt,
+      estimatedCompletion: undefined,
+      priority: 'High',
+      assignedTo: targetQuotation?.assignedTo || 'Sales Team',
+      notes: targetQuotation?.notes || ''
+    };
+
+    // Dynamic step details construction
+    const stepNames = [
+      'Customer', 'Enquiry', 'Quotation', 'Customer Acceptance', 'PO Upload', 'Sales Order', 'Supplier LPO', 'Goods Receipt', 'Inventory', 'Delivery & Picking', 'Invoice'
+    ];
+
+    const stepDetails: StepDetails[] = stepNames.slice(0, 10).map((name, idx) => {
+      const id = idx + 1;
+      let status: StepDetails['status'] = 'pending';
+      if (completedSteps.includes(id)) status = 'completed';
+      else if (id === currentStep) status = 'current';
       return {
-        currentStep: 3,
-        completedSteps: [1, 2],
-        quotationId: "QT-2024-001",
-        quotationNumber: "QT-2024-001",
-        enquiryId: "ENQ-2024-001",
-        enquiryNumber: "ENQ-2024-001",
-        customerId: "CUST-001",
-        customerName: "Al Rawi Trading",
-        customerType: "Wholesale",
-        status: "In Progress",
-        totalValue: 15750.00,
-        createdAt: "2024-01-15T10:30:00Z",
-        lastUpdated: "2024-01-16T14:20:00Z",
-        estimatedCompletion: "2024-01-25T17:00:00Z",
-        priority: "High",
-        assignedTo: "Sales Team",
-        notes: "Customer requested expedited processing for urgent project requirements."
-      } as ProcessFlowDetails;
-    },
-  });
+        id,
+        name: id === 1 ? 'Enquiry' : name === 'Customer' ? 'Customer' : name.replace('Customer ', ''),
+        status,
+        assignedTo: id === currentStep ? processFlow.assignedTo : undefined,
+        notes: (() => {
+          switch (id) {
+            case 1: return relatedEnquiry ? 'Enquiry captured' : 'Awaiting enquiry';
+            case 2: return targetQuotation ? 'Quotation prepared' : 'Pending quotation';
+            case 3: return targetQuotation ? `Status: ${targetQuotation.status}` : 'No quotation yet';
+            case 4: return processFlow.status === 'Sent' ? 'Awaiting customer acceptance' : 'Pending send/acceptance';
+            case 5: return completedSteps.includes(5) ? 'Acceptance recorded' : 'Waiting on acceptance';
+            case 7: return relatedSalesOrder ? 'Sales order confirmed' : 'Pending sales order';
+            default: return 'Pending';
+          }
+        })(),
+        estimatedDuration: '—',
+        documents: []
+      };
+    });
 
-  const { data: stepDetails } = useQuery({
-    queryKey: ["/api/process-flow/steps"],
-    queryFn: async () => {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      return [
-        {
-          id: 1,
-          name: "Enquiry",
-          status: "completed",
-          completedAt: "2024-01-15T10:30:00Z",
-          assignedTo: "Sales Team",
-          notes: "Initial enquiry received and processed",
-          estimatedDuration: "2 hours",
-          actualDuration: "1.5 hours",
-          documents: ["enquiry-form.pdf", "customer-requirements.pdf"]
-        },
-        {
-          id: 2,
-          name: "Quotation",
-          status: "completed",
-          completedAt: "2024-01-15T16:45:00Z",
-          assignedTo: "Pricing Team",
-          notes: "Quote prepared with 40% wholesale markup",
-          estimatedDuration: "4 hours",
-          actualDuration: "3.2 hours",
-          documents: ["quotation-QT-2024-001.pdf", "pricing-breakdown.xlsx"]
-        },
-        {
-          id: 3,
-          name: "Acceptance",
-          status: "current",
-          assignedTo: "Customer",
-          notes: "Waiting for customer response",
-          estimatedDuration: "2 days",
-          documents: []
-        },
-        {
-          id: 4,
-          name: "PO Upload",
-          status: "pending",
-          assignedTo: "Customer Service",
-          notes: "Pending customer acceptance",
-          estimatedDuration: "1 day",
-          documents: []
-        },
-        {
-          id: 5,
-          name: "Sales Order",
-          status: "pending",
-          assignedTo: "Order Processing",
-          notes: "Will be created after PO upload",
-          estimatedDuration: "2 hours",
-          documents: []
-        },
-        {
-          id: 6,
-          name: "Supplier LPO",
-          status: "pending",
-          assignedTo: "Procurement",
-          notes: "Will be created after sales order",
-          estimatedDuration: "4 hours",
-          documents: []
-        },
-        {
-          id: 7,
-          name: "Goods Receipt",
-          status: "pending",
-          assignedTo: "Warehouse",
-          notes: "Pending supplier delivery",
-          estimatedDuration: "1 day",
-          documents: []
-        },
-        {
-          id: 8,
-          name: "Inventory",
-          status: "pending",
-          assignedTo: "Inventory Team",
-          notes: "Will be updated after goods receipt",
-          estimatedDuration: "1 hour",
-          documents: []
-        },
-        {
-          id: 9,
-          name: "Delivery & Picking",
-          status: "pending",
-          assignedTo: "Logistics",
-          notes: "Will be scheduled after inventory update",
-          estimatedDuration: "2 days",
-          documents: []
-        },
-        {
-          id: 10,
-          name: "Invoice",
-          status: "pending",
-          assignedTo: "Accounting",
-          notes: "Will be generated after delivery",
-          estimatedDuration: "1 hour",
-          documents: []
-        }
-      ] as StepDetails[];
-    },
-  });
+    // Dynamic activity timeline generation based on discovered related entities & statuses
+    const activities: any[] = [];
+    const pushActivity = (partial: any) => {
+      if (!partial.timestamp) return; // skip if no timestamp available
+      activities.push({ id: activities.length + 1, user: processFlow.assignedTo || 'System', icon: FileText, ...partial });
+    };
 
-  const { data: recentActivities } = useQuery({
-    queryKey: ["/api/process-flow/activities"],
-    queryFn: async () => {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      return [
-        {
-          id: 1,
-          action: "Quotation Sent",
-          description: "Quote QT-2024-001 sent to customer",
-          timestamp: "2024-01-15T16:45:00Z",
-          user: "John Smith",
-          icon: Send
-        },
-        {
-          id: 2,
-          action: "Quotation Created",
-          description: "Quote QT-2024-001 created with 15 items",
-          timestamp: "2024-01-15T14:20:00Z",
-          user: "Sarah Johnson",
-          icon: FileText
-        },
-        {
-          id: 3,
-          action: "Enquiry Processed",
-          description: "Enquiry ENQ-2024-001 processed and assigned",
-          timestamp: "2024-01-15T10:30:00Z",
-          user: "Mike Wilson",
-          icon: CheckCircle2
-        }
-      ];
-    },
-  });
+    // Enquiry event
+    if (relatedEnquiry?.createdAt) {
+      pushActivity({
+        action: 'Enquiry Created',
+        description: `${relatedEnquiry.enquiryNumber || 'Enquiry'} captured for ${customerName || 'customer'}`,
+        timestamp: relatedEnquiry.createdAt,
+        icon: CheckCircle2
+      });
+    }
+
+    // Quotation creation event
+    if (targetQuotation?.createdAt) {
+      pushActivity({
+        action: 'Quotation Created',
+        description: `${targetQuotation.quoteNumber || 'Quotation'} created`,
+        timestamp: targetQuotation.createdAt,
+        icon: FileText
+      });
+    }
+
+    // Quotation sent
+    if (targetQuotation?.status === 'Sent') {
+      pushActivity({
+        action: 'Quotation Sent',
+        description: `${targetQuotation.quoteNumber || 'Quotation'} sent to customer` ,
+        timestamp: targetQuotation.updatedAt || targetQuotation.createdAt,
+        icon: Send
+      });
+    }
+
+    // Quotation accepted / rejected / expired events
+    if (['Accepted','Rejected','Rejected by Customer','Expired'].includes(targetQuotation?.status)) {
+      pushActivity({
+        action: `Quotation ${targetQuotation.status}`,
+        description: `${targetQuotation.quoteNumber || 'Quotation'} ${targetQuotation.status?.toLowerCase()}`,
+        timestamp: targetQuotation.updatedAt || targetQuotation.createdAt,
+        icon: targetQuotation.status === 'Accepted' ? CheckCircle : X
+      });
+    }
+
+    // Sales order created
+    if (relatedSalesOrder?.createdAt) {
+      pushActivity({
+        action: 'Sales Order Created',
+        description: `${relatedSalesOrder.orderNumber || 'Sales Order'} generated from ${targetQuotation?.quoteNumber || 'quotation'}`,
+        timestamp: relatedSalesOrder.createdAt,
+        icon: ShoppingCart
+      });
+    }
+
+    activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    return { processFlow, stepDetails, recentActivities: activities };
+  }, [customersLoading, enquiriesLoading, quotationsLoading, ordersLoading, customers, enquiries, quotations, salesOrders, customerIdParam, quotationIdParam]);
+
+  const isLoading = customersLoading || enquiriesLoading || quotationsLoading || ordersLoading;
+
+  // recentActivities now provided by useMemo (dynamic, customer-specific)
 
   if (isLoading || !processFlow) {
     return (
@@ -279,6 +335,42 @@ export default function ProcessFlowDetailsPage() {
       case "Medium": return "text-white bg-yellow-600";
       case "Low": return "text-white bg-green-600";
       default: return "text-white bg-gray-600";
+    }
+  };
+
+  // PDF Download logic
+  const [downloadingDoc, setDownloadingDoc] = useState<string | null>(null);
+  const handleDownloadDocument = (stepId: number, docName: string) => {
+    setDownloadingDoc(`${stepId}-${docName}`);
+    try {
+      const step = stepDetails?.find(s => s.id === stepId);
+      const pdf = new jsPDF({ unit: "pt", format: "a4" });
+      const lineHeight = 18;
+      let y = 40;
+      pdf.setFontSize(16);
+      pdf.text(`Document: ${docName}`, 40, y);
+      y += lineHeight;
+      pdf.setFontSize(12);
+      pdf.text(`Related Step: ${step?.name || stepId}`, 40, y); y += lineHeight;
+      if (step?.status) { pdf.text(`Step Status: ${step.status}`, 40, y); y += lineHeight; }
+      if (step?.assignedTo) { pdf.text(`Assigned To: ${step.assignedTo}`, 40, y); y += lineHeight; }
+      if (step?.estimatedDuration) { pdf.text(`Estimated Duration: ${step.estimatedDuration}`, 40, y); y += lineHeight; }
+      if (step?.actualDuration) { pdf.text(`Actual Duration: ${step.actualDuration}`, 40, y); y += lineHeight; }
+      if (step?.completedAt) { pdf.text(`Completed: ${formatDate(new Date(step.completedAt), "MMM dd, yyyy 'at' h:mm a")}`, 40, y); y += lineHeight; }
+      if (step?.notes) {
+        y += 10;
+        const notesLines = pdf.splitTextToSize(`Notes: ${step.notes}`, 520);
+        pdf.text(notesLines, 40, y);
+        y += notesLines.length * lineHeight;
+      }
+      y += 20;
+      pdf.setFontSize(10);
+      pdf.text(`Generated: ${formatDate(new Date(), "MMM dd, yyyy 'at' h:mm a")}`, 40, y);
+      pdf.save(docName.replace(/\s+/g, "-") + ".pdf");
+    } catch (e) {
+      console.error("Failed to generate PDF", e);
+    } finally {
+      setDownloadingDoc(null);
     }
   };
 
@@ -456,19 +548,19 @@ export default function ProcessFlowDetailsPage() {
                     <div>
                       <label className="text-sm font-medium text-gray-500">Created</label>
                       <div className="text-sm">
-                        {formatDate(new Date(processFlow.createdAt), "MMM dd, yyyy 'at' h:mm a")}
+                        {processFlow.createdAt ? formatDate(new Date(processFlow.createdAt), "MMM dd, yyyy 'at' h:mm a") : '—'}
                       </div>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-500">Last Updated</label>
                       <div className="text-sm">
-                        {formatDate(new Date(processFlow.lastUpdated), "MMM dd, yyyy 'at' h:mm a")}
+                        {processFlow.lastUpdated ? formatDate(new Date(processFlow.lastUpdated), "MMM dd, yyyy 'at' h:mm a") : '—'}
                       </div>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-500">Estimated Completion</label>
                       <div className="text-sm">
-                        {formatDate(new Date(processFlow.estimatedCompletion), "MMM dd, yyyy")}
+                        {processFlow.estimatedCompletion ? formatDate(new Date(processFlow.estimatedCompletion), "MMM dd, yyyy") : '—'}
                       </div>
                     </div>
                   </div>
@@ -613,17 +705,31 @@ export default function ProcessFlowDetailsPage() {
                     <div key={step.id} className="border rounded-lg p-4">
                       <h4 className="font-medium mb-2">{step.name} Documents</h4>
                       <div className="space-y-2">
-                        {step.documents.map((doc, index) => (
-                          <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                            <div className="flex items-center gap-2">
-                              <FileText className="h-4 w-4 text-gray-600" />
-                              <span className="text-sm">{doc}</span>
+                        {step.documents.map((doc, index) => {
+                          const key = `${step.id}-${doc}-${index}`;
+                          const isLoading = downloadingDoc === key;
+                          return (
+                            <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                              <div className="flex items-center gap-2">
+                                <FileText className="h-4 w-4 text-gray-600" />
+                                <span className="text-sm">{doc}</span>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={isLoading}
+                                onClick={() => handleDownloadDocument(step.id, doc)}
+                                data-testid={`button-download-${step.id}-${index}`}
+                              >
+                                {isLoading ? (
+                                  <span className="text-xs">...</span>
+                                ) : (
+                                  <Download className="h-4 w-4" />
+                                )}
+                              </Button>
                             </div>
-                            <Button variant="ghost" size="sm">
-                              <Download className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   );

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
 import { formatDate } from "date-fns";
 import { 
@@ -14,7 +15,8 @@ import {
   Calendar,
   Package,
   FileText,
-  DollarSign
+  DollarSign,
+  Plus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +24,11 @@ import { Badge } from "@/components/ui/badge";
 import StatusPill from "@/components/status/status-pill";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Requisition {
   id: string;
@@ -58,146 +65,160 @@ export default function RequisitionDetailPage() {
   const params = useParams();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showNewItemDialog, setShowNewItemDialog] = useState(false);
+  const [editingItem, setEditingItem] = useState<RequisitionItem | null>(null);
+  const [deletingItem, setDeletingItem] = useState<RequisitionItem | null>(null);
+  const [newItem, setNewItem] = useState<Omit<RequisitionItem, 'id' | 'requisitionId'>>({
+    itemDescription: '',
+    quantity: 1,
+    unitOfMeasure: 'Units',
+    estimatedCost: '0',
+    specification: '',
+    preferredSupplier: '',
+    urgency: 'Standard'
+  });
 
   const requisitionId = params.id;
 
-  // Mock data for development
-  const mockRequisitions: { [key: string]: Requisition } = {
-    "req-001": {
-      id: "req-001",
-      requisitionNumber: "REQ-2024-001",
-      requestedBy: "John Smith",
-      department: "IT",
-      priority: "High",
-      status: "Pending Approval",
-      requestDate: "2024-01-15",
-      requiredDate: "2024-01-25",
-      totalEstimatedCost: "5500.00",
-      justification: "Replacement for outdated servers to improve system performance and reliability",
-      notes: "Please prioritize this request as current servers are experiencing frequent downtime",
-      itemCount: 3,
-      createdAt: "2024-01-15T10:00:00Z",
-      updatedAt: "2024-01-15T10:00:00Z"
-    },
-    "req-002": {
-      id: "req-002",
-      requisitionNumber: "REQ-2024-002",
-      requestedBy: "Sarah Johnson",
-      department: "HR",
-      priority: "Medium",
-      status: "Approved",
-      requestDate: "2024-01-14",
-      requiredDate: "2024-01-20",
-      approvedBy: "Mike Wilson",
-      approvedDate: "2024-01-15",
-      totalEstimatedCost: "2200.00",
-      justification: "Office furniture for new employees joining next month",
-      notes: "Coordinate delivery with facilities team",
-      itemCount: 5,
-      createdAt: "2024-01-14T09:30:00Z",
-      updatedAt: "2024-01-15T14:20:00Z"
-    },
-    "req-003": {
-      id: "req-003",
-      requisitionNumber: "REQ-2024-003",
-      requestedBy: "David Brown",
-      department: "Finance",
-      priority: "Low",
-      status: "Draft",
-      requestDate: "2024-01-16",
-      requiredDate: "2024-02-01",
-      totalEstimatedCost: "850.00",
-      justification: "Accounting software licenses for annual renewal",
-      itemCount: 2,
-      createdAt: "2024-01-16T11:15:00Z",
-      updatedAt: "2024-01-16T11:15:00Z"
+  // Fetch requisition
+  const { data: requisition, isLoading: requisitionLoading, error: requisitionError } = useQuery({
+    queryKey: ['/api/requisitions', requisitionId],
+    enabled: !!requisitionId,
+    queryFn: async () => {
+      const res = await fetch(`/api/requisitions/${requisitionId}`);
+      if (!res.ok) {
+        if (res.status === 404) return null;
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Failed to load requisition');
+      }
+      return res.json();
     }
-  };
+  });
 
-  const mockItems: { [key: string]: RequisitionItem[] } = {
-    "req-001": [
-      {
-        id: "item-001",
-        requisitionId: "req-001",
-        itemDescription: "Dell PowerEdge R750 Server",
-        quantity: 2,
-        unitOfMeasure: "Units",
-        estimatedCost: "2500.00",
-        specification: "32GB RAM, 2TB SSD, Dual processors",
-        preferredSupplier: "Dell Technologies",
-        urgency: "Urgent"
-      },
-      {
-        id: "item-002",
-        requisitionId: "req-001",
-        itemDescription: "Network Switch 48-port",
-        quantity: 1,
-        unitOfMeasure: "Unit",
-        estimatedCost: "500.00",
-        specification: "Gigabit Ethernet, managed switch",
-        preferredSupplier: "Cisco",
-        urgency: "Standard"
+  // Fetch items
+  const { data: items = [], isLoading: itemsLoading, error: itemsError } = useQuery({
+    queryKey: ['/api/requisitions', requisitionId, 'items'],
+    enabled: !!requisitionId,
+    queryFn: async () => {
+      const res = await fetch(`/api/requisitions/${requisitionId}/items`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Failed to load items');
       }
-    ],
-    "req-002": [
-      {
-        id: "item-003",
-        requisitionId: "req-002",
-        itemDescription: "Office Desk - Executive",
-        quantity: 3,
-        unitOfMeasure: "Units",
-        estimatedCost: "300.00",
-        specification: "L-shaped, oak finish, 160cm",
-        preferredSupplier: "Office Depot",
-        urgency: "Standard"
-      },
-      {
-        id: "item-004",
-        requisitionId: "req-002",
-        itemDescription: "Ergonomic Office Chair",
-        quantity: 3,
-        unitOfMeasure: "Units",
-        estimatedCost: "250.00",
-        specification: "Mesh back, adjustable height",
-        preferredSupplier: "Herman Miller",
-        urgency: "Standard"
-      }
-    ]
-  };
+      return res.json();
+    }
+  });
 
-  // Use mock data instead of API calls
-  const requisition = mockRequisitions[requisitionId || ""] || null;
-  const items = mockItems[requisitionId || ""] || [];
-  const isLoading = false;
-
-  // Mock delete mutation
-  const deleteMutation = {
-    mutate: () => {
-      toast({
-        title: "Success",
-        description: "Requisition deleted successfully (mock)",
+  // Create item
+  const createItem = useMutation({
+    mutationFn: async (data: Omit<RequisitionItem, 'id' | 'requisitionId'>) => {
+      const res = await fetch(`/api/requisitions/${requisitionId}/items`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...data, quantity: Number(data.quantity), estimatedCost: data.estimatedCost })
       });
-      navigate("/requisitions");
-    }
-  };
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Failed to create item');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/requisitions', requisitionId, 'items'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/requisitions', requisitionId] });
+      toast({ title: 'Success', description: 'Item added' });
+      setShowNewItemDialog(false);
+      setNewItem({ itemDescription: '', quantity: 1, unitOfMeasure: 'Units', estimatedCost: '0', specification: '', preferredSupplier: '', urgency: 'Standard' });
+    },
+    onError: (err: any) => toast({ title: 'Error', description: err?.message || 'Failed to add item', variant: 'destructive' })
+  });
+
+  // Update item
+  const updateItem = useMutation({
+    mutationFn: async (data: RequisitionItem) => {
+      const res = await fetch(`/api/requisitions/items/${data.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itemDescription: data.itemDescription,
+          quantity: Number(data.quantity),
+            unitOfMeasure: data.unitOfMeasure,
+            estimatedCost: data.estimatedCost,
+            specification: data.specification,
+            preferredSupplier: data.preferredSupplier,
+            urgency: data.urgency
+        })
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Failed to update item');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/requisitions', requisitionId, 'items'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/requisitions', requisitionId] });
+      toast({ title: 'Success', description: 'Item updated' });
+      setEditingItem(null);
+    },
+    onError: (err: any) => toast({ title: 'Error', description: err?.message || 'Failed to update item', variant: 'destructive' })
+  });
+
+  // Delete item
+  const deleteItem = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/requisitions/items/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Failed to delete item');
+      }
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/requisitions', requisitionId, 'items'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/requisitions', requisitionId] });
+      toast({ title: 'Success', description: 'Item deleted' });
+      setDeletingItem(null);
+    },
+    onError: (err: any) => toast({ title: 'Error', description: err?.message || 'Failed to delete item', variant: 'destructive' })
+  });
+
+  // Delete requisition
+  const deleteRequisition = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/requisitions/${requisitionId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Failed to delete requisition');
+      }
+      return true;
+    },
+    onSuccess: () => {
+      toast({ title: 'Success', description: 'Requisition deleted' });
+      navigate('/requisitions');
+    },
+    onError: (err: any) => toast({ title: 'Error', description: err?.message || 'Failed to delete requisition', variant: 'destructive' })
+  });
 
   const handleDelete = () => {
-    deleteMutation.mutate();
+    deleteRequisition.mutate();
     setShowDeleteDialog(false);
   };
 
   const getPriorityColor = (priority: string) => {
+    // Professional, minimal styling: no filled backgrounds, just subtle border + semantic text color
     switch (priority) {
-      case "Urgent": return "bg-red-100 text-red-700 border-red-200";
-      case "High": return "bg-orange-100 text-white border-orange-200";
-      case "Medium": return "bg-yellow-100 text-yellow-700 border-yellow-200";
-      case "Low": return "bg-green-100 text-green-700 border-green-200";
-      default: return "bg-gray-100 text-gray-700 border-gray-200";
+      case "Urgent": return "bg-transparent text-red-600 border-red-300";
+      case "High": return "bg-transparent text-orange-600 border-orange-300";
+      case "Medium": return "bg-transparent text-amber-600 border-amber-300";
+      case "Low": return "bg-transparent text-emerald-600 border-emerald-300";
+      default: return "bg-transparent text-slate-600 border-slate-300";
     }
   };
 
-  if (isLoading) {
+  if (requisitionLoading) {
     return (
       <div className="p-6">
         <div className="animate-pulse space-y-4">
@@ -263,9 +284,10 @@ export default function RequisitionDetailPage() {
           <Button 
             variant="destructive"
             onClick={() => setShowDeleteDialog(true)}
+            disabled={deleteRequisition.isPending}
           >
             <Trash2 className="h-4 w-4 mr-2" />
-            Delete
+            {deleteRequisition.isPending ? 'Deleting...' : 'Delete'}
           </Button>
         </div>
       </div>
@@ -294,7 +316,7 @@ export default function RequisitionDetailPage() {
               </div>
               <div>
                 <p className="text-base text-gray-600 font-bold">Priority</p>
-                <Badge className={getPriorityColor(requisition.priority)}>
+                <Badge variant="outline" className={getPriorityColor(requisition.priority) + " shadow-none"}>
                   {requisition.priority}
                 </Badge>
               </div>
@@ -395,47 +417,82 @@ export default function RequisitionDetailPage() {
       </div>
 
       {/* Items Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Requisition Items</CardTitle>
+      <Card className="border border-slate-200 shadow-sm">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg font-semibold tracking-tight">Requisition Items</CardTitle>
+            <Button size="sm" variant="outline" onClick={() => setShowNewItemDialog(true)} className="flex items-center gap-1">
+              <Plus className="h-4 w-4" />
+              Add Item
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-2">Description</th>
-                  <th className="text-left p-2">Quantity</th>
-                  <th className="text-left p-2">Unit</th>
-                  <th className="text-left p-2">Estimated Cost</th>
-                  <th className="text-left p-2">Urgency</th>
-                  <th className="text-left p-2">Preferred Supplier</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item) => (
-                  <tr key={item.id} className="border-b">
-                    <td className="p-2">
-                      <div>
-                        <p className="font-medium">{item.itemDescription}</p>
-                        {item.specification && (
-                          <p className="text-sm text-gray-500">{item.specification}</p>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-2">{item.quantity}</td>
-                    <td className="p-2">{item.unitOfMeasure}</td>
-                    <td className="p-2">{item.estimatedCost}</td>
-                    <td className="p-2">
-                      <Badge variant={item.urgency === "Urgent" ? "destructive" : "secondary"}>
-                        {item.urgency}
-                      </Badge>
-                    </td>
-                    <td className="p-2">{item.preferredSupplier || '-'}</td>
+        <CardContent className="pt-4">
+          <div className="rounded-md border border-slate-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50/80 backdrop-blur-sm">
+                  <tr className="border-b border-slate-200">
+                    <th className="text-left font-medium text-slate-600 px-3 py-2">Description</th>
+                    <th className="text-left font-medium text-slate-600 px-3 py-2">Qty</th>
+                    <th className="text-left font-medium text-slate-600 px-3 py-2">Unit</th>
+                    <th className="text-left font-medium text-slate-600 px-3 py-2">Est. Cost</th>
+                    <th className="text-left font-medium text-slate-600 px-3 py-2">Urgency</th>
+                    <th className="text-left font-medium text-slate-600 px-3 py-2">Preferred Supplier</th>
+                    <th className="text-left font-medium text-slate-600 px-3 py-2 w-[84px]">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {itemsLoading && (
+                    <tr><td colSpan={7} className="px-4 py-6 text-center text-slate-500">Loading items...</td></tr>
+                  )}
+                  {!itemsLoading && items.length === 0 && (
+                    <tr><td colSpan={7} className="px-4 py-6 text-center text-slate-500">No items added yet.</td></tr>
+                  )}
+                  {!itemsLoading && items.map((item: RequisitionItem, idx: number) => (
+                    <tr key={item.id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="px-3 py-2 align-top">
+                        <div className="space-y-0.5">
+                          <p className="font-medium text-slate-800 leading-snug">{item.itemDescription}</p>
+                          {item.specification && (
+                            <p className="text-xs text-slate-500 leading-snug line-clamp-2">{item.specification}</p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 align-top">{item.quantity}</td>
+                      <td className="px-3 py-2 align-top">{item.unitOfMeasure}</td>
+                      <td className="px-3 py-2 align-top">{item.estimatedCost}</td>
+                      <td className="px-3 py-2 align-top">
+                        <Badge variant={item.urgency === "Urgent" ? "destructive" : "secondary"} className="text-xs px-2 py-0.5">
+                          {item.urgency}
+                        </Badge>
+                      </td>
+                      <td className="px-3 py-2 align-top text-slate-700">{item.preferredSupplier || <span className="text-slate-400">-</span>}</td>
+                      <td className="px-2 py-1 align-top">
+                        <div className="flex items-center gap-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button size="icon" variant="ghost" onClick={() => setEditingItem(item)} className="h-8 w-8" aria-label="Edit Item">
+                                <Edit className="h-4 w-4 text-blue-600" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom">Edit</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button size="icon" variant="ghost" onClick={() => setDeletingItem(item)} disabled={deleteItem.isPending} className="h-8 w-8" aria-label="Delete Item">
+                                <Trash2 className="h-4 w-4 text-red-600" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom">Delete</TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -456,6 +513,135 @@ export default function RequisitionDetailPage() {
               className="border-red-500 text-red-600 hover:bg-red-50 bg-transparent"
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      {/* New Item Dialog */}
+      <Dialog open={showNewItemDialog} onOpenChange={setShowNewItemDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add Item</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Description</label>
+              <Input value={newItem.itemDescription} onChange={(e) => setNewItem({ ...newItem, itemDescription: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Quantity</label>
+                <Input type="number" min={1} value={newItem.quantity} onChange={(e) => setNewItem({ ...newItem, quantity: Number(e.target.value) })} />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Unit</label>
+                <Input value={newItem.unitOfMeasure} onChange={(e) => setNewItem({ ...newItem, unitOfMeasure: e.target.value })} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Estimated Cost</label>
+                <Input type="number" step="0.01" value={newItem.estimatedCost} onChange={(e) => setNewItem({ ...newItem, estimatedCost: e.target.value })} />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Urgency</label>
+                <Select value={newItem.urgency} onValueChange={(v: any) => setNewItem({ ...newItem, urgency: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Standard">Standard</SelectItem>
+                    <SelectItem value="Urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Specification</label>
+              <Textarea rows={2} value={newItem.specification} onChange={(e) => setNewItem({ ...newItem, specification: e.target.value })} />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Preferred Supplier</label>
+              <Input value={newItem.preferredSupplier} onChange={(e) => setNewItem({ ...newItem, preferredSupplier: e.target.value })} />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowNewItemDialog(false)}>Cancel</Button>
+              <Button onClick={() => createItem.mutate(newItem)} disabled={createItem.isPending || !newItem.itemDescription}>
+                {createItem.isPending ? 'Saving...' : 'Add Item'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Item Dialog */}
+      <Dialog open={!!editingItem} onOpenChange={(o) => { if (!o) setEditingItem(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Item</DialogTitle>
+          </DialogHeader>
+            {editingItem && (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium">Description</label>
+                  <Input value={editingItem.itemDescription} onChange={(e) => setEditingItem({ ...editingItem, itemDescription: e.target.value })} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Quantity</label>
+                    <Input type="number" min={1} value={editingItem.quantity} onChange={(e) => setEditingItem({ ...editingItem, quantity: Number(e.target.value) })} />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Unit</label>
+                    <Input value={editingItem.unitOfMeasure} onChange={(e) => setEditingItem({ ...editingItem, unitOfMeasure: e.target.value })} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Estimated Cost</label>
+                    <Input type="number" step="0.01" value={editingItem.estimatedCost} onChange={(e) => setEditingItem({ ...editingItem, estimatedCost: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Urgency</label>
+                    <Select value={editingItem.urgency} onValueChange={(v: any) => setEditingItem({ ...editingItem, urgency: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Standard">Standard</SelectItem>
+                        <SelectItem value="Urgent">Urgent</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Specification</label>
+                  <Textarea rows={2} value={editingItem.specification || ''} onChange={(e) => setEditingItem({ ...editingItem, specification: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Preferred Supplier</label>
+                  <Input value={editingItem.preferredSupplier || ''} onChange={(e) => setEditingItem({ ...editingItem, preferredSupplier: e.target.value })} />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setEditingItem(null)}>Cancel</Button>
+                  <Button onClick={() => editingItem && updateItem.mutate(editingItem)} disabled={updateItem.isPending}>
+                    {updateItem.isPending ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                </div>
+              </div>
+            )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Item Confirmation */}
+      <AlertDialog open={!!deletingItem} onOpenChange={() => setDeletingItem(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Item</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deletingItem?.itemDescription}"?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deletingItem && deleteItem.mutate(deletingItem.id)} disabled={deleteItem.isPending} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleteItem.isPending ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

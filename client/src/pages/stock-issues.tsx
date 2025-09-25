@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -40,6 +39,28 @@ import { useToast } from "@/hooks/use-toast";
 import DataTable from "@/components/tables/data-table";
 import { formatDate, formatCurrency } from "@/lib/utils";
 
+// Helper: format a date (string from input or Date) to backend-required 'YYYY-MM-DD HH:mm:ss+00'
+function toBackendTimestamp(value: string | Date | null | undefined): string | null {
+  if (!value) return null;
+  let d: Date | null = null;
+  if (value instanceof Date) {
+    d = value;
+  } else if (typeof value === 'string' && value.trim()) {
+    // Accept ISO already
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(value)) return value;
+    // Date-only -> midnight UTC
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const [y, m, day] = value.split('-').map(Number);
+      d = new Date(Date.UTC(y, (m as number) - 1, day, 0, 0, 0));
+    } else {
+      const parsed = new Date(value);
+      if (!isNaN(parsed.getTime())) d = parsed;
+    }
+  }
+  if (!d || isNaN(d.getTime())) return null;
+  return d.toISOString().replace(/\.\d{3}Z$/, 'Z'); // Trim ms for cleanliness
+}
+
 // Form schemas
 const stockIssueSchema = z.object({
   issueNumber: z.string().min(1, "Issue number is required"),
@@ -55,19 +76,33 @@ const stockIssueSchema = z.object({
 
 type StockIssueForm = z.infer<typeof stockIssueSchema>;
 
-// Status badge colors
-const getStatusColor = (status: string) => {
+// Status icon helper (no background colors, only icon + label)
+const getStatusIcon = (status: string | undefined) => {
   switch (status) {
-    case "Draft":
-      return "bg-gray-100 text-gray-800 border-gray-300";
     case "Issued":
-      return "bg-blue-100 text-blue-800 border-blue-300";
+      return <ArrowRightLeft className="h-4 w-4 text-blue-600" />;
     case "Applied":
-      return "bg-green-100 text-green-800 border-green-300";
+      return <CheckCircle className="h-4 w-4 text-green-600" />;
     case "Cancelled":
-      return "bg-red-100 text-red-800 border-red-300";
+      return <XCircle className="h-4 w-4 text-red-600" />;
+    case "Draft":
     default:
-      return "bg-gray-100 text-gray-800 border-gray-300";
+      return <FileText className="h-4 w-4 text-gray-500" />;
+  }
+};
+
+// Status classes for bordered pill (no background fill)
+const getStatusClasses = (status: string | undefined) => {
+  switch (status) {
+    case "Issued":
+      return "border-blue-300 text-blue-700 bg-blue-50";
+    case "Applied":
+      return "border-green-300 text-green-700 bg-green-50";
+    case "Cancelled":
+      return "border-red-300 text-red-700 bg-red-50";
+    case "Draft":
+    default:
+      return "border-gray-300 text-gray-700 bg-gray-50";
   }
 };
 
@@ -136,55 +171,42 @@ export default function StockIssuesPage() {
   // Create stock issue mutation
   const createIssueMutation = useMutation({
     mutationFn: async (data: StockIssueForm) => {
-      // Always send ISO string or null for issueDate
-      let validDate = null;
-      if (data.issueDate) {
-        const d: unknown = data.issueDate;
-        if (typeof d === "string") {
-          if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
-            validDate = new Date(d).toISOString();
-          } else if (/^\d{2}-\d{2}-\d{4}$/.test(d)) {
-            const [day, month, year] = d.split("-");
-            const dateObj = new Date(Number(year), Number(month) - 1, Number(day));
-            validDate = !dateObj || isNaN(dateObj.getTime()) ? null : dateObj.toISOString();
-          } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) {
-            const [day, month, year] = d.split("/");
-            const dateObj = new Date(Number(year), Number(month) - 1, Number(day));
-            validDate = !dateObj || isNaN(dateObj.getTime()) ? null : dateObj.toISOString();
-          } else {
-            const dateObj = new Date(d);
-            validDate = !dateObj || isNaN(dateObj.getTime()) ? null : dateObj.toISOString();
-          }
-        } else if (typeof d === "object" && d !== null && d instanceof Date && !isNaN(d.getTime())) {
-          validDate = d.toISOString();
-        }
-      }
-      const issueData = {
-        issueNumber: data.issueNumber,
+      const isoDate = toBackendTimestamp(data.issueDate);
+      const issueData: any = {
+        issueNumber: data.issueNumber || undefined,
         itemId: data.itemId,
-        issuedTo: data.issuedTo,
+        issuedTo: data.issuedTo || undefined,
         quantity: Number(data.quantityIssued),
-        issueDate: validDate,
-        reason: data.purpose,
-        notes: data.notes,
-        departmentId: data.departmentId,
+        reason: data.purpose || undefined,
+        notes: data.notes || undefined,
+        departmentId: data.departmentId || undefined,
         status: data.status || "Draft",
       };
+      if (isoDate) issueData.issueDate = isoDate; // only send if valid
       return await apiRequest("POST", "/api/stock-issues", issueData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["stock-issues"] });
       setShowCreateDialog(false);
       form.reset();
-      toast({
-        title: "Success",
-        description: "Stock issue created successfully",
-      });
+      toast({ title: "Success", description: "Stock issue created successfully" });
     },
-    onError: (error: any) => {
+    onError: async (error: any) => {
+      // Attempt to surface server validation details if present
+      let details: string | undefined;
+      const msg: string = error?.message || '';
+      if (msg.includes('{')) {
+        try {
+          const jsonStart = msg.indexOf('{');
+            const raw = msg.substring(jsonStart);
+            const parsed = JSON.parse(raw);
+            if (parsed?.issues) details = Array.isArray(parsed.issues) ? parsed.issues.join('; ') : undefined;
+            else if (parsed?.error) details = parsed.error;
+        } catch {/* ignore parse errors */}
+      }
       toast({
-        title: "Error",
-        description: error.message || "Failed to create stock issue",
+        title: "Failed to create stock issue",
+        description: details || msg || "Unknown error",
         variant: "destructive",
       });
     },
@@ -234,43 +256,24 @@ export default function StockIssuesPage() {
   const onSubmit = (data: StockIssueForm) => {
     // Validate date before submit
     // Always convert to ISO string for backend
-    let issueDate = data.issueDate;
-    let validDate = "";
-    if (issueDate && typeof issueDate === "string") {
-      if (/^\d{4}-\d{2}-\d{2}$/.test(issueDate)) {
-        validDate = new Date(issueDate).toISOString();
-      } else if (/^\d{2}-\d{2}-\d{4}$/.test(issueDate)) {
-        const [day, month, year] = issueDate.split("-");
-        const dateObj = new Date(Number(year), Number(month) - 1, Number(day));
-        validDate = !dateObj || isNaN(dateObj.getTime()) ? "" : dateObj.toISOString();
-      } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(issueDate)) {
-        const [day, month, year] = issueDate.split("/");
-        const dateObj = new Date(Number(year), Number(month) - 1, Number(day));
-        validDate = !dateObj || isNaN(dateObj.getTime()) ? "" : dateObj.toISOString();
-      } else {
-        const dateObj = new Date(issueDate);
-        validDate = !dateObj || isNaN(dateObj.getTime()) ? "" : dateObj.toISOString();
-      }
-    } else {
-      validDate = "";
-    }
-    if (!validDate) {
-      toast({ title: "Error", description: "Please select a valid issue date.", variant: "destructive" });
-      return;
-    }
+    const validDate = data.issueDate ? toBackendTimestamp(data.issueDate) : null;
+    // Allow creation even if date parse fails (DB default will apply); keep field shape (string | null)
     createIssueMutation.mutate({ ...data, issueDate: validDate });
   };
 
   // Filter stock issues
   const filteredIssues = (Array.isArray(stockIssues) ? stockIssues : []).filter((issue: any) => {
-    const matchesSearch = 
-      issue.referenceNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      issue.issuedTo?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      issue.purpose?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      issue.notes?.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.toLowerCase();
+    const matchesSearch = [
+      issue.issueNumber,
+      issue.issuedTo,
+      issue.reason, // backend uses reason
+      issue.notes,
+      issue.itemName,
+      issue.itemCode,
+    ].some((v: any) => typeof v === "string" && v.toLowerCase().includes(q));
 
     const matchesStatus = statusFilter === "all" || issue.status === statusFilter;
-
     return matchesSearch && matchesStatus;
   });
 
@@ -280,7 +283,7 @@ export default function StockIssuesPage() {
       key: "issueNumber",
       header: "Issue Number",
       render: (_: any, issue: any) => (
-        <span className="font-mono text-sm font-medium">{issue.issueNumber || issue.referenceNumber || "N/A"}</span>
+  <span className="font-mono text-sm font-medium">{issue.issueNumber || "N/A"}</span>
       ),
     },
     {
@@ -317,18 +320,19 @@ export default function StockIssuesPage() {
       key: "status",
       header: "Status",
       render: (_: any, issue: any) => (
-        <Badge className={`border ${getStatusColor(issue.status || "Draft")}`}>
-          {issue.status || "Draft"}
-        </Badge>
+        <div className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusClasses(issue.status)}`}>
+          {getStatusIcon(issue.status)}
+          <span>{issue.status || "Draft"}</span>
+        </div>
       ),
     },
     {
-      key: "movementDate",
+      key: "issueDate",
       header: "Issue Date",
-      render: (value: string) => (
+      render: (_: any, issue: any) => (
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-gray-500" />
-          <span>{value ? formatDate(value) : "N/A"}</span>
+          <span>{issue.issueDate ? formatDate(issue.issueDate) : "N/A"}</span>
         </div>
       ),
     },
@@ -683,7 +687,7 @@ export default function StockIssuesPage() {
           <DialogHeader>
             <DialogTitle>Edit Stock Issue</DialogTitle>
             <DialogDescription>
-              Edit details for Issue #{selectedIssue?.issueNumber || selectedIssue?.referenceNumber || "N/A"}
+              Edit details for Issue #{selectedIssue?.issueNumber || "N/A"}
             </DialogDescription>
           </DialogHeader>
           {selectedIssue && (
@@ -705,7 +709,7 @@ export default function StockIssuesPage() {
           <DialogHeader>
             <DialogTitle>Stock Issue Details</DialogTitle>
             <DialogDescription>
-              Issue #{selectedIssue?.referenceNumber || "N/A"}
+              Issue #{selectedIssue?.issueNumber || "N/A"}
             </DialogDescription>
           </DialogHeader>
           {selectedIssue && (
@@ -714,7 +718,7 @@ export default function StockIssuesPage() {
                 <div className="space-y-4">
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Issue Number</Label>
-                    <p className="text-sm font-medium">{selectedIssue.referenceNumber || "N/A"}</p>
+                    <p className="text-sm font-medium">{selectedIssue.issueNumber || "N/A"}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Item</Label>
@@ -726,16 +730,17 @@ export default function StockIssuesPage() {
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Status</Label>
-                    <Badge className={`border ${getStatusColor(selectedIssue.status || "Draft")}`}>
-                      {selectedIssue.status || "Draft"}
-                    </Badge>
+                    <div className={`mt-1 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusClasses(selectedIssue.status)}`}>
+                      {getStatusIcon(selectedIssue.status)}
+                      <span>{selectedIssue.status || "Draft"}</span>
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-4">
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Issue Date</Label>
                     <p className="text-sm font-medium">
-                      {selectedIssue.movementDate ? formatDate(selectedIssue.movementDate) : "N/A"}
+                      {selectedIssue.issueDate ? formatDate(selectedIssue.issueDate) : "N/A"}
                     </p>
                   </div>
                   <div>
@@ -744,7 +749,7 @@ export default function StockIssuesPage() {
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Purpose</Label>
-                    <p className="text-sm font-medium">{selectedIssue.purpose || "N/A"}</p>
+                    <p className="text-sm font-medium">{selectedIssue.reason || "N/A"}</p>
                   </div>
                 </div>
               </div>
@@ -787,28 +792,7 @@ function EditStockIssueForm({ issue, items, onClose, onSuccess }: { issue: any, 
   const { mutate, isPending } = useMutation({
     mutationFn: async (data: StockIssueForm) => {
       // Always send ISO string or null for backend
-      let validDate = null;
-      if (data.issueDate) {
-        const d: unknown = data.issueDate;
-        if (typeof d === "string") {
-          if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
-            validDate = new Date(d).toISOString();
-          } else if (/^\d{2}-\d{2}-\d{4}$/.test(d)) {
-            const [day, month, year] = d.split("-");
-            const dateObj = new Date(Number(year), Number(month) - 1, Number(day));
-            validDate = !dateObj || isNaN(dateObj.getTime()) ? null : dateObj.toISOString();
-          } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) {
-            const [day, month, year] = d.split("/");
-            const dateObj = new Date(Number(year), Number(month) - 1, Number(day));
-            validDate = !dateObj || isNaN(dateObj.getTime()) ? null : dateObj.toISOString();
-          } else {
-            const dateObj = new Date(d);
-            validDate = !dateObj || isNaN(dateObj.getTime()) ? null : dateObj.toISOString();
-          }
-        } else if (typeof d === "object" && d !== null && d instanceof Date && !isNaN(d.getTime())) {
-          validDate = d.toISOString();
-        }
-      }
+      const validDate = toBackendTimestamp(data.issueDate);
       const updateData = {
         issueNumber: data.issueNumber,
         itemId: data.itemId,

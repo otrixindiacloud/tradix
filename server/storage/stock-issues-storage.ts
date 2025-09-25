@@ -1,6 +1,6 @@
 
 import { db } from "../db";
-import { stockIssue, inventoryItem } from "../../shared/schema";
+import { stockIssue, inventoryItems } from "../../shared/schema";
 import { eq } from "drizzle-orm";
 
 export class StockIssuesStorage {
@@ -12,14 +12,16 @@ export class StockIssuesStorage {
         issueNumber: stockIssue.issueNumber,
         itemId: stockIssue.itemId,
         quantity: stockIssue.quantity,
-        // issuedBy: stockIssue.issuedBy, // Removed: not present in schema
         issueDate: stockIssue.issueDate,
         status: stockIssue.status,
-        itemName: inventoryItem.description,
-        itemCode: inventoryItem.barcode,
+        issuedTo: stockIssue.issuedTo,
+        departmentId: stockIssue.departmentId,
+        notes: stockIssue.notes,
+        itemName: inventoryItems.description,
+        itemCode: inventoryItems.barcode,
       })
       .from(stockIssue)
-      .leftJoin(inventoryItem, eq(stockIssue.itemId, inventoryItem.id));
+      .leftJoin(inventoryItems, eq(stockIssue.itemId, inventoryItems.id));
     return results;
   }
 
@@ -29,11 +31,44 @@ export class StockIssuesStorage {
   }
 
   async createStockIssue(data: any) {
+    // Defensive normalization: ensure issueDate is a Date object or remove it so DB default applies
+    if (data && 'issueDate' in data) {
+      const v = data.issueDate;
+      if (v == null || v === '') {
+        delete data.issueDate; // allow default
+      } else if (!(v instanceof Date)) {
+        try {
+          const d = new Date(v);
+            if (!isNaN(d.getTime())) data.issueDate = d; else delete data.issueDate;
+        } catch {
+          delete data.issueDate;
+        }
+      }
+    }
+    console.log('[DEBUG][createStockIssue] Final payload to insert:', {
+      ...data,
+      issueDate: data.issueDate instanceof Date ? data.issueDate.toISOString() : data.issueDate
+    });
     const [created] = await db.insert(stockIssue).values(data).returning();
     return created;
   }
 
   async updateStockIssue(id: string, data: any) {
+    if (data && 'issueDate' in data) {
+      const v = data.issueDate;
+      if (v == null || v === '') {
+        delete data.issueDate;
+      } else if (!(v instanceof Date)) {
+        try {
+          const d = new Date(v);
+          if (!isNaN(d.getTime())) data.issueDate = d; else delete data.issueDate;
+        } catch { delete data.issueDate; }
+      }
+    }
+    console.log('[DEBUG][updateStockIssue] Payload:', {
+      ...data,
+      issueDate: data.issueDate instanceof Date ? data.issueDate.toISOString() : data.issueDate
+    });
     const [updated] = await db.update(stockIssue).set(data).where(eq(stockIssue.id, id)).returning();
     return updated || null;
   }

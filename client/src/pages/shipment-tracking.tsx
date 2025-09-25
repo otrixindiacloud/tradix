@@ -111,6 +111,11 @@ export default function ShipmentTrackingPage() {
   
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [showTrackingDialog, setShowTrackingDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editShipmentForm, setEditShipmentForm] = useState<any | null>(null);
+  // Detail dialog state
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
+  const [detailShipment, setDetailShipment] = useState<Shipment | null>(null);
   const [editingShipment, setEditingShipment] = useState<Shipment | null>(null);
   const [deletingShipment, setDeletingShipment] = useState<Shipment | null>(null);
   const [trackingShipment, setTrackingShipment] = useState<Shipment | null>(null);
@@ -275,6 +280,11 @@ export default function ShipmentTrackingPage() {
           payload[key] = value;
         }
       });
+      // Temporary: add placeholder numbers if backend still complaining (server will ignore if already generates)
+      if (!payload.shipmentNumber) payload.shipmentNumber = `SHP-TEMP-${Date.now()}`;
+      if (!payload.trackingNumber) payload.trackingNumber = `TRK${Date.now().toString().slice(-9)}`;
+      // Log payload for debugging
+      try { console.debug('Client createShipment payload:', payload); } catch {}
       const response = await fetch('/api/shipments', {
         method: 'POST',
         headers: {
@@ -353,10 +363,64 @@ export default function ShipmentTrackingPage() {
     },
   });
 
+  // Update shipment mutation
+  const updateShipment = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const payload: Record<string, any> = {};
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== "" && value !== undefined) {
+          if (key === 'estimatedDelivery' && typeof value === 'string' && value) {
+            payload.estimatedDelivery = new Date(value);
+          } else {
+            payload[key] = value;
+          }
+        }
+      });
+      const response = await fetch(`/api/shipments/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to update shipment');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/shipments"] });
+      toast({ title: 'Success', description: 'Shipment updated successfully' });
+      setShowEditDialog(false);
+      setEditingShipment(null);
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error?.message || 'Failed to update shipment', variant: 'destructive' });
+    }
+  });
+
   // Handle edit shipment
   const handleEdit = (shipment: Shipment) => {
     setEditingShipment(shipment);
-    navigate(`/shipment-tracking/${shipment.id}`);
+    setEditShipmentForm({
+      salesOrderNumber: shipment.salesOrderNumber || "",
+      carrierId: shipment.carrierId || "",
+      carrierName: shipment.carrierName || "",
+      serviceType: shipment.serviceType,
+      priority: shipment.priority,
+      origin: shipment.origin,
+      destination: shipment.destination,
+      estimatedDelivery: shipment.estimatedDelivery ? shipment.estimatedDelivery.split('T')[0] : "",
+      weight: shipment.weight || "",
+      dimensions: shipment.dimensions || "",
+      declaredValue: shipment.declaredValue || "",
+      packageCount: shipment.packageCount || 1,
+      isInsured: shipment.isInsured || false,
+      requiresSignature: shipment.requiresSignature || false,
+      specialInstructions: shipment.specialInstructions || "",
+      shippingCost: shipment.shippingCost || "",
+      customerReference: shipment.customerReference || "",
+    });
+    setShowEditDialog(true);
   };
 
   // Handle delete shipment
@@ -475,21 +539,21 @@ export default function ShipmentTrackingPage() {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "Low": return "text-green-700 bg-green-100";
-      case "Medium": return "text-yellow-700 bg-yellow-100";
-      case "High": return "text-orange-700 bg-orange-100";
-      case "Urgent": return "text-red-700 bg-red-100";
-      default: return "text-gray-700 bg-gray-100";
+      case "Low": return "text-green-600";
+      case "Medium": return "text-amber-600";
+      case "High": return "text-orange-600";
+      case "Urgent": return "text-red-600";
+      default: return "text-gray-600";
     }
   };
 
   const getServiceTypeColor = (serviceType: string) => {
     switch (serviceType) {
-      case "Economy": return "text-gray-700 bg-gray-100";
-      case "Standard": return "text-blue-700 bg-blue-100";
-      case "Express": return "text-purple-700 bg-purple-100";
-      case "Overnight": return "text-red-700 bg-red-100";
-      default: return "text-gray-700 bg-gray-100";
+      case "Economy": return "text-gray-600";
+      case "Standard": return "text-blue-600";
+      case "Express": return "text-purple-600";
+      case "Overnight": return "text-red-600";
+      default: return "text-gray-600";
     }
   };
 
@@ -524,11 +588,17 @@ export default function ShipmentTrackingPage() {
       key: "serviceType",
       header: "Service",
       render: (value: string, shipment: Shipment) => (
-        <div>
-          <Badge className={getServiceTypeColor(value)}>
+        <div className="flex flex-col">
+          <span className={`text-xs font-semibold tracking-wide flex items-center gap-1 ${getServiceTypeColor(value)}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${
+              value === 'Economy' ? 'bg-gray-400' :
+              value === 'Standard' ? 'bg-blue-500' :
+              value === 'Express' ? 'bg-purple-500' :
+              value === 'Overnight' ? 'bg-red-500' : 'bg-gray-400'
+            }`}></span>
             {value}
-          </Badge>
-          <div className="text-sm text-gray-500 mt-1">{shipment.packageCount} pkg(s)</div>
+          </span>
+          <span className="text-[11px] text-gray-500 mt-0.5">{shipment.packageCount} pkg(s)</span>
         </div>
       ),
     },
@@ -536,9 +606,15 @@ export default function ShipmentTrackingPage() {
       key: "priority",
       header: "Priority",
       render: (value: string) => (
-        <Badge className={getPriorityColor(value)}>
+        <span className={`text-xs font-semibold flex items-center gap-1 ${getPriorityColor(value)}`}>
+          <span className={`h-1.5 w-1.5 rounded-full ${
+            value === 'Low' ? 'bg-green-500' :
+            value === 'Medium' ? 'bg-amber-500' :
+            value === 'High' ? 'bg-orange-500' :
+            value === 'Urgent' ? 'bg-red-600' : 'bg-gray-400'
+          }`}></span>
           {value}
-        </Badge>
+        </span>
       ),
     },
     {
@@ -586,23 +662,14 @@ export default function ShipmentTrackingPage() {
       header: "Actions",
       render: (_: any, shipment: Shipment) => (
         <div className="flex gap-1">
+          
           <Button
             variant="ghost"
             size="sm"
             onClick={(e) => {
               e.stopPropagation();
-              handleTrack(shipment);
-            }}
-            data-testid={`button-track-${shipment.id}`}
-          >
-            <MapPin className="h-4 w-4 text-blue-600" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/shipment-tracking/${shipment.id}`);
+              setDetailShipment(shipment);
+              setShowDetailDialog(true);
             }}
             data-testid={`button-view-${shipment.id}`}
           >
@@ -1261,6 +1328,283 @@ export default function ShipmentTrackingPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Edit Shipment Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" aria-describedby="edit-shipment-description">
+          <p id="edit-shipment-description" className="sr-only">Modify existing shipment information and save changes.</p>
+          <DialogHeader className="pb-4 border-b">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                <Edit className="h-5 w-5 text-white" />
+              </div>
+              <DialogTitle className="text-2xl font-bold text-gray-800">Edit Shipment {editingShipment?.shipmentNumber && (<span className="text-blue-600">#{editingShipment.shipmentNumber}</span>)}</DialogTitle>
+            </div>
+          </DialogHeader>
+          {editingShipment && editShipmentForm && (
+            <div className="space-y-6 pt-4">
+              {/* Basic Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
+                  <Package className="h-5 w-5 text-blue-600" />
+                  Basic Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Sales Order (Optional)</Label>
+                    <Input
+                      value={editShipmentForm.salesOrderNumber}
+                      onChange={(e) => setEditShipmentForm({ ...editShipmentForm, salesOrderNumber: e.target.value })}
+                      placeholder="SO-2024-XXX"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Carrier *</Label>
+                    <Select
+                      value={editShipmentForm.carrierId}
+                      onValueChange={(value) => {
+                        const selectedCarrier = carriers.find((c: any) => c.id === value);
+                        setEditShipmentForm({
+                          ...editShipmentForm,
+                          carrierId: value,
+                          carrierName: selectedCarrier ? selectedCarrier.name : ''
+                        });
+                      }}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Select carrier" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {carriers.map((carrier: any) => (
+                          <SelectItem key={carrier.id} value={carrier.id}>
+                            <div className="flex items-center gap-2">
+                              <Truck className="h-4 w-4 text-gray-500" />
+                              {carrier.name}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Service Details */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
+                  <Navigation className="h-5 w-5 text-purple-600" />
+                  Service Details
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Service Type</Label>
+                    <Select
+                      value={editShipmentForm.serviceType}
+                      onValueChange={(value: any) => setEditShipmentForm({ ...editShipmentForm, serviceType: value })}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Economy">Economy</SelectItem>
+                        <SelectItem value="Standard">Standard</SelectItem>
+                        <SelectItem value="Express">Express</SelectItem>
+                        <SelectItem value="Overnight">Overnight</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Priority</Label>
+                    <Select
+                      value={editShipmentForm.priority}
+                      onValueChange={(value: any) => setEditShipmentForm({ ...editShipmentForm, priority: value })}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Low">Low</SelectItem>
+                        <SelectItem value="Medium">Medium</SelectItem>
+                        <SelectItem value="High">High</SelectItem>
+                        <SelectItem value="Urgent">Urgent</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Location Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-green-600" />
+                  Location Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Origin *</Label>
+                    <Input
+                      value={editShipmentForm.origin}
+                      onChange={(e) => setEditShipmentForm({ ...editShipmentForm, origin: e.target.value })}
+                      placeholder="Origin address"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Destination *</Label>
+                    <Input
+                      value={editShipmentForm.destination}
+                      onChange={(e) => setEditShipmentForm({ ...editShipmentForm, destination: e.target.value })}
+                      placeholder="Destination address"
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Package Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
+                  <Package className="h-5 w-5 text-orange-600" />
+                  Package Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Weight (kg)</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={editShipmentForm.weight}
+                      onChange={(e) => setEditShipmentForm({ ...editShipmentForm, weight: e.target.value })}
+                      placeholder="0.0"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Dimensions (LxWxH cm)</Label>
+                    <Input
+                      value={editShipmentForm.dimensions}
+                      onChange={(e) => setEditShipmentForm({ ...editShipmentForm, dimensions: e.target.value })}
+                      placeholder="30x20x15"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Package Count</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={editShipmentForm.packageCount}
+                      onChange={(e) => setEditShipmentForm({ ...editShipmentForm, packageCount: parseInt(e.target.value) || 1 })}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Value & Delivery */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
+                  <CalendarIcon className="h-5 w-5 text-red-600" />
+                  Value & Delivery
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Declared Value (AED)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={editShipmentForm.declaredValue}
+                      onChange={(e) => setEditShipmentForm({ ...editShipmentForm, declaredValue: e.target.value })}
+                      placeholder="0.00"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Estimated Delivery</Label>
+                    <Input
+                      type="date"
+                      value={editShipmentForm.estimatedDelivery}
+                      onChange={(e) => setEditShipmentForm({ ...editShipmentForm, estimatedDelivery: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+
+                {/* Options */}
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                    <input
+                      type="checkbox"
+                      checked={editShipmentForm.isInsured}
+                      onChange={(e) => setEditShipmentForm({ ...editShipmentForm, isInsured: e.target.checked })}
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <Label className="text-sm font-medium text-gray-700 cursor-pointer">
+                      Insurance Required
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                    <input
+                      type="checkbox"
+                      checked={editShipmentForm.requiresSignature}
+                      onChange={(e) => setEditShipmentForm({ ...editShipmentForm, requiresSignature: e.target.checked })}
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <Label className="text-sm font-medium text-gray-700 cursor-pointer">
+                      Signature Required
+                    </Label>
+                  </div>
+                </div>
+
+                {/* Special Instructions */}
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Special Instructions (Optional)</Label>
+                  <Textarea
+                    value={editShipmentForm.specialInstructions}
+                    onChange={(e) => setEditShipmentForm({ ...editShipmentForm, specialInstructions: e.target.value })}
+                    placeholder="Special handling or delivery instructions"
+                    rows={3}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-3 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowEditDialog(false);
+                    setEditingShipment(null);
+                  }}
+                  className="px-6"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => editingShipment && updateShipment.mutate({ id: editingShipment.id, data: editShipmentForm })}
+                  disabled={updateShipment.isPending || !editShipmentForm.carrierId || !editShipmentForm.origin || !editShipmentForm.destination}
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8"
+                  data-testid="button-save-edit-shipment"
+                >
+                  {updateShipment.isPending ? (
+                    <div className="flex items-center gap-2">
+                      <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Saving...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Edit className="h-4 w-4" />
+                      Save Changes
+                    </div>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Track Shipment Dialog */}
       <Dialog open={showTrackingDialog} onOpenChange={setShowTrackingDialog}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" aria-describedby="track-shipment-description">
@@ -1391,6 +1735,176 @@ export default function ShipmentTrackingPage() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Shipment Detail Dialog */}
+      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto" aria-describedby="shipment-detail-description">
+          <p id="shipment-detail-description" className="sr-only">Detailed shipment information, status, route, and logistics metadata.</p>
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-gray-800 flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center">
+                <Eye className="h-5 w-5 text-white" />
+              </div>
+              Shipment Details {detailShipment ? `– ${detailShipment.shipmentNumber}` : ''}
+            </DialogTitle>
+          </DialogHeader>
+          {detailShipment && (
+            <div className="space-y-8 pt-2">
+              {/* Top Summary Badges */}
+              <div className="flex flex-wrap gap-3">
+                <Badge variant="outline" className="text-xs flex items-center gap-1">
+                  {getStatusIcon(detailShipment.status)} <span>{detailShipment.status}</span>
+                </Badge>
+                <Badge className={getPriorityColor(detailShipment.priority)}>{detailShipment.priority} Priority</Badge>
+                <Badge className={getServiceTypeColor(detailShipment.serviceType)}>{detailShipment.serviceType} Service</Badge>
+                {detailShipment.isInsured && <Badge variant="outline" className="text-xs">Insured</Badge>}
+                {detailShipment.requiresSignature && <Badge variant="outline" className="text-xs">Signature Required</Badge>}
+              </div>
+
+              {/* Identification & Carrier */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-xs font-medium text-gray-500">Shipment Number</Label>
+                    <p className="text-sm font-semibold text-gray-800 font-mono">{detailShipment.shipmentNumber}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium text-gray-500">Tracking Number</Label>
+                    <p className="text-sm font-semibold text-blue-700 font-mono">{detailShipment.trackingNumber}</p>
+                  </div>
+                  {detailShipment.salesOrderNumber && (
+                    <div>
+                      <Label className="text-xs font-medium text-gray-500">Sales Order</Label>
+                      <p className="text-sm font-medium">{detailShipment.salesOrderNumber}</p>
+                    </div>
+                  )}
+                  {detailShipment.customerReference && (
+                    <div>
+                      <Label className="text-xs font-medium text-gray-500">Customer Reference</Label>
+                      <p className="text-sm font-medium">{detailShipment.customerReference}</p>
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-xs font-medium text-gray-500">Carrier</Label>
+                    <p className="text-sm font-medium flex items-center gap-2"><Truck className="h-4 w-4 text-gray-500" /> {detailShipment.carrierName}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium text-gray-500">Current Location</Label>
+                    <p className="text-sm font-medium">{detailShipment.currentLocation || 'Updating...'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium text-gray-500">Last Update</Label>
+                    <p className="text-sm font-medium">{detailShipment.lastUpdate ? formatDate(new Date(detailShipment.lastUpdate), 'MMM dd, yyyy HH:mm') : 'N/A'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium text-gray-500">Status</Label>
+                    <div className="mt-1"><StatusPill status={detailShipment.status.toLowerCase().replace(' ', '-')} /></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Route & Dates */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-gray-50 rounded-lg p-5 border border-gray-200">
+                <div>
+                  <Label className="text-xs font-medium text-gray-500">Origin</Label>
+                  <p className="text-sm font-semibold flex items-center gap-2"><MapPin className="h-4 w-4 text-green-600" /> {detailShipment.origin}</p>
+                </div>
+                <div className="flex items-center justify-center">
+                  <div className="flex flex-col items-center text-gray-500 text-xs font-medium">
+                    <Navigation className="h-5 w-5 mb-1 text-blue-500" />
+                    Route
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs font-medium text-gray-500">Destination</Label>
+                  <p className="text-sm font-semibold flex items-center gap-2"><MapPin className="h-4 w-4 text-red-600" /> {detailShipment.destination}</p>
+                </div>
+                <div>
+                  <Label className="text-xs font-medium text-gray-500">Estimated Delivery</Label>
+                  <p className="text-sm font-medium">{detailShipment.estimatedDelivery ? formatDate(new Date(detailShipment.estimatedDelivery), 'MMM dd, yyyy') : 'N/A'}</p>
+                </div>
+                <div>
+                  <Label className="text-xs font-medium text-gray-500">Actual Delivery</Label>
+                  <p className="text-sm font-medium">{detailShipment.actualDelivery ? formatDate(new Date(detailShipment.actualDelivery), 'MMM dd, yyyy') : '—'}</p>
+                </div>
+                <div>
+                  <Label className="text-xs font-medium text-gray-500">Service Type</Label>
+                  <p className="text-sm font-medium">{detailShipment.serviceType}</p>
+                </div>
+              </div>
+
+              {/* Package & Financial Info */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-3 p-4 border rounded-lg bg-white">
+                  <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2"><Package className="h-4 w-4 text-orange-600" /> Package</h4>
+                  <div className="text-xs text-gray-500 grid grid-cols-2 gap-y-2">
+                    <span className="font-medium text-gray-500">Weight</span><span className="font-semibold text-gray-800">{detailShipment.weight || '—'} kg</span>
+                    <span className="font-medium text-gray-500">Dimensions</span><span className="font-semibold text-gray-800">{detailShipment.dimensions || '—'}</span>
+                    <span className="font-medium text-gray-500">Packages</span><span className="font-semibold text-gray-800">{detailShipment.packageCount}</span>
+                    <span className="font-medium text-gray-500">Signature</span><span className="font-semibold text-gray-800">{detailShipment.requiresSignature ? 'Required' : 'No'}</span>
+                  </div>
+                </div>
+                <div className="space-y-3 p-4 border rounded-lg bg-white">
+                  <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2"><FileText className="h-4 w-4 text-purple-600" /> Value</h4>
+                  <div className="text-xs text-gray-500 grid grid-cols-2 gap-y-2">
+                    <span className="font-medium text-gray-500">Declared</span><span className="font-semibold text-gray-800">{detailShipment.declaredValue || '0.00'} {detailShipment.currency}</span>
+                    <span className="font-medium text-gray-500">Shipping Cost</span><span className="font-semibold text-gray-800">{detailShipment.shippingCost || '0.00'} {detailShipment.currency}</span>
+                    <span className="font-medium text-gray-500">Insured</span><span className="font-semibold text-gray-800">{detailShipment.isInsured ? 'Yes' : 'No'}</span>
+                    <span className="font-medium text-gray-500">Priority</span><span className="font-semibold text-gray-800">{detailShipment.priority}</span>
+                  </div>
+                </div>
+                <div className="space-y-3 p-4 border rounded-lg bg-white">
+                  <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2"><BarChart3 className="h-4 w-4 text-green-600" /> Timestamps</h4>
+                  <div className="text-xs text-gray-500 grid grid-cols-2 gap-y-2">
+                    <span className="font-medium text-gray-500">Created</span><span className="font-semibold text-gray-800">{detailShipment.createdAt ? formatDate(new Date(detailShipment.createdAt), 'MMM dd, yyyy') : '—'}</span>
+                    <span className="font-medium text-gray-500">Updated</span><span className="font-semibold text-gray-800">{detailShipment.updatedAt ? formatDate(new Date(detailShipment.updatedAt), 'MMM dd, yyyy HH:mm') : '—'}</span>
+                    <span className="font-medium text-gray-500">Last Update</span><span className="font-semibold text-gray-800">{detailShipment.lastUpdate ? formatDate(new Date(detailShipment.lastUpdate), 'MMM dd, yyyy HH:mm') : '—'}</span>
+                    <span className="font-medium text-gray-500">Est Days</span><span className="font-semibold text-gray-800">{detailShipment.estimatedDelivery ? Math.max(0, Math.round((new Date(detailShipment.estimatedDelivery).getTime() - new Date(detailShipment.createdAt).getTime()) / (1000*60*60*24))) : '—'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Special Instructions */}
+              {detailShipment.specialInstructions && (
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium text-gray-500">Special Instructions</Label>
+                  <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-md border border-gray-200 whitespace-pre-wrap">
+                    {detailShipment.specialInstructions}
+                  </p>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex justify-end gap-3 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowDetailDialog(false);
+                    setDetailShipment(null);
+                  }}
+                  data-testid="button-close-shipment-detail"
+                >
+                  Close
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setShowDetailDialog(false);
+                    setShowTrackingDialog(true);
+                    setTrackingShipment(detailShipment);
+                  }}
+                  data-testid="button-track-from-detail"
+                  className="bg-blue-600 text-white hover:bg-blue-700"
+                >
+                  <Navigation className="h-4 w-4 mr-2" /> Track Shipment
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 

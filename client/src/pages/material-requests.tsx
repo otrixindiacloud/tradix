@@ -65,40 +65,52 @@ interface RequestItem extends MaterialRequestItemForm {
   id: string;
 }
 
-// Status badge colors
+// Status badge minimal colors (no background) - only text + border
 const getStatusColor = (status: string) => {
   switch (status) {
     case "Draft":
-      return "bg-gray-100 text-gray-800 border-gray-300";
+      return "text-slate-600 border-slate-300";
     case "Pending Approval":
-      return "bg-yellow-100 text-yellow-800 border-yellow-300";
+      return "text-amber-600 border-amber-400";
     case "Approved":
-      return "bg-green-100 text-green-800 border-green-300";
+      return "text-green-600 border-green-500";
     case "Rejected":
-      return "bg-red-100 text-red-800 border-red-300";
+      return "text-red-600 border-red-500";
     case "Processing":
-      return "bg-blue-100 text-blue-800 border-blue-300";
+      return "text-blue-600 border-blue-400";
     case "Completed":
-      return "bg-purple-100 text-purple-800 border-purple-300";
+      return "text-purple-600 border-purple-500";
     case "Cancelled":
-      return "bg-gray-100 text-gray-600 border-gray-300";
+      return "text-slate-500 border-slate-300";
     default:
-      return "bg-gray-100 text-gray-800 border-gray-300";
+      return "text-slate-600 border-slate-300";
   }
 };
 
+// Icon mapping for statuses
+const statusIconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  Draft: FileText,
+  "Pending Approval": Clock,
+  Approved: CheckCircle,
+  Rejected: XCircle,
+  Processing: TrendingUp,
+  Completed: CheckCircle,
+  Cancelled: XCircle,
+};
+
 const getPriorityColor = (priority: string) => {
+  // Professional minimal style: no background fill, just semantic text + subtle border
   switch (priority) {
     case "Low":
-      return "bg-blue-100 text-blue-800 border-blue-300";
+      return "bg-transparent text-blue-700 border-blue-300";
     case "Medium":
-      return "bg-yellow-100 text-yellow-800 border-yellow-300";
+      return "bg-transparent text-amber-700 border-amber-300";
     case "High":
-      return "bg-orange-100 text-orange-800 border-orange-300";
+      return "bg-transparent text-orange-600 border-orange-300";
     case "Urgent":
-      return "bg-red-100 text-red-800 border-red-300";
+      return "bg-transparent text-red-600 border-red-300";
     default:
-      return "bg-gray-100 text-gray-800 border-gray-300";
+      return "bg-transparent text-slate-600 border-slate-300";
   }
 };
 
@@ -326,7 +338,7 @@ export default function MaterialRequestsPage() {
       key: "priority",
       header: "Priority",
       render: (value: string) => (
-        <Badge className={`border ${getPriorityColor(value)}`}>
+        <Badge variant="outline" className={`shadow-none ${getPriorityColor(value)} px-2 py-0.5 text-xs font-medium`}> 
           {value}
         </Badge>
       ),
@@ -334,11 +346,18 @@ export default function MaterialRequestsPage() {
     {
       key: "status",
       header: "Status",
-      render: (value: string) => (
-        <Badge className={`border ${getStatusColor(value)}`}>
-          {value}
-        </Badge>
-      ),
+      render: (value: string) => {
+        const Icon = statusIconMap[value] || FileText;
+        return (
+          <Badge
+            variant="outline"
+            className={`shadow-none inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium ${getStatusColor(value)}`}
+          >
+            <Icon className="h-3.5 w-3.5" />
+            <span>{value}</span>
+          </Badge>
+        );
+      },
     },
     {
       key: "requestDate",
@@ -1161,7 +1180,7 @@ export default function MaterialRequestsPage() {
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Priority</Label>
-                    <Badge className={`border ${getPriorityColor(selectedRequest.priority)}`}>
+                    <Badge variant="outline" className={`shadow-none ${getPriorityColor(selectedRequest.priority)} px-2 py-0.5 text-xs font-medium`}>
                       {selectedRequest.priority}
                     </Badge>
                   </div>
@@ -1169,9 +1188,19 @@ export default function MaterialRequestsPage() {
                 <div className="space-y-4">
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Status</Label>
-                    <Badge className={`border ${getStatusColor(selectedRequest.status || "Draft")}`}>
-                      {selectedRequest.status || "Draft"}
-                    </Badge>
+                    {(() => {
+                      const currentStatus = selectedRequest.status || "Draft";
+                      const Icon = statusIconMap[currentStatus] || FileText;
+                      return (
+                        <Badge
+                          variant="outline"
+                          className={`shadow-none inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium ${getStatusColor(currentStatus)}`}
+                        >
+                          <Icon className="h-3.5 w-3.5" />
+                          <span>{currentStatus}</span>
+                        </Badge>
+                      );
+                    })()}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Request Date</Label>

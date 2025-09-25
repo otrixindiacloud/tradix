@@ -63,8 +63,7 @@ export class InventoryStorage extends BaseStorage implements IInventoryStorage {
         supplier: suppliers
       })
       .from(inventoryItems)
-      .leftJoin(suppliers, eq(inventoryItems.supplierId, suppliers.id))
-      .orderBy(inventoryItems.description);
+      .leftJoin(suppliers, eq(inventoryItems.supplierId, suppliers.id));
 
     if (conditions.length > 0) {
       query = query.where(and(...conditions));
@@ -73,14 +72,12 @@ export class InventoryStorage extends BaseStorage implements IInventoryStorage {
       query = query.limit(filters.limit);
     }
     if (filters?.offset) {
-      // Only call offset if the method exists on the query object
-      if (typeof query.offset === "function") {
-        query = query.offset(filters.offset);
-      }
+      query = query.offset(filters.offset);
     }
+    query = query.orderBy(inventoryItems.description);
 
     const results = await query;
-    // Transform results to include supplier information
+    // Transform results to include supplier information and required fields
     return results.map(row => ({
       ...row,
       supplierName: typeof row.supplierName === 'string' ? row.supplierName : undefined,
@@ -292,11 +289,14 @@ export class InventoryStorage extends BaseStorage implements IInventoryStorage {
           referenceType: stockMovements.referenceType,
           referenceId: stockMovements.referenceId,
           storageLocation: stockMovements.storageLocation,
+          fromLocation: stockMovements.fromLocation,
+          toLocation: stockMovements.toLocation,
           quantityBefore: stockMovements.quantityBefore,
           quantityMoved: stockMovements.quantityMoved,
           quantityAfter: stockMovements.quantityAfter,
           unitCost: stockMovements.unitCost,
           totalValue: stockMovements.totalValue,
+          status: stockMovements.status,
           notes: stockMovements.notes,
           createdBy: stockMovements.createdBy,
           createdAt: stockMovements.createdAt,
@@ -350,10 +350,10 @@ export class InventoryStorage extends BaseStorage implements IInventoryStorage {
         transferDate: movement.createdAt,
         requestedBy: movement.createdBy,
         reason: movement.notes || 'Stock Transfer',
-        status: this.mapMovementTypeToTransferStatus(movement.movementType),
+        status: movement.status ?? this.mapMovementTypeToTransferStatus(movement.movementType),
         quantity: movement.quantityMoved,
-        fromLocation: movement.movementType === 'Transfer' ? movement.storageLocation : 'N/A',
-        toLocation: movement.movementType === 'Transfer' ? 'Target Location' : movement.storageLocation,
+        fromLocation: movement.fromLocation || (movement.movementType === 'Transfer' ? (movement.storageLocation || 'Unknown') : 'N/A'),
+        toLocation: movement.toLocation || (movement.movementType === 'Transfer' ? 'Target Location' : movement.storageLocation),
       }));
     } catch (error) {
       console.error('Error fetching stock movements:', error);
@@ -377,6 +377,7 @@ export class InventoryStorage extends BaseStorage implements IInventoryStorage {
           quantityAfter: stockMovements.quantityAfter,
           unitCost: stockMovements.unitCost,
           totalValue: stockMovements.totalValue,
+          status: stockMovements.status,
           notes: stockMovements.notes,
           createdBy: stockMovements.createdBy,
           createdAt: stockMovements.createdAt,
@@ -431,6 +432,8 @@ export class InventoryStorage extends BaseStorage implements IInventoryStorage {
   referenceType: movement.referenceType || 'Transfer',
   referenceId: movement.referenceId || movement.transferNumber || `TRF-${movementId.slice(-8)}`,
   storageLocation: movement.storageLocation || movement.fromLocation || 'Unknown',
+  fromLocation: movement.fromLocation || movement.storageLocation || null,
+  toLocation: movement.toLocation || null,
   quantityBefore: movement.quantityBefore || 0,
   quantityMoved: movement.quantityMoved,
   quantityAfter: movement.quantityAfter || (movement.quantityBefore || 0) + movement.quantityMoved,

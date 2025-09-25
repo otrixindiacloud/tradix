@@ -173,7 +173,7 @@ export function registerPurchaseOrderRoutes(app: Express) {
   // Customer PO Upload route
   app.post("/api/customer-po-upload", async (req, res) => {
     try {
-  const { quotationId, documentPath, documentName, documentType, uploadedBy, poDate, currency, paymentTerms, deliveryTerms, specialInstructions } = req.body;
+  const { quotationId, documentPath, documentName, documentType, uploadedBy, poDate, currency, paymentTerms, deliveryTerms, specialInstructions, customerReference } = req.body;
 
       // Basic presence validation (uploadedBy handled specially below)
       const missing: string[] = [];
@@ -211,20 +211,23 @@ export function registerPurchaseOrderRoutes(app: Express) {
       }
       // Removed: allow PO upload for any quotation status
 
-      // Basic accepted items check (same as create route)
+      // Basic accepted items check (same as create route) – relaxed: allow if quotation itself is Accepted
       let hasAcceptedItem = false;
-      const acceptances = await storage.getCustomerAcceptances(quotationId);
-      for (const acc of acceptances) {
-        const itemAcceptances = await storage.getQuotationItemAcceptances(acc.id);
-        if (itemAcceptances.some((i: any) => i.isAccepted)) { hasAcceptedItem = true; break; }
+      try {
+        const acceptances = await storage.getCustomerAcceptances(quotationId);
+        for (const acc of acceptances) {
+          const itemAcceptances = await storage.getQuotationItemAcceptances(acc.id);
+          if (itemAcceptances.some((i: any) => i.isAccepted)) { hasAcceptedItem = true; break; }
+        }
+      } catch (e) {
+        console.warn('Acceptance lookup failed (continuing):', e);
       }
-      if (!hasAcceptedItem) {
+      if (!hasAcceptedItem && quotation.status !== 'Accepted') {
         return res.status(400).json({ message: 'No accepted quotation items found; cannot upload PO' });
       }
 
       // Auto-generate PO number
-      const storageInstance = storage.purchaseOrderStorage || storage;
-      const poNumber = storageInstance.generateNumber ? storageInstance.generateNumber('PO') : `PO-${Date.now()}`;
+  const poNumber = (storage as any).generateNumber ? (storage as any).generateNumber('PO') : `PO-${Date.now()}`;
       const poPayload = insertPurchaseOrderSchema.parse({
         quotationId,
         poNumber,
@@ -236,7 +239,8 @@ export function registerPurchaseOrderRoutes(app: Express) {
         currency: currency || 'BHD',
         paymentTerms: paymentTerms || undefined,
         deliveryTerms: deliveryTerms || undefined,
-        specialInstructions: specialInstructions || undefined
+        specialInstructions: specialInstructions || undefined,
+        customerReference: customerReference || undefined,
       });
 
       const purchaseOrder = await storage.createPurchaseOrder(poPayload);

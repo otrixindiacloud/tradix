@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useQueryClient } from "@tanstack/react-query";
+// Abstracted data access via custom hooks
+import { usePhysicalStock, useInventoryItems, PhysicalStockItem } from "@/hooks/usePhysicalStock";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -28,12 +28,14 @@ import {
   TrendingUp,
   Package,
   Warehouse,
-  BarChart3
+  BarChart3,
+  Trash2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import DataTable from "@/components/tables/data-table";
 import { formatDate, formatCurrency } from "@/lib/utils";
 
+// Validation schema (UI-only concerns)
 const physicalStockSchema = z.object({
   itemId: z.string().min(1, "Item is required"),
   location: z.string().min(1, "Location is required"),
@@ -42,14 +44,9 @@ const physicalStockSchema = z.object({
   countedBy: z.string().min(1, "Counted by is required"),
   notes: z.string().optional(),
 });
-
 type PhysicalStockForm = z.infer<typeof physicalStockSchema>;
 
-const getStatusColor = (quantity: number) => {
-  if (quantity === 0) return "bg-red-100 text-red-800 border-red-300";
-  if (quantity < 10) return "bg-yellow-100 text-yellow-800 border-yellow-300";
-  return "bg-green-100 text-green-800 border-green-300";
-};
+// Removed colored quantity status badges per user request; plain text is now used.
 
 export default function PhysicalStockPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -59,32 +56,9 @@ export default function PhysicalStockPage() {
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  // Fetch physical stock
-  const {
-    data: physicalStock = [],
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ["physical-stock"],
-    queryFn: async () => {
-      const response = await apiRequest("GET", "/api/physical-stock");
-      const data = await response.json();
-      // Debug log
-      console.log("Physical Stock API Response:", data);
-      return Array.isArray(data) ? data : [];
-    },
-  });
-
-  // Fetch items for dropdown
-  const { data: items = [] } = useQuery({
-    queryKey: ["inventory-items"],
-    queryFn: async () => {
-      const response = await apiRequest("GET", "/api/inventory-items");
-      const data = await response.json();
-      return Array.isArray(data) ? data : [];
-    },
-  });
+  // Data layer via hooks (no direct backend logic in UI)
+  const { data: physicalStock = [], isLoading, error, createMutation, updateMutation, deleteMutation } = usePhysicalStock();
+  const { data: items = [] } = useInventoryItems();
 
   // Mock locations
   const locations = [
@@ -103,28 +77,48 @@ export default function PhysicalStockPage() {
     totalQuantity: physicalStock.reduce((sum: number, s: any) => sum + (s.quantity || 0), 0),
   };
 
-  // Create mutation
-  const createStockMutation = useMutation({
-    mutationFn: async (data: PhysicalStockForm) => {
-      return await apiRequest("POST", "/api/physical-stock", data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["physical-stock"] });
+  // Handle mutation side-effects locally (presentation only)
+  // Create success
+  React.useEffect(() => {
+    if (createMutation.isSuccess) {
+      toast({ title: "Created", description: "Physical stock entry created successfully" });
       setShowCreateDialog(false);
       form.reset();
-      toast({
-        title: "Success",
-        description: "Physical stock entry created successfully",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create entry",
-        variant: "destructive",
-      });
-    },
-  });
+    }
+  }, [createMutation.isSuccess]);
+
+  // Update success
+  React.useEffect(() => {
+    if (updateMutation.isSuccess) {
+      toast({ title: "Updated", description: "Physical stock entry updated" });
+      setShowCreateDialog(false);
+      setEditingItemId(null);
+      form.reset();
+    }
+  }, [updateMutation.isSuccess]);
+
+  // Create/Update errors
+  React.useEffect(() => {
+    const err: any = createMutation.error || updateMutation.error;
+    if (createMutation.isError || updateMutation.isError) {
+      toast({ title: "Error", description: err?.message || "Operation failed", variant: "destructive" });
+    }
+  }, [createMutation.isError, updateMutation.isError]);
+
+  // Delete success
+  React.useEffect(() => {
+    if (deleteMutation.isSuccess) {
+      toast({ title: "Deleted", description: "Physical stock entry deleted" });
+    }
+  }, [deleteMutation.isSuccess]);
+
+  // Delete error
+  React.useEffect(() => {
+    if (deleteMutation.isError) {
+      const err: any = deleteMutation.error;
+      toast({ title: "Error", description: err?.message || "Failed to delete", variant: "destructive" });
+    }
+  }, [deleteMutation.isError]);
 
   const form = useForm<PhysicalStockForm>({
     resolver: zodResolver(physicalStockSchema),
@@ -144,7 +138,43 @@ export default function PhysicalStockPage() {
       ...data,
       lastUpdated: data.lastUpdated ? new Date(data.lastUpdated).toISOString() : "",
     };
-    createStockMutation.mutate(payload);
+    if (editingItemId) {
+      if (!editingItemId) {
+        toast({ title: "Error", description: "No item selected for update", variant: "destructive" });
+        return;
+      }
+      updateMutation.mutate({ id: editingItemId, ...payload });
+    } else {
+      createMutation.mutate(payload as PhysicalStockItem);
+    }
+  };
+
+  // Track editing state
+  const [editingItemId, setEditingItemId] = React.useState<string | null>(null);
+
+  const startEdit = (stock: any) => {
+    setEditingItemId(stock.id);
+    form.reset({
+      itemId: stock.itemId,
+      location: stock.location,
+      quantity: stock.quantity,
+      lastUpdated: stock.lastUpdated ? stock.lastUpdated.split('T')[0] : '',
+      countedBy: stock.countedBy || '',
+      notes: stock.notes || '',
+    });
+    setShowCreateDialog(true);
+  };
+
+  const cancelEdit = () => {
+    setEditingItemId(null);
+    form.reset();
+    setShowCreateDialog(false);
+  };
+
+  const handleDelete = (stock: any) => {
+    if (confirm(`Delete physical stock entry for ${stock.itemName || stock.itemId}?`)) {
+      deleteMutation.mutate(stock.id);
+    }
   };
 
   // Filter
@@ -161,12 +191,23 @@ export default function PhysicalStockPage() {
     {
       key: "itemName",
       header: "Item",
-      render: (value: string) => (
-        <div className="flex items-center gap-2">
-          <Package className="h-4 w-4 text-gray-500" />
-          <span>{value || "N/A"}</span>
-        </div>
-      ),
+      render: (_value: string, row: any) => {
+        // Attempt to enrich with item code / description from loaded items
+        const itemMeta: any | undefined = items.find((it: any) => it.id === row.itemId);
+        const primary = row.itemName || itemMeta?.name || itemMeta?.description || 'N/A';
+        const secondary = itemMeta?.barcode || itemMeta?.itemCode || (itemMeta?.description && itemMeta.description !== primary ? itemMeta.description : null);
+        return (
+          <div className="flex items-center gap-2">
+            <Package className="h-4 w-4 text-gray-500" />
+            <div className="flex flex-col leading-tight">
+              <span className="text-sm font-medium text-slate-800">{primary}</span>
+              {secondary && (
+                <span className="text-[11px] text-slate-500 tracking-wide uppercase">{secondary}</span>
+              )}
+            </div>
+          </div>
+        );
+      },
     },
     {
       key: "location",
@@ -181,9 +222,7 @@ export default function PhysicalStockPage() {
     {
       key: "quantity",
       header: "Quantity",
-      render: (value: number) => (
-        <Badge className={`border ${getStatusColor(value)}`}>{value}</Badge>
-      ),
+      render: (value: number) => (<span>{value}</span>),
     },
     {
   key: "lastUpdated",
@@ -218,19 +257,22 @@ export default function PhysicalStockPage() {
               setShowDetailsDialog(true);
             }}
           >
-            <Eye className="h-4 w-4" />
+            <Eye className="h-4 w-4 text-sky-600" />
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {
-              toast({
-                title: "Info",
-                description: "Edit functionality will be implemented soon",
-              });
-            }}
+            onClick={() => startEdit(stock)}
           >
-            <Edit className="h-4 w-4" />
+            <Edit className="h-4 w-4 text-amber-600" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleDelete(stock)}
+            disabled={deleteMutation.isPending && deleteMutation.variables === stock.id}
+          >
+            <Trash2 className="h-4 w-4 text-red-600" />
           </Button>
         </div>
       ),
@@ -270,9 +312,9 @@ export default function PhysicalStockPage() {
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>New Physical Stock Count</DialogTitle>
+                <DialogTitle>{editingItemId ? 'Edit Physical Stock Entry' : 'New Physical Stock Count'}</DialogTitle>
                 <DialogDescription>
-                  Record a new physical stock count for an item
+                  {editingItemId ? 'Update the selected physical stock entry' : 'Record a new physical stock count for an item'}
                 </DialogDescription>
               </DialogHeader>
               <Form {...form}>
@@ -396,12 +438,12 @@ export default function PhysicalStockPage() {
                     <Button 
                       type="button" 
                       variant="outline" 
-                      onClick={() => setShowCreateDialog(false)}
+                      onClick={cancelEdit}
                     >
-                      Cancel
+                      {editingItemId ? 'Cancel' : 'Close'}
                     </Button>
-                    <Button type="submit" disabled={createStockMutation.isPending}>
-                      {createStockMutation.isPending ? "Creating..." : "Create Count"}
+                    <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+                      {editingItemId ? (updateMutation.isPending ? 'Updating...' : 'Update') : (createMutation.isPending ? 'Creating...' : 'Create Count')}
                     </Button>
                   </div>
                 </form>
@@ -495,17 +537,14 @@ export default function PhysicalStockPage() {
         </CardHeader>
         <CardContent>
           {error ? (
-            <div className="text-red-600 font-semibold p-4">Error loading physical stock: {error.message}</div>
+            <div className="text-red-600 font-semibold p-4">Error loading physical stock: {(error as any).message}</div>
           ) : (
-            <>
-              <pre className="bg-gray-50 p-2 text-xs mb-2 rounded">{JSON.stringify(physicalStock, null, 2)}</pre>
-              <DataTable
-                data={filteredStock}
-                columns={columns}
-                isLoading={isLoading}
-                emptyMessage={isLoading ? "Loading..." : "No physical stock found. Record your first count to get started."}
-              />
-            </>
+            <DataTable
+              data={filteredStock}
+              columns={columns}
+              isLoading={isLoading}
+              emptyMessage={isLoading ? "Loading..." : "No physical stock found. Record your first count to get started."}
+            />
           )}
         </CardContent>
       </Card>
@@ -516,7 +555,13 @@ export default function PhysicalStockPage() {
           <DialogHeader>
             <DialogTitle>Physical Stock Details</DialogTitle>
             <DialogDescription>
-              Item: {selectedStock?.itemName || "N/A"}
+              Item: {(() => {
+                if (!selectedStock) return "N/A";
+                const meta = items.find((it: any) => it.id === selectedStock.itemId);
+                return (
+                  meta?.name || meta?.description || selectedStock.itemName || selectedStock.itemId || "N/A"
+                );
+              })()}
             </DialogDescription>
           </DialogHeader>
           {selectedStock && (
@@ -525,7 +570,18 @@ export default function PhysicalStockPage() {
                 <div className="space-y-4">
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Item</Label>
-                    <p className="text-sm font-medium">{selectedStock.itemName || "N/A"}</p>
+                    <p className="text-sm font-medium flex flex-col">
+                      <span>{(() => {
+                        const meta = items.find((it: any) => it.id === selectedStock.itemId);
+                        return selectedStock.itemName || meta?.name || meta?.description || "N/A";
+                      })()}</span>
+                      {(() => {
+                        const meta = items.find((it: any) => it.id === selectedStock.itemId);
+                        const secondary = meta?.barcode || meta?.itemCode;
+                        if (!secondary) return null;
+                        return <span className="text-[11px] text-slate-500 tracking-wide uppercase">{secondary}</span>;
+                      })()}
+                    </p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Location</Label>
@@ -533,7 +589,7 @@ export default function PhysicalStockPage() {
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Quantity</Label>
-                    <Badge className={`border ${getStatusColor(selectedStock.quantity || 0)}`}>{selectedStock.quantity || 0}</Badge>
+                    <p className="text-sm font-medium">{selectedStock.quantity || 0}</p>
                   </div>
                 </div>
                 <div className="space-y-4">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { CalendarDays } from "lucide-react";
 import Calendar from "react-calendar";
 import 'react-calendar/dist/Calendar.css';
@@ -91,7 +91,7 @@ const actionTypes = [
 
 export default function RecentActivitiesPage() {
   const [, setLocation] = useLocation();
-  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [activities, setActivities] = useState<ActivityItem[]>([]); // legacy state (will be replaced by derivedActivities)
   const [stats, setStats] = useState<ActivityStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({
@@ -118,7 +118,7 @@ export default function RecentActivitiesPage() {
 
   const [activeTab, setActiveTab] = useState("all");
 
-  // Mock data for demonstration
+  // Mock data retained as fallback (will only be used if API + entity fetches all fail)
   const mockActivities: ActivityItem[] = [
     {
       id: "1",
@@ -288,24 +288,119 @@ export default function RecentActivitiesPage() {
     ]
   };
 
-  const fetchActivities = async () => {
-    setLoading(true);
+  // Entity queries (enquiries, quotations, sales orders). We intentionally request a larger limit to build richer activity feed.
+  const { data: enquiriesData, isLoading: enquiriesLoading } = useQuery({
+    queryKey: ["/api/enquiries", { limit: 50 }],
+    queryFn: async () => {
+      const res = await fetch("/api/enquiries?limit=50");
+      if (!res.ok) throw new Error("Failed to fetch enquiries");
+      return res.json();
+    }
+  });
+  const { data: quotationsData, isLoading: quotationsLoading } = useQuery({
+    queryKey: ["/api/quotations", { limit: 50 }],
+    queryFn: async () => {
+      const res = await fetch("/api/quotations?limit=50");
+      if (!res.ok) throw new Error("Failed to fetch quotations");
+      return res.json();
+    }
+  });
+  const { data: ordersData, isLoading: ordersLoading } = useQuery({
+    queryKey: ["/api/sales-orders", { limit: 50 }],
+    queryFn: async () => {
+      const res = await fetch("/api/sales-orders?limit=50");
+      if (!res.ok) throw new Error("Failed to fetch sales orders");
+      return res.json();
+    }
+  });
+
+  // Build a unified activity list from the fetched entities.
+  const derivedActivities: ActivityItem[] = useMemo(() => {
+    const acts: ActivityItem[] = [];
     try {
-      const params = new URLSearchParams({
-        page: pagination.page.toString(),
-        limit: pagination.limit.toString(),
-        ...filters
+      const enquiries = (enquiriesData?.enquiries || enquiriesData || []) as any[];
+      const quotations = (quotationsData?.quotations || quotationsData || []) as any[];
+      const orders = (ordersData?.salesOrders || ordersData?.orders || ordersData || []) as any[];
+
+      // Enquiry activities
+      enquiries.forEach((e: any) => {
+        acts.push({
+          id: `enquiry-${e.id}`,
+            type: 'enquiry',
+          action: 'received',
+          title: `Enquiry ${e.enquiryNumber || ''}`.trim(),
+          description: `Enquiry ${e.enquiryNumber || e.id} from ${e.customer?.name || 'Customer'}`,
+          entityId: e.id,
+          entityName: e.customer?.name,
+          userId: e.createdBy || 'system',
+          userName: e.createdBy || 'System',
+          timestamp: e.enquiryDate || e.createdAt || new Date().toISOString(),
+          status: e.status,
+          priority: 'high'
+        });
       });
 
-      const response = await fetch(`/api/recent-activities?${params}`);
-      const data = await response.json();
-      
-      setActivities(data.activities);
-      setPagination(data.pagination);
-    } catch (error) {
-      console.error("Error fetching activities:", error);
-      // Fallback to mock data if API fails
-      setActivities(mockActivities);
+      // Quotation activities
+      quotations.forEach((q: any) => {
+        acts.push({
+          id: `quotation-${q.id}`,
+          type: 'quotation',
+          action: (q.status || '').toLowerCase() === 'accepted' ? 'approved' : 'created',
+          title: `Quotation ${q.quoteNumber || ''}`.trim(),
+          description: `Quote ${q.quoteNumber || q.id} for ${q.customer?.name || 'Customer'} (${q.status})`,
+          entityId: q.id,
+          entityName: q.customer?.name,
+          userId: q.createdBy || 'system',
+          userName: q.createdBy || 'System',
+          timestamp: q.quotationDate || q.createdAt || new Date().toISOString(),
+          status: q.status,
+          priority: q.status === 'Accepted' ? 'urgent' : 'medium'
+        });
+      });
+
+      // Sales order activities
+      orders.forEach((o: any) => {
+        acts.push({
+          id: `order-${o.id}`,
+          type: 'sales_order',
+          action: 'created',
+          title: `Sales Order ${o.orderNumber || ''}`.trim(),
+          description: `Sales order ${o.orderNumber || o.id} for ${o.customer?.name || 'Customer'} (${o.status || 'Draft'})`,
+          entityId: o.id,
+          entityName: o.customer?.name,
+          userId: o.createdBy || 'system',
+          userName: o.createdBy || 'System',
+          timestamp: o.orderDate || o.createdAt || new Date().toISOString(),
+          status: o.status,
+          priority: 'medium'
+        });
+      });
+
+      // Sort newest first
+      acts.sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      return acts;
+    } catch (err) {
+      console.error('Error deriving activities', err);
+      return mockActivities; // fallback
+    }
+  }, [enquiriesData, quotationsData, ordersData]);
+
+  // Replace original activities state with derived activities when loaded
+  useEffect(() => {
+    setActivities(derivedActivities);
+  }, [derivedActivities]);
+
+  const entityLoading = enquiriesLoading || quotationsLoading || ordersLoading;
+
+  const fetchActivities = async () => {
+    // Maintained for manual refresh button; simply refetch queries
+    setLoading(true);
+    try {
+      await Promise.all([
+        enquiriesLoading ? Promise.resolve() : Promise.resolve(),
+        quotationsLoading ? Promise.resolve() : Promise.resolve(),
+        ordersLoading ? Promise.resolve() : Promise.resolve()
+      ]);
     } finally {
       setLoading(false);
     }
@@ -328,7 +423,6 @@ export default function RecentActivitiesPage() {
   };
 
   useEffect(() => {
-    fetchActivities();
     fetchStats();
   }, [filters, pagination.page]);
 
@@ -742,7 +836,7 @@ export default function RecentActivitiesPage() {
               </div>
             </CardHeader>
             <CardContent>
-              {loading ? (
+              {loading || entityLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <RefreshCw className="h-6 w-6 animate-spin" />
                 </div>

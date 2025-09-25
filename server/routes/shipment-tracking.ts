@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { storage } from "../storage";
-import { z } from "zod";
+import { z as zod } from "zod";
 import { insertShipmentSchema } from "@shared/schema";
 
 export function registerShipmentTrackingRoutes(app: Express) {
@@ -8,17 +8,8 @@ export function registerShipmentTrackingRoutes(app: Express) {
   app.get("/api/shipments", async (req, res) => {
     try {
       const { 
-        status, 
-        priority, 
-        carrierId, 
-        serviceType, 
-        search, 
-        dateFrom, 
-        dateTo, 
-        limit, 
-        offset 
+        status, priority, carrierId, serviceType, search, dateFrom, dateTo, limit, offset 
       } = req.query;
-      
       const filters = {
         status: status as string,
         priority: priority as string,
@@ -30,7 +21,6 @@ export function registerShipmentTrackingRoutes(app: Express) {
         limit: limit ? parseInt(limit as string) : undefined,
         offset: offset ? parseInt(offset as string) : undefined,
       };
-      
       const shipments = await storage.getShipments(filters);
       res.json(shipments);
     } catch (error) {
@@ -43,9 +33,7 @@ export function registerShipmentTrackingRoutes(app: Express) {
   app.get("/api/shipments/:id", async (req, res) => {
     try {
       const shipment = await storage.getShipment(req.params.id);
-      if (!shipment) {
-        return res.status(404).json({ message: "Shipment not found" });
-      }
+      if (!shipment) return res.status(404).json({ message: "Shipment not found" });
       res.json(shipment);
     } catch (error) {
       console.error("Error fetching shipment:", error);
@@ -57,9 +45,7 @@ export function registerShipmentTrackingRoutes(app: Express) {
   app.get("/api/shipments/tracking/:trackingNumber", async (req, res) => {
     try {
       const shipment = await storage.getShipmentByTrackingNumber(req.params.trackingNumber);
-      if (!shipment) {
-        return res.status(404).json({ message: "Shipment not found" });
-      }
+      if (!shipment) return res.status(404).json({ message: "Shipment not found" });
       res.json(shipment);
     } catch (error) {
       console.error("Error fetching shipment by tracking number:", error);
@@ -67,26 +53,64 @@ export function registerShipmentTrackingRoutes(app: Express) {
     }
   });
 
-  // Create new shipment
+  // Create new shipment (clean, tolerant)
   app.post("/api/shipments", async (req, res) => {
     try {
-      const shipmentData = req.body;
-  // Use Zod schema for validation
-  const parseResult = insertShipmentSchema.safeParse(shipmentData);
-      if (!parseResult.success) {
-        return res.status(400).json({ message: parseResult.error.errors.map((e: any) => e.message).join(", ") });
+  const data: any = { ...req.body };
+      // Provide defaults
+      data.status ||= 'Pending';
+      data.serviceType ||= 'Standard';
+      data.priority ||= 'Medium';
+
+      // Normalize date-like fields: allow string, convert if valid, else undefined
+      ['estimatedDelivery','actualDelivery','lastUpdate'].forEach(f => {
+        if (typeof data[f] === 'string') {
+          const s = data[f].trim();
+          if (!s) data[f] = undefined; else {
+            const d = new Date(s);
+            if (!isNaN(d.getTime())) data[f] = d; else data[f] = undefined;
+          }
+        }
+      });
+
+      // Carrier name lookup if missing
+      if (!data.carrierName && data.carrierId) {
+        try { const c = await storage.getSupplier(data.carrierId); if (c?.name) data.carrierName = c.name; } catch {}
       }
-      const validData = parseResult.data;
-      try {
-        const shipment = await storage.createShipment(validData);
-        res.status(201).json(shipment);
-      } catch (err: any) {
-        console.error("Error creating shipment:", err);
-        res.status(500).json({ message: (err && err.message) ? err.message : "Failed to create shipment" });
+
+      // Build relaxed schema (shipmentNumber & trackingNumber optional at creation); date fields optional
+      const relaxed = insertShipmentSchema.partial({ shipmentNumber: true, trackingNumber: true, carrierName: true })
+        .extend({
+          estimatedDelivery: zod.date().optional().nullable(),
+          actualDelivery: zod.date().optional().nullable(),
+          lastUpdate: zod.date().optional().nullable(),
+          carrierName: zod.string().optional(),
+        });
+
+      // Attempt to coerce any leftover strings that look like dates
+      ['estimatedDelivery','actualDelivery','lastUpdate'].forEach(f => {
+        if (typeof data[f] === 'string') {
+          const d = new Date(data[f]);
+          if (!isNaN(d.getTime())) data[f] = d; else delete data[f];
+        }
+      });
+
+      const parsed = relaxed.safeParse(data);
+      if (!parsed.success) {
+        const msgs = parsed.error.errors.map(e => `${e.path.join('.') || 'field'}: ${e.message}`);
+        return res.status(400).json({ message: msgs.join(' | '), debugErrors: parsed.error.errors, received: data });
       }
-    } catch (error: any) {
-      console.error("Error validating shipment:", error);
-      res.status(500).json({ message: (error && error.message) ? error.message : "Failed to create shipment" });
+
+      // Minimal manual required fields (origin / destination)
+      if (!data.origin || !data.origin.trim()) return res.status(400).json({ message: 'origin: Required', received: data });
+      if (!data.destination || !data.destination.trim()) return res.status(400).json({ message: 'destination: Required', received: data });
+      if (!data.carrierId) return res.status(400).json({ message: 'carrierId: Required', received: data });
+
+      const shipment = await storage.createShipment(parsed.data);
+      return res.status(201).json(shipment);
+    } catch (err: any) {
+      console.error('Error creating shipment (final handler):', err);
+      return res.status(500).json({ message: err?.message || 'Failed to create shipment' });
     }
   });
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Select } from "@/components/ui/select";
 import { SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
@@ -71,7 +71,31 @@ export default function Dashboard() {
     },
   });
   const customers = customersData.customers || [];
+  // Fast lookup map for customer enrichment (used when enquiry/order rows only have customerId)
+  const customerIndex = useMemo(() => {
+    const idx: Record<string, any> = {};
+    customers.forEach((c: any) => { if (c?.id) idx[c.id] = c; });
+    return idx;
+  }, [customers]);
   const [selectedEnquiries, setSelectedEnquiries] = useState<string[]>([]);
+
+  // Fetch a single customer when an ID is selected (ensures fresh data even if list was paginated or stale)
+  const { data: selectedCustomerData, isLoading: selectedCustomerLoading } = useQuery({
+    queryKey: ["/api/customers", selectedCustomerId],
+    queryFn: async () => {
+      if (!selectedCustomerId) return null;
+      const res = await fetch(`/api/customers/${selectedCustomerId}`);
+      if (!res.ok) throw new Error("Failed to fetch customer");
+      return res.json();
+    },
+    enabled: !!selectedCustomerId,
+  });
+
+  // Resolve the currently selected customer (prefer single fetch result, else fallback to list)
+  const selectedCustomer = useMemo(() => {
+    if (!selectedCustomerId) return null;
+    return selectedCustomerData || customers.find((c: any) => c.id === selectedCustomerId) || null;
+  }, [selectedCustomerId, selectedCustomerData, customers]);
   
   // Load selected enquiries from localStorage on component mount
   useEffect(() => {
@@ -186,12 +210,19 @@ export default function Dashboard() {
     {
       key: "customer.name",
       header: "Customer",
-      render: (value: string, item: any) => (
-        <div>
-          <p className="text-sm font-medium text-gray-900">{item.customer?.name || "Unknown"}</p>
-          <p className="text-xs text-gray-600">{item.customer?.customerType || "-"}</p>
-        </div>
-      ),
+      render: (value: string, item: any) => {
+        const resolvedCustomer = item.customer || customerIndex[item.customerId];
+        return (
+          <div>
+            <p className="text-sm font-medium text-gray-900" data-testid={`enquiry-customer-name-${item.id}`}>
+              {resolvedCustomer?.name || "Unknown"}
+            </p>
+            <p className="text-xs text-gray-600">
+              {resolvedCustomer?.customerType || resolvedCustomer?.classification || "-"}
+            </p>
+          </div>
+        );
+      },
     },
     {
       key: "status",
@@ -269,71 +300,238 @@ export default function Dashboard() {
     },
   ];
 
-  const recentActivities = [
+  // Helper to format relative time (simple, client-side)
+  const timeAgo = (dateString?: string) => {
+    if (!dateString) return '';
+    const now = Date.now();
+    const ts = new Date(dateString).getTime();
+    const diffSec = Math.max(1, Math.floor((now - ts) / 1000));
+    const units: [number, string][] = [
+      [60, 'second'],
+      [60, 'minute'],
+      [24, 'hour'],
+      [7, 'day'],
+      [4.34524, 'week'],
+      [12, 'month'],
+      [Number.POSITIVE_INFINITY, 'year']
+    ];
+    let unitIndex = 0;
+    let count = diffSec;
+    for (let i = 0; i < units.length; i++) {
+      const [threshold, label] = units[i];
+      if (count < threshold) {
+        const value = Math.floor(count);
+        return `${value} ${label}${value !== 1 ? 's' : ''} ago`;
+      }
+      count /= threshold;
+      unitIndex = i;
+    }
+    return 'just now';
+  };
+
+  const quotationColumns = [
     {
-      id: 1,
-      icon: FaCheckCircle2,
-      color: "text-green-600",
-      bgColor: "bg-green-100",
-      message: "Quote #QT-2024-005 accepted by Al Rawi Trading",
-      time: "2 minutes ago",
+      key: 'quoteNumber',
+      header: 'Quote ID',
+      render: (value: string, item: any) => (
+        <div>
+          <span className="font-mono text-sm text-gray-600">{value}</span>
+          {item?.customer?.name && (
+            <p className="text-xs text-gray-500 mt-0.5" data-testid={`quote-customer-${item.id}`}>{item.customer.name}</p>
+          )}
+        </div>
+      )
     },
     {
-      id: 2,
-      icon: FaUpload,
-      color: "text-gray-600",
-      bgColor: "bg-gray-100",
-      message: "PO document uploaded for SO-2024-012",
-      time: "15 minutes ago",
+      key: 'customer.name',
+      header: 'Customer',
+      render: (value: string, item: any) => (
+        <div>
+          <p className="text-sm font-medium text-gray-900">{item.customer?.name || 'Unknown'}</p>
+          <p className="text-xs text-gray-600">{item.customer?.customerType || '-'}</p>
+        </div>
+      )
     },
+    { key: 'status', header: 'Status' },
+    { key: 'totalAmount', header: 'Value', className: 'text-right' },
     {
-      id: 3,
-      icon: FaQuestionCircle,
-      color: "text-amber-600",
-      bgColor: "bg-amber-100",
-      message: "New enquiry received from Gulf Construction Co.",
-      time: "1 hour ago",
-    },
-    {
-      id: 4,
-      icon: FaBox,
-      color: "text-orange-600",
-      bgColor: "bg-orange-100",
-      message: "Goods received for LPO-SUP-001",
-      time: "3 hours ago",
-    },
+      key: 'actions',
+      header: 'Actions',
+      render: (value: string, item: any) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={(e) => { e.stopPropagation(); setLocation(`/quotations/${item.id}`); }}
+          data-testid={`button-view-details-quotation-${item.id}`}
+        >
+          <FaEye className="h-4 w-4 mr-2" />
+          View Details
+        </Button>
+      )
+    }
   ];
 
-  const urgentTasks = [
-    {
-      id: 1,
-      title: "Quote approval required",
-      description: "QT-2024-007 - Exceeds discount limit",
-      priority: "urgent",
-      action: "Review",
-    },
-    {
-      id: 2,
-      title: "PO validation pending",
-      description: "SO-2024-015 - Quantity mismatch",
-      priority: "high",
-      action: "Validate",
-    },
-    {
-      id: 3,
-      title: "Supplier LPO creation",
-      description: "SO-2024-013 - Ready for processing",
-      priority: "medium",
-      action: "Create",
-    },
-    {
-      id: 4,
-      title: "Inventory update",
-      description: "GR-2024-008 - Goods received",
-      priority: "low",
-      action: "Update",
-    },
-  ];
+  // Precompute flattened arrays (API may return {items:[]} or direct array)
+  const enquiriesArray = (enquiries?.enquiries || enquiries || []) as any[];
+  const quotationsArray = (quotations?.quotations || quotations || []) as any[];
+  const ordersArray = (salesOrders?.salesOrders || salesOrders || []) as any[];
+
+  const filteredEnquiriesTable = useMemo(() => {
+    const base = selectedCustomerId ? enquiriesArray.filter(e => (e.customer?.id || e.customerId) === selectedCustomerId) : enquiriesArray;
+    return [...base].sort((a,b) => new Date(b.enquiryDate || b.createdAt).getTime() - new Date(a.enquiryDate || a.createdAt).getTime()).slice(0,5);
+  }, [enquiriesArray, selectedCustomerId]);
+
+  const filteredQuotationsTable = useMemo(() => {
+    const base = selectedCustomerId ? quotationsArray.filter(q => (q.customer?.id || q.customerId) === selectedCustomerId) : quotationsArray;
+    return [...base].sort((a,b) => new Date(b.quotationDate || b.createdAt).getTime() - new Date(a.quotationDate || a.createdAt).getTime()).slice(0,5);
+  }, [quotationsArray, selectedCustomerId]);
+
+  const filteredOrdersTable = useMemo(() => {
+    const base = selectedCustomerId ? ordersArray.filter(o => (o.customer?.id || o.customerId) === selectedCustomerId) : ordersArray;
+    return [...base].sort((a,b) => new Date(b.orderDate || b.createdAt).getTime() - new Date(a.orderDate || a.createdAt).getTime()).slice(0,5);
+  }, [ordersArray, selectedCustomerId]);
+
+  // Dynamic recent activities derived from fetched entities
+  const { recentActivities, urgentTasks } = useMemo(() => {
+    const acts: any[] = [];
+    const tasks: any[] = [];
+    const push = (obj: any) => acts.push({ id: acts.length + 1, ...obj });
+
+    const filteredEnquiries = (enquiries?.enquiries || enquiries || []).filter((e: any) => !selectedCustomerId || (e.customer?.id || e.customerId) === selectedCustomerId);
+    const filteredQuotations = (quotations?.quotations || quotations || []).filter((q: any) => !selectedCustomerId || (q.customer?.id || q.customerId) === selectedCustomerId);
+    const filteredOrders = (salesOrders?.salesOrders || salesOrders || []).filter((o: any) => !selectedCustomerId || (o.customer?.id || o.customerId) === selectedCustomerId);
+
+    // Enquiries activities
+    filteredEnquiries.slice(0, 10).forEach((e: any) => {
+      push({
+        icon: FaQuestionCircle,
+        color: 'text-blue-600',
+        bgColor: 'bg-blue-100',
+        message: `New enquiry ${e.enquiryNumber || ''} from ${e.customer?.name || 'Customer'}`,
+        time: timeAgo(e.enquiryDate || e.createdAt)
+      });
+    });
+
+    // Quotation activities (created & status changes)
+    filteredQuotations.slice(0, 15).forEach((q: any) => {
+      push({
+        icon: FaFileInvoice,
+        color: 'text-gray-600',
+        bgColor: 'bg-gray-100',
+        message: `Quotation ${q.quoteNumber || ''} created for ${q.customer?.name || 'Customer'}`,
+        time: timeAgo(q.createdAt)
+      });
+      if (q.status === 'Sent') {
+        push({
+          icon: FaUpload,
+          color: 'text-gray-600',
+          bgColor: 'bg-gray-100',
+          message: `Quotation ${q.quoteNumber} sent to ${q.customer?.name || 'customer'}`,
+          time: timeAgo(q.updatedAt || q.createdAt)
+        });
+      } else if (q.status === 'Accepted') {
+        push({
+          icon: FaCheckCircle2,
+          color: 'text-green-600',
+          bgColor: 'bg-green-100',
+          message: `Quote ${q.quoteNumber} accepted by ${q.customer?.name || 'customer'}`,
+          time: timeAgo(q.updatedAt || q.createdAt)
+        });
+      } else if (q.status === 'Rejected' || q.status === 'Rejected by Customer') {
+        push({
+          icon: FaHistory,
+          color: 'text-red-600',
+          bgColor: 'bg-red-100',
+          message: `Quote ${q.quoteNumber} ${q.status.toLowerCase()}`,
+          time: timeAgo(q.updatedAt || q.createdAt)
+        });
+      } else if (q.status === 'Expired') {
+        push({
+          icon: FaHistory,
+          color: 'text-amber-600',
+          bgColor: 'bg-amber-100',
+          message: `Quotation ${q.quoteNumber} expired`,
+          time: timeAgo(q.updatedAt || q.createdAt)
+        });
+      }
+    });
+
+    // Sales orders activities
+    filteredOrders.slice(0, 10).forEach((o: any) => {
+      push({
+        icon: FaShoppingCart,
+        color: 'text-green-600',
+        bgColor: 'bg-green-100',
+        message: `Sales order ${o.orderNumber || ''} created for ${o.customer?.name || 'Customer'}`,
+        time: timeAgo(o.createdAt)
+      });
+    });
+
+    // Sort by time (acts already relative; re-sort by original timestamp if available stored in hidden field?)
+    // Since we only have relative strings now, we keep insertion order (approx by entity recency due to input ordering)
+
+    // Dynamic urgent tasks logic
+    filteredQuotations.slice(0, 10).forEach((q: any) => {
+      if (q.status === 'Draft' || q.status === 'Under Review') {
+        tasks.push({
+          id: tasks.length + 1,
+            title: q.status === 'Draft' ? 'Quote approval required' : 'Internal review pending',
+          description: `${q.quoteNumber || 'Quotation'} - ${q.status === 'Draft' ? 'Complete & submit' : 'Awaiting approval'}`,
+          priority: q.status === 'Draft' ? 'urgent' : 'high',
+          action: q.status === 'Draft' ? 'Review' : 'Review'
+        });
+      }
+      if (q.status === 'Sent') {
+        tasks.push({
+          id: tasks.length + 1,
+          title: 'Awaiting customer acceptance',
+          description: `${q.quoteNumber} - Follow up if no response`,
+          priority: 'medium',
+          action: 'Review'
+        });
+      }
+      if (q.status === 'Accepted') {
+        tasks.push({
+          id: tasks.length + 1,
+          title: 'Create Sales Order',
+          description: `${q.quoteNumber} accepted - convert to SO`,
+          priority: 'urgent',
+          action: 'Create'
+        });
+      }
+      if (q.status === 'Expired') {
+        tasks.push({
+          id: tasks.length + 1,
+          title: 'Renew expired quotation',
+          description: `${q.quoteNumber} - Issue new revision`,
+          priority: 'high',
+          action: 'Review'
+        });
+      }
+    });
+
+    filteredOrders.slice(0, 10).forEach((o: any) => {
+      if (o.status === 'Draft') {
+        tasks.push({
+          id: tasks.length + 1,
+          title: 'Validate sales order',
+          description: `${o.orderNumber} requires validation`,
+          priority: 'high',
+          action: 'Validate'
+        });
+      }
+    });
+
+    // Deduplicate tasks by title+description
+    const uniqueTasks: any[] = [];
+    const seen = new Set<string>();
+    for (const t of tasks) {
+      const key = t.title + '|' + t.description;
+      if (!seen.has(key)) { seen.add(key); uniqueTasks.push(t); }
+    }
+
+    return { recentActivities: acts.slice(0, 12), urgentTasks: uniqueTasks.slice(0, 12) };
+  }, [enquiries, quotations, salesOrders, selectedCustomerId]);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -406,9 +604,22 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Sequential Workflow Stepper */}
-        {/* Filter quotations by selected customer for process flow */}
+        {/* Sequential Workflow Stepper (only when a customer is selected) */}
         {(() => {
+          if (!selectedCustomerId) {
+            return (
+              <div className="mb-4">
+                <WorkflowStepper
+                  currentStep={0}
+                  completedSteps={[]}
+                  quotationId={undefined}
+                  quotationNumber={""}
+                  onMarkComplete={undefined}
+                  onViewDetails={undefined}
+                />
+              </div>
+            );
+          }
           // Filter all entities for the selected customer (support both customer?.id and customerId)
           const filteredEnquiries = selectedCustomerId
             ? (enquiries || []).filter((e: any) => (e.customer?.id || e.customerId) === selectedCustomerId)
@@ -444,73 +655,222 @@ export default function Dashboard() {
           if (sortedQuotations.length > 0) {
             completedSteps.push(3);
             currentStep = 4;
-            // Check quotation status for further progress
+            // Dynamic status-based progress + reflection card
             const latestQuote = sortedQuotations[0];
-            if (latestQuote.status === "Sent") {
-              completedSteps.push(4);
-              currentStep = 5;
-              reflectionCard = (
-                <div className="bg-white rounded-lg shadow border p-4 mt-4 flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold text-lg text-gray-900">
-                        <span role="img" aria-label="flag">🏁</span> Current Step: Customer Acceptance
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-700 mb-1">
-                      <span className="text-sm">
-                        <FaFileInvoice className="inline-block mr-1 text-gray-500" />
-                        Quote #{latestQuote.quoteNumber} - Waiting for customer response
-                      </span>
-                    </div>
-                    {latestQuote.customer && (
-                      <div className="text-xs text-gray-600">
-                        Customer: <span className="font-medium text-gray-900">{latestQuote.customer.name}</span>
-                        {latestQuote.customer.customerType && (
-                          <span className="ml-2">({latestQuote.customer.customerType})</span>
-                        )}
+            const status = latestQuote.status;
+
+            type StatusHandlerResult = { extraCompleted: number[]; currentStep: number; card: JSX.Element | null };
+            const statusHandlers: Record<string, (q: any) => StatusHandlerResult> = {
+              Draft: (q) => ({
+                extraCompleted: [],
+                currentStep: 4,
+                card: (
+                  <div className="bg-white rounded-lg shadow border p-4 mt-4 flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-lg text-gray-900">
+                          <span role="img" aria-label="pencil">✏️</span> Current Step: Prepare Quotation
+                        </span>
                       </div>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="success" onClick={() => setLocation(`/quotations/${latestQuote.id}/acceptance`)}>
-                      <CheckCircle className="h-4 w-4 mr-1" />
-                      Mark Complete
-                    </Button>
-                    <Button variant="outline" onClick={() => setLocation(`/quotations/${latestQuote.id}`)}>
-                      <Eye className="h-4 w-4 mr-1" />
-                      View Details
-                    </Button>
-                  </div>
-                </div>
-              );
-            } else if (latestQuote.status === "Accepted") {
-              completedSteps.push(4, 5, 6);
-              currentStep = 7;
-              reflectionCard = (
-                <div className="bg-white rounded-lg shadow border p-4 mt-4 flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold text-lg text-gray-900">
-                        <span role="img" aria-label="flag">✅</span> Current Step: Sales Order
-                      </span>
+                      <div className="text-sm text-gray-700 mb-1">
+                        Draft #{q.quoteNumber} - Complete pricing & terms then submit for review.
+                      </div>
+                      {q.customer && (
+                        <div className="text-xs text-gray-600">
+                          Customer: <span className="font-medium text-gray-900">{q.customer.name}</span>
+                          {q.customer.customerType && <span className="ml-2">({q.customer.customerType})</span>}
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center gap-2 text-gray-700 mb-1">
-                      <span className="text-sm">
-                        <FaFileInvoice className="inline-block mr-1 text-gray-500" />
-                        Quote #{latestQuote.quoteNumber} - Accepted by customer
-                      </span>
+                    <div className="flex gap-2">
+                      <Button variant="outline" onClick={() => setLocation(`/quotations/${q.id}`)}>
+                        <Eye className="h-4 w-4 mr-1" /> Edit Quote
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button variant="success" onClick={() => setLocation(`/sales-orders/new?fromQuote=${latestQuote.id}`)}>
-                      <CheckCircle className="h-4 w-4 mr-1" />
-                      Create Sales Order
-                    </Button>
+                )
+              }),
+              'Under Review': (q) => ({
+                extraCompleted: [],
+                currentStep: 4,
+                card: (
+                  <div className="bg-white rounded-lg shadow border p-4 mt-4 flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-lg text-gray-900">
+                          <span role="img" aria-label="hourglass">⏳</span> Internal Review Pending
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-700 mb-1">
+                        Quote #{q.quoteNumber} awaiting internal approval.
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" onClick={() => setLocation(`/quotations/${q.id}`)}>
+                        <Eye className="h-4 w-4 mr-1" /> View
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              );
+                )
+              }),
+              Approved: (q) => ({
+                extraCompleted: [],
+                currentStep: 4,
+                card: (
+                  <div className="bg-white rounded-lg shadow border p-4 mt-4 flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-lg text-gray-900">
+                          <span role="img" aria-label="flag">🏁</span> Ready To Send
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-700 mb-1">
+                        Quote #{q.quoteNumber} approved. Send to customer to progress.
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="success" onClick={() => setLocation(`/quotations/${q.id}`)}>
+                        <CheckCircle className="h-4 w-4 mr-1" /> Send Quote
+                      </Button>
+                    </div>
+                  </div>
+                )
+              }),
+              Sent: (q) => ({
+                extraCompleted: [4],
+                currentStep: 5,
+                card: (
+                  <div className="bg-white rounded-lg shadow border p-4 mt-4 flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-lg text-gray-900">
+                          <span role="img" aria-label="flag">🏁</span> Current Step: Customer Acceptance
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-gray-700 mb-1">
+                        <span className="text-sm">
+                          <FaFileInvoice className="inline-block mr-1 text-gray-500" />
+                          Quote #{q.quoteNumber} - Waiting for customer response
+                        </span>
+                      </div>
+                      {q.customer && (
+                        <div className="text-xs text-gray-600">
+                          Customer: <span className="font-medium text-gray-900">{q.customer.name}</span>
+                          {q.customer.customerType && (
+                            <span className="ml-2">({q.customer.customerType})</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" onClick={() => setLocation(`/quotations/${q.id}`)}>
+                        <Eye className="h-4 w-4 mr-1" /> View Details
+                      </Button>
+                    </div>
+                  </div>
+                )
+              }),
+              Accepted: (q) => ({
+                extraCompleted: [4, 5, 6],
+                currentStep: 7,
+                card: (
+                  <div className="bg-white rounded-lg shadow border p-4 mt-4 flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-lg text-gray-900">
+                          <span role="img" aria-label="check">✅</span> Current Step: Sales Order
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-gray-700 mb-1">
+                        <span className="text-sm">
+                          <FaFileInvoice className="inline-block mr-1 text-gray-500" />
+                          Quote #{q.quoteNumber} accepted by customer
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="success" onClick={() => setLocation(`/sales-orders/new?fromQuote=${q.id}`)}>
+                        <CheckCircle className="h-4 w-4 mr-1" /> Create Sales Order
+                      </Button>
+                    </div>
+                  </div>
+                )
+              }),
+              Rejected: (q) => ({
+                extraCompleted: [],
+                currentStep: 4,
+                card: (
+                  <div className="bg-white rounded-lg shadow border p-4 mt-4 flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-lg text-gray-900">
+                          <span role="img" aria-label="cross">❌</span> Quote Rejected Internally
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-700 mb-1">Revise pricing or terms and resubmit.</div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" onClick={() => setLocation(`/quotations/${q.id}`)}>
+                        <Eye className="h-4 w-4 mr-1" /> Revise
+                      </Button>
+                    </div>
+                  </div>
+                )
+              }),
+              'Rejected by Customer': (q) => ({
+                extraCompleted: [4], // It was sent, so mark step 4 complete
+                currentStep: 5,
+                card: (
+                  <div className="bg-white rounded-lg shadow border p-4 mt-4 flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-lg text-gray-900">
+                          <span role="img" aria-label="warning">⚠️</span> Customer Rejected Quote
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-700 mb-1">Review feedback and issue a revised quotation.</div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" onClick={() => setLocation(`/quotations/${q.id}`)}>
+                        <Eye className="h-4 w-4 mr-1" /> Open Quote
+                      </Button>
+                    </div>
+                  </div>
+                )
+              }),
+              Expired: (q) => ({
+                extraCompleted: [],
+                currentStep: 4,
+                card: (
+                  <div className="bg-white rounded-lg shadow border p-4 mt-4 flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-lg text-gray-900">
+                          <span role="img" aria-label="timer">⌛</span> Quotation Expired
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-700 mb-1">Create a new revision to continue.</div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" onClick={() => setLocation(`/quotations/${q.id}`)}>
+                        <Eye className="h-4 w-4 mr-1" /> Revise Quote
+                      </Button>
+                    </div>
+                  </div>
+                )
+              })
+            };
+
+            const handler = statusHandlers[status] || ((q: any) => ({ extraCompleted: [], currentStep: 4, card: null }));
+            const result = handler(latestQuote);
+            if (result.extraCompleted.length) {
+              completedSteps.push(...result.extraCompleted);
+              currentStep = result.currentStep;
+            } else {
+              // If no extra steps complete but handler advanced currentStep, honor it
+              currentStep = result.currentStep;
             }
+            reflectionCard = result.card;
             currentQuote = latestQuote;
           }
           // Step 7: Sales Order exists
@@ -520,24 +880,36 @@ export default function Dashboard() {
             // You can extend this logic for further steps (Supplier LPO, Goods Receipt, etc.)
           }
 
+          // If there is no enquiry yet show a subtle hint card under the placeholder
+          if (filteredEnquiries.length === 0) {
+            reflectionCard = reflectionCard || (
+              <div className="bg-white rounded-lg shadow border p-4 mt-4 text-sm text-gray-700">
+                No enquiries found for this customer yet. Start by creating a new enquiry.
+              </div>
+            );
+          }
+
           return (
-            <WorkflowStepper
-              currentStep={currentStep}
-              completedSteps={completedSteps}
-              quotationId={currentQuote?.id}
-              quotationNumber={currentQuote?.quoteNumber || "QT-2024-001"}
-              onMarkComplete={() => {
-                if (currentQuote?.id) {
-                  setLocation(`/quotations/${currentQuote.id}/acceptance`);
-                } else {
-                  setLocation('/quotations/new');
-                }
-              }}
-              onViewDetails={() => {
-                setLocation(`/process-flow-details`);
-              }}
-              reflectionCard={reflectionCard}
-            />
+            <div>
+              <WorkflowStepper
+                currentStep={currentStep}
+                completedSteps={completedSteps}
+                quotationId={currentQuote?.id}
+                quotationNumber={currentQuote?.quoteNumber || "QT-2024-001"}
+                quotationStatus={currentQuote?.status}
+                onMarkComplete={() => {
+                  if (currentQuote?.id) {
+                    setLocation(`/quotations/${currentQuote.id}/acceptance`);
+                  } else {
+                    setLocation('/quotations/new');
+                  }
+                }}
+                onViewDetails={() => {
+                  setLocation(`/process-flow-details?customerId=${selectedCustomerId}`);
+                }}
+                reflectionCard={reflectionCard}
+              />
+            </div>
           );
         })()}
       </div>
@@ -754,7 +1126,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Data Tables Section */}
+      {/* Data Tables Section (Enquiries & Orders) */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
         {/* Recent Enquiries */}
         <Card className="shadow-lg">
@@ -769,14 +1141,14 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <DataTable
-              data={selectedCustomerId ? (enquiries?.filter((e: any) => e.customer?.id === selectedCustomerId).slice(0, 5) || []) : (enquiries?.slice(0, 5) || [])}
+              data={filteredEnquiriesTable}
               columns={enquiryColumns}
               isLoading={enquiriesLoading}
               emptyMessage="No enquiries found"
             />
           </CardContent>
         </Card>
-
+        
         {/* Active Orders */}
         <Card className="shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between">
@@ -790,7 +1162,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <DataTable
-              data={selectedCustomerId ? (salesOrders?.filter((o: any) => o.customer?.id === selectedCustomerId).slice(0, 5) || []) : (salesOrders?.slice(0, 5) || [])}
+              data={filteredOrdersTable}
               columns={orderColumns}
               isLoading={ordersLoading}
               emptyMessage="No active orders found"

@@ -8,6 +8,7 @@ import { registerSupplierRoutes } from "./suppliers";
 import { registerItemRoutes } from "./items";
 import { registerEnquiryRoutes } from "./enquiries";
 import requisitionsRoutes from "./requisitions";
+import materialRequestsRoutes from "./material-requests";
 import { registerQuotationRoutes } from "./quotations";
 import { registerApprovalRoutes } from "./approvals";
 import { registerCustomerAcceptanceRoutes } from "./customer-acceptance";
@@ -55,6 +56,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerItemRoutes(app);
   registerEnquiryRoutes(app);
   app.use("/api/requisitions", requisitionsRoutes);
+  // Alias route for material requests UI (maps to requisitions storage)
+  app.use("/api/material-requests", materialRequestsRoutes);
   registerQuotationRoutes(app);
   registerApprovalRoutes(app);
   registerCustomerAcceptanceRoutes(app);

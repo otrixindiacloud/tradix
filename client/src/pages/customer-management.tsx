@@ -529,7 +529,7 @@ export default function CustomerManagementPage() {
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card className="relative overflow-hidden bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-blue-100/50"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-blue-50/50"></div>
             <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-sm font-medium text-gray-700">Total Customers</CardTitle>
               <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
@@ -548,7 +548,7 @@ export default function CustomerManagementPage() {
           </Card>
 
           <Card className="relative overflow-hidden bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200">
-            <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 to-green-100/50"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 to-green-50/50"></div>
             <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-sm font-medium text-gray-700">Retail Customers</CardTitle>
               <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
@@ -570,7 +570,7 @@ export default function CustomerManagementPage() {
           </Card>
 
           <Card className="relative overflow-hidden bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200">
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-purple-100/50"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-purple-50/50"></div>
             <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-sm font-medium text-gray-700">Wholesale Customers</CardTitle>
               <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
@@ -592,11 +592,11 @@ export default function CustomerManagementPage() {
           </Card>
 
           <Card className="relative overflow-hidden bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200">
-            <div className="absolute inset-0 bg-gradient-to-br from-orange-50/50 to-orange-100/50"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-50/50 to-orange-50/50"></div>
             <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-sm font-medium text-gray-700">Total Credit Limit</CardTitle>
               <div className="h-10 w-10 rounded-lg bg-orange-100 flex items-center justify-center">
-                <CreditCard className="h-5 w-5 text-orange-600" />
+                <CreditCard className="h-5 w-5 text-orange-600" /> 
               </div>
             </CardHeader>
             <CardContent className="relative">

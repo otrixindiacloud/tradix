@@ -56,6 +56,39 @@ export function registerPhysicalStockRoutes(app: Express) {
       }
     });
 
+    // PUT /api/physical-stock/:id - update a physical stock entry
+    app.put("/api/physical-stock/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+        const updateData = req.body;
+        console.log('[DEBUG] PUT /api/physical-stock/' + id, { body: updateData });
+       const updated = await storage.updatePhysicalStockItem(id, updateData);
+        if (!updated) {
+          return res.status(404).json({ message: "Physical stock item not found" });
+        }
+        res.json(updated);
+      } catch (error) {
+        console.error("Error updating physical stock item:", error);
+        res.status(500).json({ message: "Failed to update physical stock item" });
+      }
+    });
+
+    // DELETE /api/physical-stock/:id - delete a physical stock entry
+    app.delete("/api/physical-stock/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+        const userId = req.header('X-User-ID');
+        const success = await storage.deletePhysicalStockItem(id, userId);
+        if (!success) {
+          return res.status(404).json({ message: "Physical stock item not found" });
+        }
+        res.json({ message: "Physical stock item deleted" });
+      } catch (error) {
+        console.error("Error deleting physical stock item:", error);
+        res.status(500).json({ message: "Failed to delete physical stock item" });
+      }
+    });
+
   // Get all physical stock items (real DB physical_stock table)
   app.get("/api/physical-stock-counts", async (req, res) => {
     try {

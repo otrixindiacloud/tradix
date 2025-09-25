@@ -934,6 +934,14 @@ export class ModularStorage extends BaseStorage {
     return this.physicalStockStorage.createPhysicalStockItem(data);
   }
 
+  async updatePhysicalStockItem(id: string, data: any) {
+    return this.physicalStockStorage.updatePhysicalStockItem(id, data);
+  }
+
+  async deletePhysicalStockItem(id: string, userId?: string) {
+    return this.physicalStockStorage.deletePhysicalStockItem(id, userId);
+  }
+
   async getPhysicalStockCounts(limit?: number, offset?: number) {
     return this.physicalStockStorage.getPhysicalStockCounts(limit, offset);
   }

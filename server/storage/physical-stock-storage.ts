@@ -65,6 +65,31 @@ export class PhysicalStockStorage extends BaseStorage {
     return await db.select().from(physicalStock);
   }
   
+  async updatePhysicalStockItem(id: string, data: Partial<{ itemId: string; location: string; quantity: number; lastUpdated: string; countedBy: string; notes?: string }>) {
+    // Fetch old data for audit
+    const [oldItem] = await db.select().from(physicalStock).where(eq(physicalStock.id, id)).limit(1);
+    if (!oldItem) return null;
+    const updateData: any = { ...data };
+    if (data.lastUpdated) {
+      updateData.lastUpdated = new Date(data.lastUpdated);
+    }
+    const [updated] = await db
+      .update(physicalStock)
+      .set(updateData)
+      .where(eq(physicalStock.id, id))
+      .returning();
+    await this.logAuditEvent('physical_stock', id, 'updated', data.countedBy, oldItem, updated);
+    return updated;
+  }
+
+  async deletePhysicalStockItem(id: string, userId?: string) {
+    const [oldItem] = await db.select().from(physicalStock).where(eq(physicalStock.id, id)).limit(1);
+    if (!oldItem) return false;
+    await db.delete(physicalStock).where(eq(physicalStock.id, id));
+    await this.logAuditEvent('physical_stock', id, 'deleted', userId, oldItem, null);
+    return true;
+  }
+  
   // === PHYSICAL STOCK COUNTS ===
   
   async createPhysicalStockCount(data: InsertPhysicalStockCount): Promise<PhysicalStockCount> {

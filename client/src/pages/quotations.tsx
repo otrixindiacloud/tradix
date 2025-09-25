@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import StatusPill from "@/components/status/status-pill";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -84,6 +84,8 @@ export default function QuotationsPage() {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingQuotation, setEditingQuotation] = useState<Quotation | null>(null);
   const [deletingQuotation, setDeletingQuotation] = useState<Quotation | null>(null);
+  const [viewQuotation, setViewQuotation] = useState<Quotation | null>(null);
+  const [showViewDialog, setShowViewDialog] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   
   const { toast } = useToast();
@@ -456,6 +458,7 @@ export default function QuotationsPage() {
     {
       key: "actions",
       header: "Actions",
+      className: "text-center",
       render: (_: any, quotation: Quotation) => (
         <div className="flex gap-1">
           {/* Only show Approve button for client user, hide other actions */}
@@ -481,7 +484,8 @@ export default function QuotationsPage() {
                 size="sm"
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigate(`/quotations/${quotation.id}`);
+                  setViewQuotation(quotation);
+                  setShowViewDialog(true);
                 }}
                 data-testid={`button-view-${quotation.id}`}
               >
@@ -635,25 +639,21 @@ export default function QuotationsPage() {
         )}
       </Card>
 
-      {/* Quotations Table */}
-      <div>
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <h3 className="text-lg font-semibold">Quotations</h3>
-            {dateRange.from && dateRange.to && (
-              <p className="text-sm text-blue-600 mt-1">
-                Filtered by date range: {format(dateRange.from, "MMM dd")} - {format(dateRange.to, "MMM dd, yyyy")}
-              </p>
-            )}
+      {/* Quotations Table (Card Layout) */}
+      <Card>
+        <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-4">
+          <div className="space-y-1">
+            <CardTitle>Quotations</CardTitle>
+            <CardDescription>
+              Showing {paginatedQuotations.length} of {enrichedQuotations.length} quotations
+              {dateRange.from && dateRange.to && (
+                <span className="block mt-1 text-blue-600">
+                  Date Range: {format(dateRange.from, "MMM dd")} - {format(dateRange.to, "MMM dd, yyyy")}
+                </span>
+              )}
+            </CardDescription>
           </div>
           <div className="flex items-center space-x-2">
-            <Button 
-              variant="outline" 
-              onClick={() => navigate("/quotations/new")}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              New Quotation
-            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" data-testid="button-export-table">
@@ -674,9 +674,8 @@ export default function QuotationsPage() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        </div>
-        <div>
-
+        </CardHeader>
+        <CardContent>
           {error ? (
             <div className="text-center py-8">
               <p className="text-red-600 mb-4">Error loading quotations: {error?.message || 'Unknown error'}</p>
@@ -685,7 +684,7 @@ export default function QuotationsPage() {
               </Button>
             </div>
           ) : (
-            <div>
+            <>
               <DataTable
                 data={paginatedQuotations || []}
                 columns={columns}
@@ -695,7 +694,6 @@ export default function QuotationsPage() {
                   navigate(`/quotations/${quotation.id}`);
                 }}
               />
-              {/* Pagination Controls */}
               {quotations.length > pageSize && (
                 <div className="flex justify-center items-center gap-2 mt-4">
                   <Button
@@ -707,9 +705,7 @@ export default function QuotationsPage() {
                   >
                     Previous
                   </Button>
-                  <span className="mx-2 text-sm">
-                    Page {currentPage} of {totalPages}
-                  </span>
+                  <span className="mx-2 text-sm">Page {currentPage} of {totalPages}</span>
                   <Button
                     variant="outline"
                     size="sm"
@@ -721,10 +717,10 @@ export default function QuotationsPage() {
                   </Button>
                 </div>
               )}
-            </div>
+            </>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Edit Quotation Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
@@ -753,6 +749,71 @@ export default function QuotationsPage() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Quotation Quick Detail Dialog */}
+      <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Quotation Details</DialogTitle>
+          </DialogHeader>
+          {viewQuotation ? (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                <div>
+                  <div className="text-gray-500">Quote Number</div>
+                  <div className="font-medium">{viewQuotation.quoteNumber}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500">Revision</div>
+                  <div className="font-medium">{viewQuotation.revision}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500">Status</div>
+                  <Badge variant="outline" className={getStatusBadgeClass(viewQuotation.status)}>{viewQuotation.status}</Badge>
+                </div>
+                <div>
+                  <div className="text-gray-500">Approval</div>
+                  <Badge variant="outline" className={getApprovalBadgeClass(viewQuotation.approvalStatus)}>{viewQuotation.approvalStatus || 'N/A'}</Badge>
+                </div>
+                <div>
+                  <div className="text-gray-500">Customer Type</div>
+                  <div className="font-medium">{viewQuotation.customerType}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500">Total</div>
+                  <div className="font-semibold">${parseFloat(viewQuotation.totalAmount || '0').toLocaleString()}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500">Quote Date</div>
+                  <div>{formatDate(new Date(viewQuotation.quoteDate), 'MMM dd, yyyy')}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500">Valid Until</div>
+                  <div>{formatDate(new Date(viewQuotation.validUntil), 'MMM dd, yyyy')}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500">Created At</div>
+                  <div>{formatDate(new Date(viewQuotation.createdAt), 'MMM dd, yyyy')}</div>
+                </div>
+              </div>
+              {viewQuotation.notes && (
+                <div>
+                  <div className="text-gray-500 text-sm mb-1">Notes</div>
+                  <div className="bg-gray-50 rounded-md p-3 text-sm whitespace-pre-wrap max-h-48 overflow-auto">
+                    {viewQuotation.notes}
+                  </div>
+                </div>
+              )}
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => navigate(`/quotations/${viewQuotation.id}`)}>Open Full Page</Button>
+                <Button onClick={() => setShowViewDialog(false)}>Close</Button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm text-gray-500">No quotation selected.</div>
+          )}
         </DialogContent>
       </Dialog>
 

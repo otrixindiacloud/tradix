@@ -36,6 +36,7 @@ interface WorkflowStepperProps {
   className?: string;
   quotationId?: string;
   quotationNumber?: string;
+  quotationStatus?: string;
   onMarkComplete?: () => void;
   onViewDetails?: () => void;
   reflectionCard?: React.ReactNode;
@@ -47,6 +48,7 @@ export default function WorkflowStepper({
   className,
   quotationId,
   quotationNumber = "QT-2024-001",
+  quotationStatus,
   onMarkComplete,
   onViewDetails
 }: WorkflowStepperProps) {
@@ -82,6 +84,27 @@ export default function WorkflowStepper({
       navigate(`/process-flow-details`);
     }
   };
+
+  // Derive current step meta
+  const currentStepMeta = WORKFLOW_STEPS.find(s => s.id === currentStep);
+  const currentStepName = currentStepMeta ? currentStepMeta.name : '—';
+
+  // Dynamic descriptive line based on quotation status & step
+  const description = (() => {
+    if (!quotationNumber) return 'No quotation yet.';
+    if (!quotationStatus) return `Quote #${quotationNumber}`;
+    switch (quotationStatus) {
+      case 'Draft': return `Quote #${quotationNumber} is in draft`; 
+      case 'Under Review': return `Quote #${quotationNumber} under internal review`;
+      case 'Approved': return `Quote #${quotationNumber} approved – ready to send`;
+      case 'Sent': return `Quote #${quotationNumber} sent – awaiting customer response`;
+      case 'Accepted': return `Quote #${quotationNumber} accepted by customer`;
+      case 'Rejected': return `Quote #${quotationNumber} rejected internally`;
+      case 'Rejected by Customer': return `Quote #${quotationNumber} rejected by customer`;
+      case 'Expired': return `Quote #${quotationNumber} expired – create revision`;
+      default: return `Quote #${quotationNumber} (${quotationStatus})`;
+    }
+  })();
 
   return (
     <div className={cn("bg-white rounded-xl shadow-sm border border-gray-200 p-6", className)}>
@@ -178,11 +201,11 @@ export default function WorkflowStepper({
             <div>
               <h4 className="font-medium text-gray-900 flex items-center gap-2" data-testid="text-current-step">
                 <FaFlag className="h-4 w-4 text-gray-600" />
-                Current Step: Customer Acceptance
+                Current Step: {currentStepName}
               </h4>
               <p className="text-sm text-gray-600 flex items-center gap-2" data-testid="text-step-description">
                 <FaFileInvoice className="h-4 w-4 text-gray-500" />
-                Quote #{quotationNumber} - Waiting for customer response
+                {description}
               </p>
             </div>
             <div className="flex space-x-2">

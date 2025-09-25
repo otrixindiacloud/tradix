@@ -31,69 +31,121 @@ router.get("/:id", async (req, res) => {
 // POST /api/stock-issues
 router.post("/", async (req, res) => {
   try {
-    const payload = { ...req.body };
-    // Robustly handle issueDate
-    console.log("[DEBUG][POST] Received issueDate:", payload.issueDate, "Type:", typeof payload.issueDate);
-    if (!payload.issueDate) {
-      payload.issueDate = null;
-    } else if (typeof payload.issueDate === "string") {
-      const dateObj = new Date(payload.issueDate);
-      if (dateObj instanceof Date && !isNaN(dateObj.getTime())) {
-        payload.issueDate = dateObj.toISOString();
-      } else {
-        console.warn("[WARN][POST] Invalid date string for issueDate:", payload.issueDate);
-        payload.issueDate = null;
-      }
-    } else if (payload.issueDate instanceof Date) {
-      if (!isNaN(payload.issueDate.getTime()) && typeof payload.issueDate.toISOString === "function") {
-        payload.issueDate = payload.issueDate.toISOString();
-      } else {
-        console.warn("[WARN][POST] Invalid Date object for issueDate:", payload.issueDate);
-        payload.issueDate = null;
-      }
-    } else {
-      console.warn("[WARN][POST] Unexpected type for issueDate:", payload.issueDate, typeof payload.issueDate);
-      payload.issueDate = null;
+    // Accept both camelCase and snake_case from client
+    const body = req.body || {};
+    console.log("[DEBUG][POST /api/stock-issues] Raw body received:", body);
+    const rawIssueDate = body.issueDate ?? body.issue_date;
+
+    const payload: any = {
+      issueNumber: body.issueNumber ?? body.issue_number,
+      itemId: body.itemId ?? body.item_id,
+      issuedTo: body.issuedTo ?? body.issued_to,
+      quantity: body.quantity != null ? Number(body.quantity) : undefined,
+      issueDate: rawIssueDate,
+      reason: body.reason,
+      departmentId: body.departmentId ?? body.department_id,
+      notes: body.notes,
+      status: body.status,
+    };
+
+    // Basic validation (avoid silent 500s)
+    const problems: string[] = [];
+    const uuidRegex = /^[0-9a-fA-F-]{36}$/;
+    if (!payload.itemId || typeof payload.itemId !== 'string' || !uuidRegex.test(payload.itemId)) {
+      problems.push('itemId (UUID) is required');
     }
+    if (payload.quantity == null || isNaN(payload.quantity) || payload.quantity <= 0) {
+      problems.push('quantity must be > 0');
+    }
+    if (problems.length) {
+      return res.status(422).json({ message: 'Validation failed', issues: problems, payload });
+    }
+
+    // Normalize issueDate -> Date | undefined
+    if (payload.issueDate) {
+      if (payload.issueDate instanceof Date) {
+        if (isNaN(payload.issueDate.getTime())) payload.issueDate = undefined;
+      } else if (typeof payload.issueDate === "string" || typeof payload.issueDate === "number") {
+        const d = new Date(payload.issueDate);
+        if (!isNaN(d.getTime())) payload.issueDate = d; else payload.issueDate = undefined;
+      } else {
+        // Unknown type; drop it so DB default applies
+        payload.issueDate = undefined;
+      }
+    }
+    // Failsafe: ensure final is Date or undefined
+    if (payload.issueDate && !(payload.issueDate instanceof Date)) {
+      const d = new Date(payload.issueDate as any);
+      payload.issueDate = isNaN(d.getTime()) ? undefined : d;
+    }
+    console.log('[DEBUG][POST] issueDate final type:', typeof payload.issueDate, 'value:', payload.issueDate instanceof Date ? payload.issueDate.toISOString() : payload.issueDate);
+
+    // Remove undefined so Drizzle can apply defaults
+    Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k]);
+
+    console.log("[DEBUG][POST] Normalized Stock Issue Payload", payload);
     const issue = await storage.createStockIssue(payload);
     res.json(issue);
   } catch (err) {
-    console.error("Stock Issue Creation Error:", err, "Payload:", req.body);
+    console.error("Stock Issue Creation Error:", err, "Raw Payload:", req.body);
     const errorMessage = (err instanceof Error && err.message) ? err.message : String(err);
-    res.status(500).json({ message: "Failed to create stock issue", error: errorMessage });
+    res.status(500).json({ 
+      message: "Failed to create stock issue", 
+      error: errorMessage,
+      received: req.body,
+      hint: "Verify itemId references an existing inventory item and that migrations for stock_issue table are applied.",
+    });
   }
 });
 
 // PUT /api/stock-issues/:id
 router.put("/:id", async (req, res) => {
   try {
-    const payload = { ...req.body };
-    // Robustly handle issueDate
-    console.log("[DEBUG][PUT] Received issueDate:", payload.issueDate, "Type:", typeof payload.issueDate);
-    if (!payload.issueDate) {
-      payload.issueDate = null;
-    } else if (typeof payload.issueDate === "string") {
-      const dateObj = new Date(payload.issueDate);
-      if (dateObj instanceof Date && !isNaN(dateObj.getTime())) {
-        payload.issueDate = dateObj.toISOString();
-      } else {
-        console.warn("[WARN][PUT] Invalid date string for issueDate:", payload.issueDate);
-        payload.issueDate = null;
-      }
-    } else if (payload.issueDate instanceof Date) {
-      if (!isNaN(payload.issueDate.getTime()) && typeof payload.issueDate.toISOString === "function") {
-        payload.issueDate = payload.issueDate.toISOString();
-      } else {
-        console.warn("[WARN][PUT] Invalid Date object for issueDate:", payload.issueDate);
-        payload.issueDate = null;
-      }
-    } else {
-      console.warn("[WARN][PUT] Unexpected type for issueDate:", payload.issueDate, typeof payload.issueDate);
-      payload.issueDate = null;
+    const body = req.body || {};
+    const rawIssueDate = body.issueDate ?? body.issue_date;
+    const payload: any = {
+      issueNumber: body.issueNumber ?? body.issue_number,
+      itemId: body.itemId ?? body.item_id,
+      issuedTo: body.issuedTo ?? body.issued_to,
+      quantity: body.quantity != null ? Number(body.quantity) : undefined,
+      issueDate: rawIssueDate,
+      reason: body.reason,
+      departmentId: body.departmentId ?? body.department_id,
+      notes: body.notes,
+      status: body.status,
+    };
+    const problems: string[] = [];
+    const uuidRegex = /^[0-9a-fA-F-]{36}$/;
+    if (payload.itemId && (typeof payload.itemId !== 'string' || !uuidRegex.test(payload.itemId))) {
+      problems.push('itemId must be a valid UUID');
     }
+    if (payload.quantity != null && (isNaN(payload.quantity) || payload.quantity <= 0)) {
+      problems.push('quantity must be > 0');
+    }
+    if (problems.length) {
+      return res.status(422).json({ message: 'Validation failed', issues: problems, payload });
+    }
+    if (payload.issueDate) {
+      if (payload.issueDate instanceof Date) {
+        if (isNaN(payload.issueDate.getTime())) payload.issueDate = undefined;
+      } else if (typeof payload.issueDate === "string" || typeof payload.issueDate === "number") {
+        const d = new Date(payload.issueDate);
+        if (!isNaN(d.getTime())) payload.issueDate = d; else payload.issueDate = undefined;
+      } else {
+        payload.issueDate = undefined;
+      }
+    }
+    if (payload.issueDate && !(payload.issueDate instanceof Date)) {
+      const d = new Date(payload.issueDate as any);
+      payload.issueDate = isNaN(d.getTime()) ? undefined : d;
+    }
+    console.log('[DEBUG][PUT] issueDate final type:', typeof payload.issueDate, 'value:', payload.issueDate instanceof Date ? payload.issueDate.toISOString() : payload.issueDate);
+    Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k]);
+    console.log("[DEBUG][PUT] Normalized Stock Issue Payload", payload);
     const updated = await storage.updateStockIssue(req.params.id, payload);
     res.json(updated);
   } catch (err) {
+    console.error("Stock Issue Update Error", err);
     res.status(500).json({ message: "Failed to update stock issue" });
   }
 });

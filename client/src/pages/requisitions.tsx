@@ -115,122 +115,68 @@ export default function RequisitionsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Mock data for development - replace with actual API call
-  const mockRequisitions: Requisition[] = [
-    {
-      id: "req-001",
-      requisitionNumber: "REQ-2024-001",
-      requestedBy: "John Smith",
-      department: "IT",
-      priority: "High",
-      status: "Pending Approval",
-      requestDate: "2024-01-15",
-      requiredDate: "2024-01-25",
-      totalEstimatedCost: "5500.00",
-      justification: "Replacement for outdated servers",
-      itemCount: 3,
-      createdAt: "2024-01-15T10:00:00Z",
-      updatedAt: "2024-01-15T10:00:00Z"
+  const { data: requisitions = [], isLoading = false, error } = useQuery({
+    queryKey: ["/api/requisitions", filters],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      // Treat 'all' and empty as unset
+      if (filters.status && filters.status !== 'all') params.set('status', filters.status);
+      if (filters.priority && filters.priority !== 'all') params.set('priority', filters.priority);
+      if (filters.department && filters.department !== 'all') params.set('department', filters.department);
+      if (filters.search) params.set('search', filters.search);
+      if (filters.dateFrom) params.set('dateFrom', filters.dateFrom);
+      if (filters.dateTo) params.set('dateTo', filters.dateTo);
+      // Request a reasonably large page size (could wire real pagination later)
+      params.set('page', '1');
+      params.set('limit', '500');
+      const res = await fetch(`/api/requisitions?${params.toString()}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Failed to fetch requisitions');
+      }
+      const json = await res.json();
+      // API returns { data: Requisition[], pagination: {...} }
+      if (Array.isArray(json)) return json; // fallback if legacy
+      return Array.isArray(json.data) ? json.data : [];
     },
-    {
-      id: "req-002",
-      requisitionNumber: "REQ-2024-002",
-      requestedBy: "Sarah Johnson",
-      department: "HR",
-      priority: "Medium",
-      status: "Approved",
-      requestDate: "2024-01-14",
-      requiredDate: "2024-01-20",
-      approvedBy: "Mike Wilson",
-      approvedDate: "2024-01-15",
-      totalEstimatedCost: "2200.00",
-      justification: "Office furniture for new employees",
-      itemCount: 5,
-      createdAt: "2024-01-14T09:30:00Z",
-      updatedAt: "2024-01-15T14:20:00Z"
-    },
-    {
-      id: "req-003",
-      requisitionNumber: "REQ-2024-003",
-      requestedBy: "David Brown",
-      department: "Finance",
-      priority: "Low",
-      status: "Draft",
-      requestDate: "2024-01-16",
-      requiredDate: "2024-02-01",
-      totalEstimatedCost: "850.00",
-      justification: "Accounting software licenses",
-      itemCount: 2,
-      createdAt: "2024-01-16T11:15:00Z",
-      updatedAt: "2024-01-16T11:15:00Z"
-    },
-    {
-      id: "req-004",
-      requisitionNumber: "REQ-2024-004",
-      requestedBy: "Emily Davis",
-      department: "Marketing",
-      priority: "Urgent",
-      status: "Processing",
-      requestDate: "2024-01-13",
-      requiredDate: "2024-01-18",
-      approvedBy: "Tom Anderson",
-      approvedDate: "2024-01-14",
-      totalEstimatedCost: "3200.00",
-      justification: "Campaign materials and promotional items",
-      itemCount: 8,
-      createdAt: "2024-01-13T08:45:00Z",
-      updatedAt: "2024-01-16T16:30:00Z"
-    }
-  ];
+  });
 
-  // Check for edit parameter in URL
+  // Handle deep-link edit param once data is loaded
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const editId = urlParams.get('edit');
-    if (editId) {
-      // Find the requisition to edit
-      const requisitionToEdit = mockRequisitions.find(req => req.id === editId);
-      if (requisitionToEdit) {
-        setEditingRequisition(requisitionToEdit);
+    if (editId && requisitions && Array.isArray(requisitions)) {
+      const target = (requisitions as Requisition[]).find(r => r.id === editId);
+      if (target) {
+        setEditingRequisition(target);
         setShowEditDialog(true);
-        // Remove the edit parameter from URL
         window.history.replaceState({}, '', window.location.pathname);
       }
     }
-  }, []);
-
-  const { data: requisitions = mockRequisitions, isLoading = false, error } = useQuery({
-    queryKey: ["/api/requisitions", filters],
-    queryFn: async () => {
-      // Using mock data for development - backend to be implemented
-      return mockRequisitions.filter(req => {
-        if (filters.status && req.status !== filters.status) return false;
-        if (filters.priority && req.priority !== filters.priority) return false;
-        if (filters.department && req.department !== filters.department) return false;
-        if (filters.search && !req.requisitionNumber.toLowerCase().includes(filters.search.toLowerCase()) 
-            && !req.requestedBy.toLowerCase().includes(filters.search.toLowerCase())) return false;
-        return true;
-      });
-    },
-  });
+  }, [requisitions]);
 
   // Create requisition mutation
   const createRequisition = useMutation({
     mutationFn: async (data: typeof newRequisition) => {
-      // Mock implementation - replace with actual API call
-      const newReq: Requisition = {
-        id: `req-${Date.now()}`,
-        requisitionNumber: `REQ-2024-${String(mockRequisitions.length + 1).padStart(3, '0')}`,
-        ...data,
-        status: "Draft",
-        requestDate: new Date().toISOString().split('T')[0],
-        totalEstimatedCost: "0.00",
-        itemCount: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+      const body = {
+        requestedBy: data.requestedBy,
+        department: data.department,
+        priority: data.priority,
+        requiredDate: data.requiredDate ? new Date(data.requiredDate).toISOString() : new Date().toISOString(),
+        justification: data.justification,
+        notes: data.notes || undefined,
+        totalEstimatedCost: '0',
       };
-      mockRequisitions.push(newReq);
-      return newReq;
+      const res = await fetch('/api/requisitions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Failed to create requisition');
+      }
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/requisitions"] });
@@ -248,10 +194,10 @@ export default function RequisitionsPage() {
         notes: "",
       });
     },
-    onError: () => {
+    onError: (err: any) => {
       toast({
         title: "Error",
-        description: "Failed to create requisition",
+        description: err?.message || "Failed to create requisition",
         variant: "destructive",
       });
     },
@@ -260,17 +206,28 @@ export default function RequisitionsPage() {
   // Update requisition mutation
   const updateRequisition = useMutation({
     mutationFn: async (data: Partial<Requisition> & { id: string }) => {
-      // Mock implementation - replace with actual API call
-      const index = mockRequisitions.findIndex(r => r.id === data.id);
-      if (index > -1) {
-        mockRequisitions[index] = {
-          ...mockRequisitions[index],
-          ...data,
-          updatedAt: new Date().toISOString()
-        };
-        return mockRequisitions[index];
+      const payload: any = {
+        requestedBy: data.requestedBy,
+        department: data.department,
+        priority: data.priority,
+        requiredDate: data.requiredDate ? new Date(data.requiredDate).toISOString() : undefined,
+        status: data.status,
+        totalEstimatedCost: data.totalEstimatedCost,
+        justification: data.justification,
+        notes: data.notes,
+      };
+      // Remove undefined fields
+      Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k]);
+      const res = await fetch(`/api/requisitions/${data.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Failed to update requisition');
       }
-      throw new Error("Requisition not found");
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/requisitions"] });
@@ -281,10 +238,10 @@ export default function RequisitionsPage() {
       setShowEditDialog(false);
       setEditingRequisition(null);
     },
-    onError: () => {
+    onError: (err: any) => {
       toast({
         title: "Error",
-        description: "Failed to update requisition",
+        description: err?.message || "Failed to update requisition",
         variant: "destructive",
       });
     },
@@ -293,11 +250,12 @@ export default function RequisitionsPage() {
   // Delete requisition mutation
   const deleteRequisition = useMutation({
     mutationFn: async (id: string) => {
-      // Mock implementation - replace with actual API call
-      const index = mockRequisitions.findIndex(r => r.id === id);
-      if (index > -1) {
-        mockRequisitions.splice(index, 1);
+      const res = await fetch(`/api/requisitions/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Failed to delete requisition');
       }
+      return true;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/requisitions"] });
@@ -307,10 +265,10 @@ export default function RequisitionsPage() {
       });
       setDeletingRequisition(null);
     },
-    onError: () => {
+    onError: (err: any) => {
       toast({
         title: "Error",
-        description: "Failed to delete requisition",
+        description: err?.message || "Failed to delete requisition",
         variant: "destructive",
       });
     },
@@ -548,8 +506,8 @@ export default function RequisitionsPage() {
   ];
 
   // Pagination logic
-  const totalPages = Math.ceil(requisitions.length / pageSize);
-  const paginatedRequisitions = requisitions.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const totalPages = Math.ceil((requisitions as Requisition[]).length / pageSize) || 1;
+  const paginatedRequisitions = (requisitions as Requisition[]).slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div className="space-y-6">
@@ -575,7 +533,7 @@ export default function RequisitionsPage() {
                   <span className="font-medium">Procurement Management</span>
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  Total Requisitions: {requisitions.length}
+                  Total Requisitions: {(requisitions as Requisition[]).length}
                 </div>
               </div>
             </div>
@@ -604,7 +562,7 @@ export default function RequisitionsPage() {
           <div className="flex-1">
             <div className="text-base font-semibold text-gray-700 tracking-tight">Pending Approval</div>
             <div className="text-3xl font-extrabold text-gray-900 drop-shadow-sm">
-              {requisitions?.filter((r: Requisition) => r.status === "Pending Approval").length || 0}
+              {(requisitions as Requisition[])?.filter((r: Requisition) => r.status === "Pending Approval").length || 0}
             </div>
           </div>
           <div className="absolute right-4 top-4 opacity-10 text-7xl font-black text-gray-300 select-none pointer-events-none">!</div>
@@ -617,7 +575,7 @@ export default function RequisitionsPage() {
           <div className="flex-1">
             <div className="text-base font-semibold text-gray-700 tracking-tight">Approved</div>
             <div className="text-3xl font-extrabold text-gray-900 drop-shadow-sm">
-              {requisitions?.filter((r: Requisition) => r.status === "Approved").length || 0}
+              {(requisitions as Requisition[])?.filter((r: Requisition) => r.status === "Approved").length || 0}
             </div>
           </div>
           <div className="absolute right-4 top-4 opacity-10 text-7xl font-black text-gray-300 select-none pointer-events-none">✓</div>
@@ -630,7 +588,7 @@ export default function RequisitionsPage() {
           <div className="flex-1">
             <div className="text-base font-semibold text-gray-700 tracking-tight">Processing</div>
             <div className="text-3xl font-extrabold text-gray-900 drop-shadow-sm">
-              {requisitions?.filter((r: Requisition) => r.status === "Processing").length || 0}
+              {(requisitions as Requisition[])?.filter((r: Requisition) => r.status === "Processing").length || 0}
             </div>
           </div>
           <div className="absolute right-4 top-4 opacity-10 text-7xl font-black text-gray-300 select-none pointer-events-none">⧗</div>
@@ -643,7 +601,7 @@ export default function RequisitionsPage() {
           <div className="flex-1">
             <div className="text-base font-semibold text-gray-700 tracking-tight">Urgent</div>
             <div className="text-3xl font-extrabold text-gray-900 drop-shadow-sm">
-              {requisitions?.filter((r: Requisition) => r.priority === "Urgent").length || 0}
+              {(requisitions as Requisition[])?.filter((r: Requisition) => r.priority === "Urgent").length || 0}
             </div>
           </div>
           <div className="absolute right-4 top-4 opacity-10 text-7xl font-black text-gray-300 select-none pointer-events-none">!</div>
@@ -832,7 +790,7 @@ export default function RequisitionsPage() {
                   }}
                 />
                 {/* Pagination Controls */}
-                {requisitions.length > pageSize && (
+                {(requisitions as Requisition[]).length > pageSize && (
                   <div className="flex justify-center items-center gap-2 mt-4">
                     <Button
                       variant="outline"

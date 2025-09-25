@@ -1,12 +1,10 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams, useLocation } from "wouter";
 import { formatDate } from "date-fns";
 import { 
   ArrowLeft, 
-  Edit, 
   Download, 
-  CreditCard,
   FileText,
   Clock,
   DollarSign,
@@ -14,14 +12,8 @@ import {
   Calendar,
   Receipt,
   Package,
-  CheckCircle,
-  XCircle,
   AlertTriangle,
-  Plus,
-  Trash2,
-  Eye,
-  Phone,
-  Mail
+  Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,10 +23,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import StatusPill from "@/components/status/status-pill";
+// import StatusPill from "@/components/status/status-pill"; // not needed now
 import { useToast } from "@/hooks/use-toast";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+// Delete functionality not yet supported for derived invoices
 
 interface PurchaseInvoice {
   id: string;
@@ -77,33 +68,23 @@ interface PurchaseInvoice {
 
 interface PurchaseInvoiceItem {
   id: string;
-  invoiceId: string;
+  goodsReceiptId?: string;
   itemDescription: string;
-  supplierCode: string;
+  supplierCode?: string;
   barcode?: string;
   quantity: number;
-  unitPrice: string;
-  totalPrice: string;
-  unitOfMeasure: string;
-  taxRate: string;
-  discountRate: string;
-  discountAmount: string;
-  taxAmount: string;
-  goodsReceiptItemId?: string;
+  unitPrice?: string;
+  totalPrice?: string;
+  unitOfMeasure?: string;
+  taxRate?: string;
+  discountRate?: string;
+  discountAmount?: string;
+  taxAmount?: string;
   notes?: string;
 }
 
-type PaymentEntry = {
-  id: string;
-  invoiceId: string;
-  paymentDate: string;
-  amount: string;
-  paymentMethod: "Bank Transfer" | "Cheque" | "Cash" | "Credit Card" | "Letter of Credit";
-  reference: string;
-  notes?: string;
-  createdBy: string;
-  createdAt: string;
-};
+// Payments not yet implemented on backend for derived purchase invoices
+type PaymentEntry = never;
 
 export default function PurchaseInvoiceDetailPage() {
   // Handles viewing an attachment (opens in new tab or downloads)
@@ -114,22 +95,15 @@ export default function PurchaseInvoiceDetailPage() {
   };
   const { id } = useParams();
   const [, navigate] = useLocation();
-  const [showEditDialog, setShowEditDialog] = useState(false);
-  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [editingInvoice, setEditingInvoice] = useState<PurchaseInvoice | null>(null);
-
-  // Ensure editingInvoice is always initialized with latest invoice data when opening edit dialog
-  const handleOpenEditDialog = () => {
-    if (invoice) {
-      setEditingInvoice({ ...invoice });
-      setShowEditDialog(true);
-    }
-  };
-  const [paymentAmount, setPaymentAmount] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"Bank Transfer" | "Cheque" | "Cash" | "Credit Card" | "Letter of Credit">("Bank Transfer");
-  const [paymentReference, setPaymentReference] = useState("");
-  const [paymentNotes, setPaymentNotes] = useState("");
+  // UI state for features not yet supported; kept for future enablement
+  const [showEditDialog] = useState(false);
+  const [showPaymentDialog] = useState(false);
+  const [showDeleteDialog] = useState(false);
+  const [editingInvoice] = useState<PurchaseInvoice | null>(null);
+  const [paymentAmount] = useState("");
+  const [paymentMethod] = useState<"Bank Transfer" | "Cheque" | "Cash" | "Credit Card" | "Letter of Credit">("Bank Transfer");
+  const [paymentReference] = useState("");
+  const [paymentNotes] = useState("");
   
   const { toast } = useToast();
 
@@ -186,202 +160,30 @@ export default function PurchaseInvoiceDetailPage() {
       description: `Invoice PDF (${filename}) download started.`,
     });
   };
-  const queryClient = useQueryClient();
-
-  // Mock data for the selected invoice - replace with actual API call
-  const mockInvoice: PurchaseInvoice = {
-    id: id || "pi-001",
-    invoiceNumber: "PI-2024-001",
-    supplierInvoiceNumber: "SUP-INV-001",
-    supplierId: "sup-001",
-    supplierName: "Tech Solutions LLC",
-    supplierEmail: "billing@techsolutions.com",
-    supplierPhone: "+973 1234 5678",
-    purchaseOrderId: "po-001",
-    purchaseOrderNumber: "PO-2024-001",
-    goodsReceiptId: "gr-001",
-    goodsReceiptNumber: "GR-2024-001",
-    status: "Approved",
-    paymentStatus: "Partially Paid",
-    invoiceDate: "2024-01-15",
-    dueDate: "2024-02-14",
-    receivedDate: "2024-01-17",
-    paymentDate: "2024-01-20",
-    subtotal: "5000.00",
-    taxAmount: "250.00",
-    discountAmount: "100.00",
-    totalAmount: "5150.00",
-    paidAmount: "2000.00",
-    remainingAmount: "3150.00",
-    currency: "BHD",
-    paymentTerms: "Net 30",
-    paymentMethod: "Bank Transfer",
-    bankReference: "TXN-789456123",
-    approvedBy: "John Smith",
-    approvalDate: "2024-01-18",
-    notes: "Hardware procurement invoice for Q1 2024",
-    attachments: ["invoice.pdf", "delivery_note.pdf", "purchase_order.pdf"],
-    itemCount: 3,
-    isRecurring: false,
-    createdAt: "2024-01-17T10:00:00Z",
-    updatedAt: "2024-01-20T14:30:00Z"
-  };
-
-  const mockInvoiceItems: PurchaseInvoiceItem[] = [
-    {
-      id: "item-001",
-      invoiceId: id || "pi-001",
-      itemDescription: "Dell Laptop OptiPlex 3090",
-      supplierCode: "DELL-OPT-3090",
-      barcode: "123456789012",
-      quantity: 10,
-      unitPrice: "450.00",
-      totalPrice: "4500.00",
-      unitOfMeasure: "PCS",
-      taxRate: "5.00",
-      discountRate: "2.00",
-      discountAmount: "90.00",
-      taxAmount: "225.00",
-      goodsReceiptItemId: "gr-item-001",
-      notes: "Latest model with SSD"
-    },
-    {
-      id: "item-002",
-      invoiceId: id || "pi-001",
-      itemDescription: "Wireless Mouse Logitech MX",
-      supplierCode: "LOGI-MX-001",
-      barcode: "234567890123",
-      quantity: 15,
-      unitPrice: "25.00",
-      totalPrice: "375.00",
-      unitOfMeasure: "PCS",
-      taxRate: "5.00",
-      discountRate: "1.00",
-      discountAmount: "3.75",
-      taxAmount: "18.75",
-      goodsReceiptItemId: "gr-item-002"
-    },
-    {
-      id: "item-003",
-      invoiceId: id || "pi-001",
-      itemDescription: "Keyboard Mechanical RGB",
-      supplierCode: "MECH-KB-RGB",
-      barcode: "345678901234",
-      quantity: 5,
-      unitPrice: "85.00",
-      totalPrice: "425.00",
-      unitOfMeasure: "PCS",
-      taxRate: "5.00",
-      discountRate: "1.50",
-      discountAmount: "6.38",
-      taxAmount: "21.25",
-      goodsReceiptItemId: "gr-item-003",
-      notes: "Cherry MX switches"
-    }
-  ];
-
-  const mockPaymentHistory: PaymentEntry[] = [
-    {
-      id: "pay-001",
-      invoiceId: id || "pi-001",
-      paymentDate: "2024-01-20",
-      amount: "2000.00",
-      paymentMethod: "Bank Transfer",
-      reference: "TXN-789456123",
-      notes: "Partial payment received",
-      createdBy: "John Smith",
-      createdAt: "2024-01-20T14:30:00Z"
-    }
-  ];
-
-  const { data: invoice, isLoading } = useQuery<PurchaseInvoice>({
-    queryKey: ["/api/purchase-invoices", id],
+  // Fetch all derived purchase invoices then select the one we need (no single endpoint yet)
+  const { data: invoices, isLoading } = useQuery<PurchaseInvoice[]>({
+    queryKey: ["/api/purchase-invoices"],
     queryFn: async () => {
-      // Mock implementation - replace with actual API call
-      return mockInvoice;
-    },
+      const resp = await fetch("/api/purchase-invoices");
+      if (!resp.ok) throw new Error("Failed to fetch purchase invoices");
+      return resp.json();
+    }
   });
 
+  const invoice = useMemo(() => (invoices || []).find(inv => inv.id === id), [invoices, id]);
+
+  // Fetch items from goods receipt items endpoint if goodsReceiptId present
   const { data: invoiceItems = [] } = useQuery<PurchaseInvoiceItem[]>({
-    queryKey: ["/api/purchase-invoices", id, "items"],
+    queryKey: ["/api/goods-receipt-headers", invoice?.goodsReceiptId, "items"],
+    enabled: !!invoice?.goodsReceiptId,
     queryFn: async () => {
-      // Mock implementation - replace with actual API call
-      return mockInvoiceItems;
-    },
-  });
-
-  const { data: paymentHistory = [] } = useQuery<PaymentEntry[]>({
-    queryKey: ["/api/purchase-invoices", id, "payments"],
-    queryFn: async () => {
-      // Mock implementation - replace with actual API call
-      return mockPaymentHistory;
-    },
-  });
-
-  const updateInvoice = useMutation({
-    mutationFn: async (data: Partial<PurchaseInvoice>) => {
-      // Mock implementation - replace with actual API call
-      const resp = await fetch(`/api/purchase-invoices/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (!resp.ok) throw new Error('Failed to update invoice');
+      const resp = await fetch(`/api/goods-receipt-headers/${invoice!.goodsReceiptId}/items`);
+      if (!resp.ok) throw new Error("Failed to fetch goods receipt items");
       return resp.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/purchase-invoices", id] });
-      toast({
-        title: "Success",
-        description: "Invoice updated successfully",
-      });
-      setShowEditDialog(false);
-      setEditingInvoice(null);
-    },
+    }
   });
 
-  const addPayment = useMutation({
-    mutationFn: async (paymentData: { amount: string; method: string; reference: string; notes: string }) => {
-      // Mock implementation - replace with actual API call
-      const resp = await fetch(`/api/purchase-invoices/${id}/payments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(paymentData),
-      });
-      if (!resp.ok) throw new Error('Failed to add payment');
-      return resp.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/purchase-invoices", id] });
-      queryClient.invalidateQueries({ queryKey: ["/api/purchase-invoices", id, "payments"] });
-      toast({
-        title: "Success",
-        description: "Payment recorded successfully",
-      });
-      setShowPaymentDialog(false);
-      setPaymentAmount("");
-      setPaymentReference("");
-      setPaymentNotes("");
-    },
-  });
-
-  const deleteInvoice = useMutation({
-    mutationFn: async () => {
-      // Mock implementation - replace with actual API call
-      const resp = await fetch(`/api/purchase-invoices/${id}`, {
-        method: 'DELETE',
-      });
-      if (!resp.ok) throw new Error('Failed to delete invoice');
-      return resp.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Invoice deleted successfully",
-      });
-      navigate('/purchase-invoices');
-    },
-  });
+  const paymentHistory: PaymentEntry[] = [];
 
   const getStatusBadgeProps = (status: string) => {
     switch (status) {
@@ -474,6 +276,34 @@ export default function PurchaseInvoiceDetailPage() {
     );
   }
 
+  if (!invoice && !isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Invoice Not Found</h1>
+          <p className="text-gray-600 mb-4">The requested purchase invoice could not be found.</p>
+          <Link href="/purchase-invoices">
+            <Button>Back to Purchase Invoices</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // If still loading invoices, show spinner (previous loading branch covers but guard here)
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading invoice details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Defensive: if invoice somehow undefined after loading
   if (!invoice) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -501,25 +331,19 @@ export default function PurchaseInvoiceDetailPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{invoice.invoiceNumber}</h1>
-            <p className="text-gray-600">{invoice.supplierName}</p>
+            <h1 className="text-3xl font-bold text-gray-900">{invoice?.invoiceNumber}</h1>
+            <p className="text-gray-600">{invoice?.supplierName}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleOpenEditDialog}>
-            <Edit className="h-4 w-4 mr-2" />
+          <Button variant="outline" disabled title="Edit not available (derived invoice)">
             Edit
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" disabled title="Download requires attachment integration">
             <Download className="h-4 w-4 mr-2" />
             Download
           </Button>
-          {parseFloat(invoice.remainingAmount) > 0 && (
-            <Button onClick={() => setShowPaymentDialog(true)}>
-              <CreditCard className="h-4 w-4 mr-2" />
-              Record Payment
-            </Button>
-          )}
+          <Button disabled title="Payments not implemented for derived invoices">Record Payment</Button>
         </div>
       </div>
 
@@ -534,10 +358,10 @@ export default function PurchaseInvoiceDetailPage() {
               <div>
                 <p className="text-sm font-bold text-black">Status</p>
                 <Badge 
-                  variant={getStatusBadgeProps(invoice.status).variant}
-                  className={getStatusBadgeProps(invoice.status).className}
+                  variant={getStatusBadgeProps(invoice?.status || 'Draft').variant}
+                  className={getStatusBadgeProps(invoice?.status || 'Draft').className}
                 >
-                  <span className="font-medium">{invoice.status}</span>
+                  <span className="font-medium">{invoice?.status}</span>
                 </Badge>
               </div>
             </div>
@@ -552,7 +376,7 @@ export default function PurchaseInvoiceDetailPage() {
               </div>
               <div>
                 <p className="text-sm font-bold text-black">Total Amount</p>
-                <p className="text-xl font-bold">{invoice.currency} {parseFloat(invoice.totalAmount).toLocaleString()}</p>
+                <p className="text-xl font-bold">{invoice?.currency} {parseFloat(invoice?.totalAmount || '0').toLocaleString()}</p>
               </div>
             </div>
           </CardContent>
@@ -561,16 +385,14 @@ export default function PurchaseInvoiceDetailPage() {
   <Card className="shadow-lg">
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div>
-                <CreditCard className="h-6 w-6 text-yellow-600" />
-              </div>
+              <div className="h-6 w-6" />
               <div>
                 <p className="text-sm font-bold text-black">Payment Status</p>
                 <Badge 
-                  variant={getPaymentStatusBadgeProps(invoice.paymentStatus).variant}
-                  className={getPaymentStatusBadgeProps(invoice.paymentStatus).className}
+                  variant={getPaymentStatusBadgeProps(invoice?.paymentStatus || 'Unpaid').variant}
+                  className={getPaymentStatusBadgeProps(invoice?.paymentStatus || 'Unpaid').className}
                 >
-                  <span className="font-medium">{invoice.paymentStatus}</span>
+                  <span className="font-medium">{invoice?.paymentStatus}</span>
                 </Badge>
               </div>
             </div>
@@ -585,7 +407,7 @@ export default function PurchaseInvoiceDetailPage() {
               </div>
               <div>
                 <p className="text-sm font-bold text-black">Due Date</p>
-                <p className="text-lg font-semibold">{formatDate(new Date(invoice.dueDate), 'MMM dd, yyyy')}</p>
+                  <p className="text-lg font-semibold">{invoice?.dueDate ? formatDate(new Date(invoice.dueDate), 'MMM dd, yyyy') : '-'}</p>
               </div>
             </div>
           </CardContent>
@@ -607,21 +429,21 @@ export default function PurchaseInvoiceDetailPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-gray-600">Invoice Number</Label>
-                  <p className="text-lg font-semibold">{invoice.invoiceNumber}</p>
+                  <p className="text-lg font-semibold">{invoice?.invoiceNumber}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-600">Supplier Invoice Number</Label>
-                  <p className="text-lg">{invoice.supplierInvoiceNumber || "N/A"}</p>
+                  <p className="text-lg">{invoice?.supplierInvoiceNumber || "N/A"}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-600">Invoice Date</Label>
-                  <p className="text-lg">{formatDate(new Date(invoice.invoiceDate), 'MMM dd, yyyy')}</p>
+                  <p className="text-lg">{invoice?.invoiceDate ? formatDate(new Date(invoice.invoiceDate), 'MMM dd, yyyy') : '-'}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-600">Due Date</Label>
-                  <p className="text-lg">{formatDate(new Date(invoice.dueDate), 'MMM dd, yyyy')}</p>
+                  <p className="text-lg">{invoice?.dueDate ? formatDate(new Date(invoice.dueDate), 'MMM dd, yyyy') : '-'}</p>
                 </div>
-                {invoice.receivedDate && (
+                {invoice?.receivedDate && (
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Received Date</Label>
                     <p className="text-lg">{formatDate(new Date(invoice.receivedDate), 'MMM dd, yyyy')}</p>
@@ -629,22 +451,22 @@ export default function PurchaseInvoiceDetailPage() {
                 )}
                 <div>
                   <Label className="text-sm font-medium text-gray-600">Payment Terms</Label>
-                  <p className="text-lg">{invoice.paymentTerms}</p>
+                  <p className="text-lg">{invoice?.paymentTerms || '-'}</p>
                 </div>
-                {invoice.purchaseOrderNumber && (
+                {invoice?.purchaseOrderNumber && (
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Purchase Order</Label>
                     <p className="text-lg">{invoice.purchaseOrderNumber}</p>
                   </div>
                 )}
-                {invoice.goodsReceiptNumber && (
+                {invoice?.goodsReceiptNumber && (
                   <div>
                     <Label className="text-sm font-medium text-gray-600">Goods Receipt</Label>
                     <p className="text-lg">{invoice.goodsReceiptNumber}</p>
                   </div>
                 )}
               </div>
-              {invoice.notes && (
+              {invoice?.notes && (
                 <div>
                   <Label className="text-sm font-medium text-gray-600">Notes</Label>
                   <p className="text-gray-800">{invoice.notes}</p>
@@ -675,38 +497,32 @@ export default function PurchaseInvoiceDetailPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {invoiceItems.map((item) => (
-                      <tr key={item.id} className="border-b hover:bg-gray-50">
+                    {invoiceItems.map((item: any) => (
+                      <tr key={item.id} className="border-b">
                         <td className="py-3 px-2">
                           <div>
-                            <p className="font-medium">{item.itemDescription}</p>
-                            <p className="text-sm text-gray-600">{item.supplierCode}</p>
-                            {item.barcode && (
-                              <p className="text-xs text-gray-500">Barcode: {item.barcode}</p>
-                            )}
-                            {item.notes && (
-                              <p className="text-xs text-gray-500 italic">{item.notes}</p>
-                            )}
+                            <p className="font-medium">{item.itemDescription || item.description || 'Item'}</p>
+                            {item.supplierCode && <p className="text-sm text-gray-600">{item.supplierCode}</p>}
+                            {item.barcode && (<p className="text-xs text-gray-500">Barcode: {item.barcode}</p>)}
+                            {item.notes && (<p className="text-xs text-gray-500 italic">{item.notes}</p>)}
                           </div>
                         </td>
                         <td className="text-center py-3 px-2">
-                          {item.quantity} {item.unitOfMeasure}
+                          {item.quantity} {item.unitOfMeasure || ''}
                         </td>
                         <td className="text-right py-3 px-2">
-                          {invoice.currency} {parseFloat(item.unitPrice).toLocaleString()}
+                          {invoice?.currency} {parseFloat(item.unitPrice || '0').toLocaleString()}
                         </td>
                         <td className="text-right py-3 px-2">
-                          {parseFloat(item.discountAmount) > 0 ? (
-                            <span className="text-green-600">
-                              -{invoice.currency} {parseFloat(item.discountAmount).toLocaleString()}
-                            </span>
-                          ) : "-"}
+                          {item.discountAmount && parseFloat(item.discountAmount) > 0 ? (
+                            <span className="text-green-600">-{invoice?.currency} {parseFloat(item.discountAmount).toLocaleString()}</span>
+                          ) : '-'}
                         </td>
                         <td className="text-right py-3 px-2">
-                          {invoice.currency} {parseFloat(item.taxAmount).toLocaleString()}
+                          {invoice?.currency} {parseFloat(item.taxAmount || '0').toLocaleString()}
                         </td>
                         <td className="text-right py-3 px-2 font-medium">
-                          {invoice.currency} {parseFloat(item.totalPrice).toLocaleString()}
+                          {invoice?.currency} {parseFloat(item.totalPrice || '0').toLocaleString()}
                         </td>
                       </tr>
                     ))}
@@ -720,31 +536,31 @@ export default function PurchaseInvoiceDetailPage() {
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Subtotal:</span>
-                  <span className="font-medium">{invoice.currency} {parseFloat(invoice.subtotal).toLocaleString()}</span>
+                  <span className="font-medium">{invoice?.currency} {parseFloat(invoice?.subtotal || '0').toLocaleString()}</span>
                 </div>
-                {parseFloat(invoice.discountAmount) > 0 && (
+                {invoice?.discountAmount && parseFloat(invoice.discountAmount) > 0 && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Discount:</span>
-                    <span className="text-green-600">-{invoice.currency} {parseFloat(invoice.discountAmount).toLocaleString()}</span>
+                    <span className="text-green-600">-{invoice?.currency} {parseFloat(invoice.discountAmount).toLocaleString()}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span className="text-gray-600">Tax:</span>
-                  <span className="font-medium">{invoice.currency} {parseFloat(invoice.taxAmount).toLocaleString()}</span>
+                  <span className="font-medium">{invoice?.currency} {parseFloat(invoice.taxAmount || '0').toLocaleString()}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total:</span>
-                  <span>{invoice.currency} {parseFloat(invoice.totalAmount).toLocaleString()}</span>
+                  <span>{invoice?.currency} {parseFloat(invoice?.totalAmount || '0').toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-green-600">
                   <span>Paid:</span>
-                  <span>{invoice.currency} {parseFloat(invoice.paidAmount).toLocaleString()}</span>
+                  <span>{invoice?.currency} {parseFloat(invoice?.paidAmount || '0').toLocaleString()}</span>
                 </div>
-                {parseFloat(invoice.remainingAmount) > 0 && (
+                {invoice?.remainingAmount && parseFloat(invoice.remainingAmount) > 0 && (
                   <div className="flex justify-between text-red-600 font-medium">
                     <span>Remaining:</span>
-                    <span>{invoice.currency} {parseFloat(invoice.remainingAmount).toLocaleString()}</span>
+                    <span>{invoice?.currency} {parseFloat(invoice.remainingAmount).toLocaleString()}</span>
                   </div>
                 )}
               </div>
@@ -765,15 +581,15 @@ export default function PurchaseInvoiceDetailPage() {
             <CardContent className="space-y-3">
               <div>
                 <Label className="text-sm font-medium text-gray-600">Name</Label>
-                <p className="font-medium">{invoice.supplierName}</p>
+                <p className="font-medium">{invoice?.supplierName}</p>
               </div>
-              {invoice.supplierEmail && (
+              {invoice?.supplierEmail && (
                 <div>
                   <Label className="text-sm font-medium text-gray-600">Email</Label>
                   <p className="text-blue-600">{invoice.supplierEmail}</p>
                 </div>
               )}
-              {invoice.supplierPhone && (
+              {invoice?.supplierPhone && (
                 <div>
                   <Label className="text-sm font-medium text-gray-600">Phone</Label>
                   <p>{invoice.supplierPhone}</p>
@@ -782,7 +598,7 @@ export default function PurchaseInvoiceDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Payment History */}
+          {/* Payment History (not available yet) */}
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -791,231 +607,33 @@ export default function PurchaseInvoiceDetailPage() {
               </CardTitle>
             </CardHeader>
                   <CardContent>
-                    {paymentHistory.length === 0 ? (
-                      <p className="text-gray-600 text-center py-4">No payments recorded</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {paymentHistory.map((payment) => (
-                          <div key={payment.id} className="rounded-lg p-3">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <p className="font-medium">{invoice.currency} {parseFloat(payment.amount).toLocaleString()}</p>
-                          <p className="text-sm text-gray-600">{payment.paymentMethod}</p>
-                        </div>
-                        <p className="text-sm text-gray-500">{formatDate(new Date(payment.paymentDate), 'MMM dd, yyyy')}</p>
-                      </div>
-                      {payment.reference && (
-                        <p className="text-xs text-gray-500">Ref: {payment.reference}</p>
-                      )}
-                      {payment.notes && (
-                        <p className="text-xs text-gray-600 mt-1">{payment.notes}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+                    <p className="text-gray-600 text-center py-4">Payment integration coming soon</p>
+                  )
             </CardContent>
           </Card>
 
 
-          {/* Quick Actions */}
+          {/* Quick Actions (limited - derived data) */}
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full justify-start" onClick={handleDownloadPDF}>
+              <Button variant="outline" disabled className="w-full justify-start" title="Download not available yet">
                 <Download className="h-4 w-4 mr-2" />
                 Download PDF
               </Button>
-              <Button variant="outline" className="w-full justify-start" onClick={handlePrint}>
+              <Button variant="outline" disabled className="w-full justify-start" title="Print not available yet">
                 <FileText className="h-4 w-4 mr-2" />
                 Print Invoice
               </Button>
-              {parseFloat(invoice.remainingAmount) > 0 && (
-                <Button className="w-full justify-start" onClick={() => setShowPaymentDialog(true)}>
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Record Payment
-                </Button>
-              )}
-              <Button variant="destructive" className="w-full justify-start" onClick={() => setShowDeleteDialog(true)}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Invoice
-              </Button>
+              <Button disabled className="w-full justify-start" title="Payments not available">Record Payment</Button>
+              <Button variant="destructive" disabled className="w-full justify-start" title="Delete not available">Delete Invoice</Button>
             </CardContent>
           </Card>
         </div>
       </div>
-
-      {/* Edit Invoice Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Edit Invoice</DialogTitle>
-          </DialogHeader>
-          {editingInvoice && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="supplierInvoiceNumber">Supplier Invoice Number</Label>
-                  <Input
-                    id="supplierInvoiceNumber"
-                    value={editingInvoice.supplierInvoiceNumber || ""}
-                    onChange={e => setEditingInvoice({ ...editingInvoice, supplierInvoiceNumber: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="dueDate">Due Date</Label>
-                  <Input
-                    id="dueDate"
-                    type="date"
-                    value={editingInvoice.dueDate}
-                    onChange={e => setEditingInvoice({ ...editingInvoice, dueDate: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="paymentTerms">Payment Terms</Label>
-                  <Input
-                    id="paymentTerms"
-                    value={editingInvoice.paymentTerms}
-                    onChange={e => setEditingInvoice({ ...editingInvoice, paymentTerms: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="currency">Currency</Label>
-                  <Select
-                    value={editingInvoice.currency}
-                    onValueChange={value => setEditingInvoice({ ...editingInvoice, currency: value as any })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="BHD">BHD</SelectItem>
-                      <SelectItem value="AED">AED</SelectItem>
-                      <SelectItem value="EUR">EUR</SelectItem>
-                      <SelectItem value="GBP">GBP</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="col-span-2">
-                  <Label htmlFor="notes">Notes</Label>
-                  <Textarea
-                    id="notes"
-                    value={editingInvoice.notes || ""}
-                    onChange={e => setEditingInvoice({ ...editingInvoice, notes: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setShowEditDialog(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={() => updateInvoice.mutate(editingInvoice)} disabled={updateInvoice.isPending}>
-                  {updateInvoice.isPending ? "Saving..." : "Save Changes"}
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Record Payment Dialog */}
-      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Record Payment</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="paymentAmount">Payment Amount</Label>
-              <Input
-                id="paymentAmount"
-                type="number"
-                step="0.01"
-                max={invoice?.remainingAmount}
-                value={paymentAmount}
-                onChange={e => setPaymentAmount(e.target.value)}
-                placeholder="0.00"
-              />
-              <p className="text-sm text-gray-600 mt-1">
-                Remaining: {invoice?.currency} {parseFloat(invoice?.remainingAmount || "0").toLocaleString()}
-              </p>
-            </div>
-            <div>
-              <Label htmlFor="paymentMethod">Payment Method</Label>
-              <Select value={paymentMethod} onValueChange={value => setPaymentMethod(value as any)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
-                  <SelectItem value="Cheque">Cheque</SelectItem>
-                  <SelectItem value="Cash">Cash</SelectItem>
-                  <SelectItem value="Credit Card">Credit Card</SelectItem>
-                  <SelectItem value="Letter of Credit">Letter of Credit</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="paymentReference">Reference</Label>
-              <Input
-                id="paymentReference"
-                value={paymentReference}
-                onChange={e => setPaymentReference(e.target.value)}
-                placeholder="Transaction reference"
-              />
-            </div>
-            <div>
-              <Label htmlFor="paymentNotes">Notes</Label>
-              <Textarea
-                id="paymentNotes"
-                value={paymentNotes}
-                onChange={e => setPaymentNotes(e.target.value)}
-                placeholder="Payment notes (optional)"
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowPaymentDialog(false)}>
-                Cancel
-              </Button>
-              <Button 
-                onClick={() => addPayment.mutate({ 
-                  amount: paymentAmount, 
-                  method: paymentMethod, 
-                  reference: paymentReference,
-                  notes: paymentNotes
-                })}
-                disabled={addPayment.isPending || !paymentAmount}
-              >
-                {addPayment.isPending ? "Recording..." : "Record Payment"}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Invoice Dialog */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Invoice</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this purchase invoice? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={() => deleteInvoice.mutate()}
-              disabled={deleteInvoice.isPending}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              {deleteInvoice.isPending ? "Deleting..." : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Removed Edit / Payment / Delete dialogs since backend support not implemented for derived invoices */}
     </div>
   );
 }

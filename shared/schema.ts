@@ -96,6 +96,9 @@ export const stockIssue = pgTable("stock_issue", {
   quantity: integer("quantity").notNull(),
   issueDate: timestamp("issue_date", { withTimezone: true }).defaultNow(),
   reason: text("reason"),
+  // Newly added fields (ensure migrations applied: see add-stock-issue-fixes.sql)
+  departmentId: uuid("department_id"),
+  notes: text("notes"),
   status: varchar("status", { length: 32 }),
 });
 
@@ -1379,11 +1382,15 @@ export const stockMovements = pgTable("stock_movements", {
   referenceType: text("reference_type"), // GoodsReceipt, SalesOrder, Transfer, Adjustment, Return
   referenceId: text("reference_id"),
   storageLocation: text("storage_location"),
+  // Explicit from/to locations for transfers (previously only storageLocation was stored)
+  fromLocation: varchar("from_location", { length: 128 }),
+  toLocation: varchar("to_location", { length: 128 }),
   quantityBefore: integer("quantity_before").notNull(),
   quantityMoved: integer("quantity_moved").notNull(),
   quantityAfter: integer("quantity_after").notNull(),
   unitCost: decimal("unit_cost", { precision: 10, scale: 2 }),
   totalValue: decimal("total_value", { precision: 10, scale: 2 }),
+  status: text("status"), // Draft, Pending Approval, Approved, In Transit, Completed, Cancelled
   notes: text("notes"),
   createdBy: text("created_by"),
   createdAt: timestamp("created_at").defaultNow(),

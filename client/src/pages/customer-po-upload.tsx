@@ -54,44 +54,94 @@ export default function PoUpload() {
 
   const customers = customersData.customers || [];
 
+  // Two-step upload mutation: 1) upload file to /api/files/upload 2) create PO record /api/customer-po-upload
   const uploadPO = useMutation({
     mutationFn: async ({ quotationId, poNumber, file }: { quotationId: string; poNumber: string; file: File }) => {
-      // Use FormData for file upload
-      const formData = new FormData();
-      formData.append("quotationId", quotationId);
-      formData.append("poNumber", poNumber);
-      formData.append("file", file);
-      if (currentUser?.user?.id) {
-        formData.append("uploadedBy", currentUser.user.id);
+      // Step 1: Upload file
+      const fileForm = new FormData();
+      fileForm.append("files", file);
+      const fileRes = await fetch("/api/files/upload", { method: "POST", body: fileForm, credentials: "include" });
+      if (!fileRes.ok) {
+        throw new Error("Failed to upload file to server");
       }
+      const fileData = await fileRes.json();
+      const uploaded = fileData.files?.[0];
+      if (!uploaded) throw new Error("File upload response invalid");
 
-      // Use fetch directly for multipart upload
-      const response = await fetch("/api/customer-po-upload", {
+      // Step 2: Create PO referencing uploaded file
+      const payload = {
+        quotationId,
+        // backend auto-generates poNumber, but include customer reference as poNumber field? Actually route does not accept poNumber, so treat as customerReference
+        customerReference: poNumber,
+        documentPath: uploaded.path, // e.g. /api/files/download/<filename>
+        documentName: uploaded.name,
+        documentType: uploaded.mimetype || file.type || "application/octet-stream",
+        uploadedBy: currentUser?.user?.id,
+        poDate: new Date().toISOString(),
+        currency: "BHD",
+      } as any;
+
+      const res = await fetch("/api/customer-po-upload", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
         credentials: "include",
       });
-      if (!response.ok) {
-        throw new Error("Failed to upload PO document");
+      if (!res.ok) {
+        let serverMsg = "Failed to create purchase order record";
+        try {
+          const maybeJson = await res.json();
+            if (maybeJson?.message) serverMsg = maybeJson.message;
+        } catch {
+          const errText = await res.text();
+          if (errText) serverMsg = errText;
+        }
+        console.error("PO upload failed:", serverMsg);
+        throw new Error(serverMsg);
       }
-      return response.json();
+      return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/quotations"] });
-      toast({
-        title: "Success",
-        description: "PO document uploaded successfully",
+    onMutate: async (vars) => {
+      // Optimistic update: show PO number and uploaded status immediately
+      await queryClient.cancelQueries({ queryKey: ["/api/quotations"] });
+      const previous = queryClient.getQueryData(["/api/quotations"]);
+      queryClient.setQueryData(["/api/quotations"], (old: any) => {
+        if (!Array.isArray(old)) return old;
+        return old.map((q: any) => q.id === vars.quotationId ? {
+          ...q,
+          customerPoDocument: q.customerPoDocument || "#optimistic", // placeholder path
+          customerPoDocumentName: (vars as any).file?.name || q.customerPoDocumentName,
+          customerPoNumber: vars.poNumber || q.customerPoNumber,
+        } : q);
       });
+      return { previous };
+    },
+    onSuccess: (po: any, vars) => {
+      // Optimistically update quotations cache so table reflects immediately
+      queryClient.setQueryData(["/api/quotations"], (old: any) => {
+        if (!Array.isArray(old)) return old;
+        return old.map((q: any) => q.id === vars.quotationId ? {
+          ...q,
+            customerPoDocument: po.documentPath,
+            customerPoDocumentName: po.documentName,
+            customerPoNumber: po.poNumber,
+        } : q);
+      });
+      toast({ title: "Success", description: `PO uploaded. Generated PO #: ${po.poNumber}` });
       setSelectedQuotation(null);
       setUploadedFile(null);
       setPoNumber("");
+      // Still revalidate to ensure backend authoritative state (e.g., validationStatus)
+      queryClient.invalidateQueries({ queryKey: ["/api/quotations"] });
     },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to upload PO document",
-        variant: "destructive",
-      });
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/quotations"] });
+    },
+    onError: (error: any, _vars, ctx) => {
+      if (ctx?.previous) {
+        queryClient.setQueryData(["/api/quotations"], ctx.previous);
+      }
+      toast({ title: "Upload Failed", description: error.message || "Failed to upload PO document", variant: "destructive" });
     },
   });
 
@@ -179,9 +229,9 @@ export default function PoUpload() {
             Uploaded{row.customerPoDocumentName ? `: ${row.customerPoDocumentName}` : ""}
           </Badge>
         ) : (
-          <Badge variant="outline" className="border-red-500 text-red-600">
-            <X className="h-3 w-3 mr-1" />
-            Not uploaded
+          <Badge variant="outline" className="border-orange-500 text-orange-600">
+            <AlertTriangle className="h-3 w-3 mr-1" />
+            Pending
           </Badge>
         )
       ),
@@ -200,7 +250,7 @@ export default function PoUpload() {
               <Button
                 size="sm"
                 variant="outline"
-                className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                className="border-blue-500 text-blue-600"
                 onClick={(e) => {
                   e.stopPropagation();
                   setSelectedQuotation(quotation);
@@ -265,7 +315,7 @@ export default function PoUpload() {
           <div className="flex gap-2">
             <Button
               variant="outline"
-              className="border-blue-500 text-blue-600 hover:bg-blue-50 font-semibold px-6 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition flex items-center gap-2"
+              className="border-blue-500 text-blue-600 font-semibold px-6 py-2 rounded-lg shadow-sm flex items-center gap-2"
               onClick={() => setSelectedQuotation({})}
               data-testid="button-new-customer-po-upload"
             >
@@ -353,7 +403,7 @@ export default function PoUpload() {
                 />
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               </div>
-              <Button variant="outline" size="icon" data-testid="button-filter" className="border-blue-500 text-blue-600 hover:bg-blue-50 shadow-sm">
+              <Button variant="outline" size="icon" data-testid="button-filter" className="border-blue-500 text-blue-600 shadow-sm">
                 <Filter className="h-4 w-4" />
               </Button>
             </div>
@@ -457,8 +507,8 @@ export default function PoUpload() {
               </label>
               <div
                 {...getRootProps()}
-                className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                  isDragActive ? "border-blue-400 bg-blue-50" : "border-gray-300 hover:border-gray-400"
+                className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer ${
+                  isDragActive ? "border-blue-400 bg-blue-50" : "border-gray-300"
                 }`}
                 data-testid="dropzone-po-document"
               >
@@ -510,20 +560,16 @@ export default function PoUpload() {
               </Button>
               <Button
                 variant="outline"
-                className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                className="border-blue-500 text-blue-600"
                 onClick={() => {
                   if (selectedQuotation?.id && poNumber.trim() && uploadedFile) {
-                    uploadPO.mutate({
-                      quotationId: selectedQuotation.id,
-                      poNumber: poNumber.trim(),
-                      file: uploadedFile,
-                    });
+                    uploadPO.mutate({ quotationId: selectedQuotation.id, poNumber: poNumber.trim(), file: uploadedFile });
                   }
                 }}
                 disabled={!selectedQuotation?.id || !poNumber.trim() || !uploadedFile || uploadPO.isPending}
                 data-testid="button-upload-po"
               >
-                {uploadPO.isPending ? "Uploading..." : "Upload PO"}
+                Upload PO
               </Button>
             </div>
           </div>
@@ -592,7 +638,7 @@ export default function PoUpload() {
                     <label className="text-sm font-medium text-gray-500">PO Number</label>
                     <p className="font-medium">
                       {viewingQuotation.customerPoNumber || (
-                        <Badge variant="outline" className="border-orange-500 text-orange-600 hover:bg-orange-50">
+                        <Badge variant="outline" className="border-orange-500 text-orange-600">
                           <AlertTriangle className="h-3 w-3 mr-1 text-orange-600" />
                           Pending
                         </Badge>
@@ -608,7 +654,7 @@ export default function PoUpload() {
                           Uploaded
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="border-red-500 text-red-600 hover:bg-red-50">
+                        <Badge variant="outline" className="border-red-500 text-red-600">
                           <X className="h-3 w-3 mr-1 text-red-600" />
                           Missing
                         </Badge>

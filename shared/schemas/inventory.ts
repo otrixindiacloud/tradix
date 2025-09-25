@@ -60,6 +60,7 @@ export const stockMovements = pgTable("stock_movements", {
   quantityAfter: integer("quantity_after").notNull(),
   unitCost: decimal("unit_cost", { precision: 10, scale: 2 }),
   totalValue: decimal("total_value", { precision: 10, scale: 2 }),
+  status: text("status"),
   notes: text("notes"),
   createdBy: text("created_by"),
   createdAt: timestamp("created_at").defaultNow(),

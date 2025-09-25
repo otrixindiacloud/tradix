@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,12 +12,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { 
+import {
   ArrowLeftRight,
-  Plus, 
-  Search, 
+  Plus,
+  Search,
   Filter,
-  Edit, 
+  Edit,
   Eye,
   CheckCircle,
   Clock,
@@ -56,23 +55,31 @@ const stockTransferSchema = z.object({
 
 type StockTransferForm = z.infer<typeof stockTransferSchema>;
 
-// Status badge colors
-const getStatusColor = (status: string) => {
+// Unified status configuration (colors + icons) inspired by provided design reference
+// Each status returns consistent Tailwind utility classes for pill badges.
+const getStatusConfig = (status: string) => {
+  // Border + text only (no background color as per request)
+  const base = "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium border";
   switch (status) {
-    case "Draft":
-      return "bg-gray-100 text-gray-800 border-gray-300";
-    case "Pending Approval":
-      return "bg-yellow-100 text-yellow-800 border-yellow-300";
-    case "Approved":
-      return "bg-blue-100 text-blue-800 border-blue-300";
-    case "In Transit":
-      return "bg-pink-100 text-white-800 border-purple-300";
     case "Completed":
-      return "bg-green-100 text-green-800 border-green-300";
+      return { icon: CheckCircle, className: `${base} text-green-700 border-green-300` };
+    case "Approved":
+      return { icon: CheckCircle, className: `${base} text-emerald-700 border-emerald-300` };
+    case "Partial":
+      return { icon: FileText, className: `${base} text-blue-700 border-blue-300` };
+    case "Discrepancy":
+      return { icon: AlertTriangle, className: `${base} text-rose-700 border-rose-300` };
+    case "Pending":
+    case "Pending Approval":
+      return { icon: Clock, className: `${base} text-amber-700 border-amber-300` };
+    case "Draft":
+      return { icon: FileText, className: `${base} text-slate-600 border-slate-300` };
+    case "In Transit":
+      return { icon: Truck, className: `${base} text-indigo-700 border-indigo-300` };
     case "Cancelled":
-      return "bg-red-100 text-red-800 border-red-300";
+      return { icon: XCircle, className: `${base} text-red-700 border-red-300` };
     default:
-      return "bg-gray-100 text-gray-800 border-gray-300";
+      return { icon: FileText, className: `${base} text-slate-600 border-slate-300` };
   }
 };
 
@@ -121,6 +128,22 @@ export default function StockTransferPage() {
         return [];
       }
     },
+  });
+
+  // Fetch stock issues so they can also be shown in the Stock Transfers table section (combined operational movements view)
+  const { data: stockIssues = [] } = useQuery({
+    queryKey: ["stock-issues-lite"],
+    queryFn: async () => {
+      try {
+        const response = await apiRequest("GET", "/api/stock-issues");
+        if (!response.ok) return [];
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
+      } catch (e) {
+        console.warn("Failed to fetch stock issues for combined view", e);
+        return [];
+      }
+    }
   });
 
   // Fetch items for dropdown
@@ -267,28 +290,68 @@ export default function StockTransferPage() {
   };
 
   // Filter stock transfers
-  const filteredTransfers = (Array.isArray(stockTransfers) ? stockTransfers : []).filter((transfer: any) => {
-    const matchesSearch = 
-      transfer.referenceNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transfer.referenceId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transfer.requestedBy?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transfer.createdBy?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transfer.fromLocation?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transfer.toLocation?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transfer.storageLocation?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transfer.reason?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transfer.notes?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transfer.itemName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transfer.itemCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transfer.description?.toLowerCase().includes(searchQuery.toLowerCase());
+  // Prepare combined data (Transfers + Issues). We tag each record with recordType for display.
+  const transfersWithType = (Array.isArray(stockTransfers) ? stockTransfers : []).map((t: any) => ({
+    ...t,
+    recordType: "Transfer"
+  }));
+  const issuesMappedAsTransfers = (Array.isArray(stockIssues) ? stockIssues : []).map((i: any) => ({
+    // Map issue fields into the transfer column structure
+    id: i.id,
+    referenceNumber: i.issueNumber || i.referenceNumber || i.id,
+    transferNumber: i.issueNumber,
+    itemId: i.itemId,
+    itemName: i.itemName,
+    itemCode: i.itemCode,
+    quantityMoved: i.quantity,
+    fromLocation: i.fromLocation || i.storageLocation || null, // issues may not have these
+    toLocation: i.toLocation || null,
+    storageLocation: i.fromLocation || null,
+    transferDate: i.issueDate,
+    createdAt: i.issueDate,
+    requestedBy: i.issuedTo || i.requestedBy || null,
+    createdBy: i.createdBy || null,
+    reason: i.reason || "Stock Issue",
+    notes: i.notes,
+    status: i.status || "Draft",
+    recordType: "Issue"
+  }));
 
-    const matchesStatus = statusFilter === "all" || transfer.status === statusFilter;
+  const combinedRecords = [...transfersWithType, ...issuesMappedAsTransfers];
 
+  const filteredTransfers = combinedRecords.filter((record: any) => {
+    const q = searchQuery.toLowerCase();
+    const matchesSearch = [
+      record.referenceNumber,
+      record.referenceId,
+      record.requestedBy,
+      record.createdBy,
+      record.fromLocation,
+      record.toLocation,
+      record.storageLocation,
+      record.reason,
+      record.notes,
+      record.itemName,
+      record.itemCode,
+      record.description,
+      record.recordType
+    ].some((v: any) => typeof v === 'string' && v.toLowerCase().includes(q));
+
+    const matchesStatus = statusFilter === 'all' || record.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   // Table columns
   const columns = [
+    // {
+    //   key: "recordType",
+    //   header: "Type",
+    //   render: (value: string) => (
+    //     <Badge className={value === 'Issue' ? 'bg-red-100 text-red-700 border border-red-300' : 'bg-purple-100 text-purple-700 border border-purple-300'}>
+    //       {value || 'Transfer'}
+    //     </Badge>
+    //   )
+    // },
     {
       key: "referenceNumber",
       header: "Transfer Number",
@@ -347,11 +410,16 @@ export default function StockTransferPage() {
     {
       key: "status",
       header: "Status",
-      render: (value: string) => (
-        <Badge className={`border ${getStatusColor(value || "Draft")}`}>
-          {value || "Draft"}
-        </Badge>
-      ),
+      render: (value: string) => {
+        const status = value || "Draft";
+        const { icon: Icon, className } = getStatusConfig(status);
+        return (
+          <div className={className}>
+            <Icon className="h-3 w-3" />
+            {status}
+          </div>
+        );
+      }
     },
     {
       key: "createdAt",
@@ -850,9 +918,16 @@ export default function StockTransferPage() {
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Status</Label>
-                    <Badge className={`border ${getStatusColor(selectedTransfer.status || "Draft")}`}>
-                      {selectedTransfer.status || "Draft"}
-                    </Badge>
+                    {(() => {
+                      const status = selectedTransfer.status || "Draft";
+                      const { icon: Icon, className } = getStatusConfig(status);
+                      return (
+                        <div className={className}>
+                          <Icon className="h-3 w-3" />
+                          {status}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
                 <div className="space-y-4">

@@ -35,6 +35,7 @@ import {
   RefreshCw,
   AlertCircle
 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import DataTable from "@/components/tables/data-table";
 import { formatDate, formatCurrency } from "@/lib/utils";
@@ -60,22 +61,25 @@ type ReceiptReturnItemForm = {
   conditionNotes?: string;
 };
 
-// Status badge colors
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case "Draft":
-      return "bg-gray-100 text-gray-800 border-gray-300";
-    case "Pending Approval":
-      return "bg-yellow-100 text-yellow-800 border-yellow-300";
-    case "Approved":
-      return "bg-blue-100 text-blue-800 border-blue-300";
-    case "Returned":
-      return "bg-orange-100 text-orange-800 border-orange-300";
-    case "Credited":
-      return "bg-green-100 text-green-800 border-green-300";
-    default:
-      return "bg-gray-100 text-gray-800 border-gray-300";
-  }
+// Status badge component (light background, border + icon, no saturated fills)
+const StatusBadge = ({ status }: { status: string }) => {
+  const cfg: Record<string, { icon: React.ElementType; classes: string; label: string }> = {
+    Draft: { icon: FileText, classes: "text-gray-700 border-gray-300", label: "Draft" },
+    "Pending Approval": { icon: Clock, classes: "text-yellow-700 border-yellow-400", label: "Pending" },
+    Approved: { icon: CheckCircle, classes: "text-blue-700 border-blue-400", label: "Approved" },
+    Returned: { icon: RotateCcw, classes: "text-orange-700 border-orange-400", label: "Returned" },
+    Credited: { icon: DollarSign, classes: "text-green-700 border-green-400", label: "Credited" },
+  };
+  const data = cfg[status] || cfg["Draft"];
+  const Icon = data.icon;
+  return (
+    <Badge
+      className={`flex items-center gap-1.5 border bg-transparent px-2 py-0.5 text-xs font-medium rounded-md ${data.classes}`}
+    >
+      <Icon className="h-3.5 w-3.5" />
+      <span>{data.label}</span>
+    </Badge>
+  );
 };
 
 export default function ReceiptReturnsPage() {
@@ -86,9 +90,10 @@ export default function ReceiptReturnsPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedReturn, setSelectedReturn] = useState<any | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  // Local search state for goods receipt selection (previously incorrectly inside render callback)
+  const [receiptSearchTerm, setReceiptSearchTerm] = useState("");
   // Local state for item and quantity selection in dialogs
-  const [selectedItemId, setSelectedItemId] = useState<string>("");
-  const [selectedReturnQuantity, setSelectedReturnQuantity] = useState<number>(0);
+  // (Removed local selectedItemId/quantity state; using form values directly)
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -145,6 +150,21 @@ export default function ReceiptReturnsPage() {
     },
   });
 
+  // Fetch suppliers for name resolution
+  const { data: suppliers = [] } = useQuery({
+    queryKey: ["suppliers"],
+    queryFn: async () => {
+      try {
+        const res = await apiRequest("GET", "/api/suppliers");
+        const data = await res.json();
+        return Array.isArray(data) ? data : [];
+      } catch (e) {
+        console.error("Failed to fetch suppliers", e);
+        return [];
+      }
+    }
+  });
+
   // Fetch statistics
   const { data: stats } = useQuery({
     queryKey: ["receipt-returns-stats"],
@@ -170,13 +190,35 @@ export default function ReceiptReturnsPage() {
   // Create receipt return mutation
   const createReturnMutation = useMutation({
     mutationFn: async (data: ReceiptReturnForm) => {
-      return await apiRequest("POST", "/api/receipt-returns", data);
+      const res = await apiRequest("POST", "/api/receipt-returns", data);
+      const json = await res.json();
+      if (!res.ok) {
+        const msg = json?.message || `Failed to create return (${res.status})`;
+        throw new Error(msg);
+      }
+      return json;
     },
-    onSuccess: async () => {
+    onSuccess: async (createdReturn: any) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["receipt-returns"] }),
         queryClient.invalidateQueries({ queryKey: ["receipt-returns-stats"] })
       ]);
+      // If form had item and quantity include creating item record
+      const formValues = form.getValues();
+      if (createdReturn?.id && formValues.itemId && formValues.returnQuantity) {
+        try {
+          await apiRequest("POST", `/api/receipt-returns/${createdReturn.id}/items`, {
+            itemId: formValues.itemId,
+            quantityReturned: formValues.returnQuantity,
+            unitCost: 0,
+            totalCost: 0,
+            returnReason: formValues.returnReason,
+            conditionNotes: formValues.notes,
+          });
+        } catch (e) {
+          console.error("Failed to create return item", e);
+        }
+      }
       setTimeout(() => {
         setShowCreateDialog(false);
         form.reset();
@@ -197,15 +239,28 @@ export default function ReceiptReturnsPage() {
 
   // Update receipt return mutation
   const updateReturnMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string, data: Partial<ReceiptReturnForm> }) => {
-      return await apiRequest("PUT", `/api/receipt-returns/${id}`, data);
+    mutationFn: async ({ id, data }: { id: string; data: Partial<ReceiptReturnForm> }) => {
+      const res = await apiRequest("PUT", `/api/receipt-returns/${id}`, data);
+      let json: any = {};
+      try { json = await res.json(); } catch { /* ignore */ }
+      if (!res.ok) {
+        throw new Error(json?.message || `Failed to update return (${res.status})`);
+      }
+      return json;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["receipt-returns"] });
-      setShowDetailsDialog(false);
+    onSuccess: (updated: any) => {
+      // Merge into cache optimistically
+      queryClient.setQueryData(["receipt-returns"], (old: any) => {
+        if (!Array.isArray(old)) return old;
+        return old.map(r => (r.id === updated.id ? { ...r, ...updated } : r));
+      });
+      queryClient.invalidateQueries({ queryKey: ["receipt-returns-stats"] });
+      setShowEditDialog(false);
+      setEditForm(null);
+      form.reset();
       toast({
-        title: "Success",
-        description: "Receipt return updated successfully",
+        title: "Updated",
+        description: "Receipt return saved",
       });
     },
     onError: (error: any) => {
@@ -239,9 +294,11 @@ export default function ReceiptReturnsPage() {
   });
 
   // Extend form schema to include itemId and returnQuantity
+  // For a unified form used in both create & edit dialogs, make item fields optional here;
+  // we'll enforce them manually only during creation.
   const extendedReceiptReturnSchema = receiptReturnSchema.extend({
-    itemId: z.string().min(1, "Item is required"),
-    returnQuantity: z.coerce.number().min(1, "Quantity must be at least 1"),
+    itemId: z.string().optional(),
+    returnQuantity: z.coerce.number().optional(),
   });
 
   type ExtendedReceiptReturnForm = z.infer<typeof extendedReceiptReturnSchema>;
@@ -251,35 +308,53 @@ export default function ReceiptReturnsPage() {
     defaultValues: {
       returnNumber: "",
       goodsReceiptId: "",
+      // supplierId is required by schema; we'll derive it automatically from selected goods receipt
+      // and keep it in form state so validation passes
+      supplierId: "",
       returnReason: "",
       returnDate: "",
       status: "Draft",
       notes: "",
       itemId: "",
-      returnQuantity: 0,
+  returnQuantity: 1,
     },
   });
 
   const onSubmit = (data: ExtendedReceiptReturnForm) => {
-    // Find supplierId from selected goods receipt
+    // Manual enforcement for create scenario (itemId & returnQuantity required)
+    if (!data.itemId || !data.returnQuantity || data.returnQuantity < 1) {
+      toast({
+        title: "Missing item details",
+        description: "Please select an item and enter a valid return quantity.",
+        variant: "destructive",
+      });
+      return;
+    }
     const selectedReceipt = goodsReceipts.find((r: any) => r.id === data.goodsReceiptId);
     const supplierId = selectedReceipt?.supplierId || "";
-    const payload = { ...data, supplierId };
+    const payload: ReceiptReturnForm = {
+      returnNumber: data.returnNumber,
+      goodsReceiptId: data.goodsReceiptId,
+      supplierId,
+      returnReason: data.returnReason,
+      returnDate: data.returnDate,
+      status: data.status,
+      notes: data.notes,
+    };
     createReturnMutation.mutate(payload, {
       onSuccess: (createdReturn: any) => {
-        // Create supplierReturnItem for the returned item
         if (createdReturn && createdReturn.id && data.itemId && data.returnQuantity) {
           const itemPayload: ReceiptReturnItemForm = {
             itemId: data.itemId,
             quantityReturned: data.returnQuantity,
-            unitCost: undefined,
-            totalCost: undefined,
+            unitCost: 0,
+            totalCost: 0,
             returnReason: data.returnReason,
             conditionNotes: data.notes,
           };
           apiRequest("POST", `/api/receipt-returns/${createdReturn.id}/items`, itemPayload);
         }
-      }
+      },
     });
   };
 
@@ -299,28 +374,41 @@ export default function ReceiptReturnsPage() {
   // Table columns
   const columns = [
     {
-      key: "return_number",
+      key: "returnNumber",
       header: "Return Number",
       render: (value: string) => (
         <span className="font-mono text-sm font-medium">{value || "N/A"}</span>
       ),
     },
     {
-      key: "goods_receipt_id",
-      header: "Goods Receipt ID",
-      render: (value: string) => (
-        <span className="font-mono text-xs">{value || "N/A"}</span>
-      ),
+      key: "goodsReceiptId",
+      header: "Goods Receipt",
+      render: (value: string) => {
+        const receipt = goodsReceipts.find((r: any) => r.id === value);
+        const display = receipt?.receiptNumber || receipt?.number || value;
+        return (
+          <span className="font-mono text-xs text-blue-700 font-medium">{display || "N/A"}</span>
+        );
+      },
     },
     {
-      key: "supplier_id",
-      header: "Supplier ID",
-      render: (value: string) => (
-        <span className="font-mono text-xs">{value || "N/A"}</span>
-      ),
+      key: "supplierId",
+      header: "Supplier",
+      render: (value: string, row: any) => {
+        // Prefer supplier list lookup; fallback to goods receipt supplier name if not found
+        const supplier = suppliers.find((s: any) => s.id === value);
+        let name = supplier?.name;
+        if (!name) {
+          const receipt = goodsReceipts.find((r: any) => r.id === row.goodsReceiptId);
+            name = receipt?.supplierName || receipt?.supplier?.name;
+        }
+        return (
+          <span className="text-sm font-medium text-gray-800">{name || value || "N/A"}</span>
+        );
+      },
     },
     {
-      key: "return_reason",
+      key: "returnReason",
       header: "Return Reason",
       render: (value: string) => (
         <div className="flex items-center gap-2">
@@ -330,7 +418,7 @@ export default function ReceiptReturnsPage() {
       ),
     },
     {
-      key: "return_date",
+      key: "returnDate",
       header: "Return Date",
       render: (value: string) => (
         <div className="flex items-center gap-2">
@@ -342,11 +430,7 @@ export default function ReceiptReturnsPage() {
     {
       key: "status",
       header: "Status",
-      render: (value: string) => (
-        <Badge className={`border ${getStatusColor(value || "Draft")}`}>
-          {value || "Draft"}
-        </Badge>
-      ),
+      render: (value: string) => <StatusBadge status={value || "Draft"} />,
     },
     {
       key: "notes",
@@ -377,14 +461,12 @@ export default function ReceiptReturnsPage() {
               setEditForm(returnItem);
               setShowEditDialog(true);
               // Prefill form values
-              form.setValue("returnNumber", returnItem.return_number || "");
-              form.setValue("goodsReceiptId", returnItem.goods_receipt_id || "");
-              form.setValue("returnReason", returnItem.return_reason || "");
-              form.setValue("returnDate", returnItem.return_date || "");
+              form.setValue("returnNumber", returnItem.returnNumber || returnItem.return_number || "");
+              form.setValue("goodsReceiptId", returnItem.goodsReceiptId || returnItem.goods_receipt_id || "");
+              form.setValue("returnReason", returnItem.returnReason || returnItem.return_reason || "");
+              form.setValue("returnDate", returnItem.returnDate || returnItem.return_date || "");
               form.setValue("status", returnItem.status || "Draft");
               form.setValue("notes", returnItem.notes || "");
-              setSelectedItemId("");
-              setSelectedReturnQuantity(0);
             }}
           >
             <Edit className="h-4 w-4" />
@@ -447,27 +529,27 @@ export default function ReceiptReturnsPage() {
                 <form
                   onSubmit={form.handleSubmit((data) => {
                     // Validate item and quantity
-                    if (!selectedItemId || !selectedReturnQuantity) {
-                      toast({
-                        title: "Missing Item or Quantity",
-                        description: "Please select an item and enter a quantity.",
-                        variant: "destructive",
-                      });
-                      return;
-                    }
                     // Find supplierId from selected goods receipt
                     const selectedReceipt = goodsReceipts.find((r: any) => r.id === data.goodsReceiptId);
                     const supplierId = selectedReceipt?.supplierId || "";
-                    const payload = { ...data, supplierId };
+                      const payload: ReceiptReturnForm = {
+                        returnNumber: data.returnNumber,
+                        goodsReceiptId: data.goodsReceiptId,
+                        supplierId,
+                        returnReason: data.returnReason,
+                        returnDate: data.returnDate,
+                        status: data.status,
+                        notes: data.notes,
+                      };
                     createReturnMutation.mutate(payload, {
                       onSuccess: (createdReturn: any) => {
                         // Create supplierReturnItem for the returned item
-                        if (createdReturn && createdReturn.id) {
+                        if (createdReturn && createdReturn.id && data.itemId && data.returnQuantity) {
                           const itemPayload: ReceiptReturnItemForm = {
-                            itemId: selectedItemId,
-                            quantityReturned: selectedReturnQuantity,
-                            unitCost: undefined,
-                            totalCost: undefined,
+                            itemId: data.itemId,
+                            quantityReturned: data.returnQuantity,
+                            unitCost: 0,
+                            totalCost: 0,
                             returnReason: data.returnReason,
                             conditionNotes: data.notes,
                           };
@@ -503,15 +585,25 @@ export default function ReceiptReturnsPage() {
                       control={form.control}
                       name="goodsReceiptId"
                       render={({ field }) => {
-                        const [receiptSearch, setReceiptSearch] = useState("");
+                        // Filter receipts outside of hook misuse
                         const filteredReceipts = goodsReceipts.filter((receipt: any) => {
                           const searchStr = `${receipt.receiptNumber || ""} ${receipt.supplierName || receipt.supplier?.name || ""}`.toLowerCase();
-                          return searchStr.includes(receiptSearch.toLowerCase());
+                          return searchStr.includes(receiptSearchTerm.toLowerCase());
                         });
                         return (
                           <FormItem>
                             <FormLabel>Receipt Number <span className="text-red-500">*</span></FormLabel>
-                            <Select required onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select
+                              required
+                              onValueChange={(val) => {
+                                field.onChange(val);
+                                const selected = goodsReceipts.find((r: any) => r.id === val);
+                                if (selected?.supplierId) {
+                                  form.setValue("supplierId", selected.supplierId, { shouldValidate: true });
+                                }
+                              }}
+                              defaultValue={field.value}
+                            >
                               <FormControl>
                                 <SelectTrigger>
                                   <SelectValue placeholder="Select Receipt" />
@@ -521,8 +613,8 @@ export default function ReceiptReturnsPage() {
                                 <div className="px-2 py-2 sticky top-0 bg-white z-10">
                                   <Input
                                     placeholder="Search receipt number or supplier..."
-                                    value={receiptSearch}
-                                    onChange={e => setReceiptSearch(e.target.value)}
+                                    value={receiptSearchTerm}
+                                    onChange={e => setReceiptSearchTerm(e.target.value)}
                                     className="mb-2"
                                   />
                                 </div>
@@ -837,16 +929,25 @@ export default function ReceiptReturnsPage() {
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit((data) => {
-                if (editForm && editForm.id) {
-                  updateReturnMutation.mutate({ id: editForm.id, data }, {
-                    onSuccess: () => {
-                      setShowEditDialog(false);
-                      setEditForm(null);
-                      form.reset();
-                      queryClient.invalidateQueries({ queryKey: ["receipt-returns"] });
-                    }
-                  });
-                }
+                if (!editForm?.id) return;
+                // Derive supplierId from selected goods receipt (mirroring create logic)
+                const selectedReceipt = goodsReceipts.find((r: any) => r.id === data.goodsReceiptId);
+                const supplierId = selectedReceipt?.supplierId || editForm.supplierId || "";
+                const payload: Partial<ReceiptReturnForm> = {
+                  returnNumber: data.returnNumber,
+                  goodsReceiptId: data.goodsReceiptId,
+                  supplierId,
+                  returnReason: data.returnReason,
+                  returnDate: data.returnDate,
+                  status: data.status,
+                  notes: data.notes,
+                };
+                // Optimistic cache update before mutation
+                queryClient.setQueryData(["receipt-returns"], (old: any) => {
+                  if (!Array.isArray(old)) return old;
+                  return old.map(r => (r.id === editForm.id ? { ...r, ...payload } : r));
+                });
+                updateReturnMutation.mutate({ id: editForm.id, data: payload });
               })}
               className="space-y-4"
             >
@@ -982,7 +1083,10 @@ export default function ReceiptReturnsPage() {
                 <Button type="button" variant="outline" onClick={() => setShowEditDialog(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={updateReturnMutation.isPending}>
+                <Button type="submit" disabled={updateReturnMutation.isPending} className="min-w-[120px] flex items-center justify-center gap-2">
+                  {updateReturnMutation.isPending && (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  )}
                   {updateReturnMutation.isPending ? "Saving..." : "Save Changes"}
                 </Button>
               </div>
@@ -1016,9 +1120,7 @@ export default function ReceiptReturnsPage() {
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Status</Label>
-                    <Badge className={`border ${getStatusColor(selectedReturn.status || "Draft")}`}>
-                      {selectedReturn.status || "Draft"}
-                    </Badge>
+                    <StatusBadge status={selectedReturn.status || "Draft"} />
                   </div>
                 </div>
                 <div className="space-y-4">

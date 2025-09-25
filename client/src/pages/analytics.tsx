@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -103,8 +103,8 @@ interface InventoryAnalytics {
   high_value_items: number;
   category_breakdown: Array<{
     category: string;
-    count: number;
-    value: number;
+    count: number;        // number of distinct items
+    totalstock: number;   // total stock units (aggregated quantity)
   }>;
   stock_movements: Array<{
     date: string;
@@ -211,6 +211,9 @@ const SOLID_COLORS = [
   "bg-orange-500"
 ];
 
+// Global threshold for grouping small inventory categories into 'Other'
+const CATEGORY_OTHER_PERCENT_THRESHOLD = 0.02; // 2%
+
 export default function AnalyticsPage() {
   const [kpis, setKpis] = useState<DashboardKPIs | null>(null);
   const [salesTrends, setSalesTrends] = useState<SalesTrend[]>([]);
@@ -218,6 +221,7 @@ export default function AnalyticsPage() {
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [conversionFunnel, setConversionFunnel] = useState<ConversionFunnel | null>(null);
   const [inventoryAnalytics, setInventoryAnalytics] = useState<InventoryAnalytics | null>(null);
+  const [inventoryCategoryMetric, setInventoryCategoryMetric] = useState<'totalstock' | 'count'>('totalstock');
   const [supplierAnalytics, setSupplierAnalytics] = useState<SupplierAnalytics | null>(null);
   const [financialAnalytics, setFinancialAnalytics] = useState<FinancialAnalytics | null>(null);
   const [auditTrailAnalytics, setAuditTrailAnalytics] = useState<AuditTrailAnalytics | null>(null);
@@ -322,7 +326,7 @@ export default function AnalyticsPage() {
 
       const [
         kpisData, trendsData, customersData, productsData, funnelData,
-        inventoryData, supplierData, financialData, auditData, enquirySourceData
+        inventoryDataRaw, supplierData, financialData, auditData, enquirySourceData
       ] = await Promise.all([
         processResponse(kpisRes, defaultKpis),
         processResponse(trendsRes, []),
@@ -336,12 +340,62 @@ export default function AnalyticsPage() {
         processResponse(enquirySourceRes, null)
       ]);
 
+  // If inventory analytics missing key metrics (total_quantity/high_value_items/category_breakdown), derive dynamically from inventory items endpoint
+  let inventoryData = inventoryDataRaw;
+  const HIGH_VALUE_ITEM_VALUE_THRESHOLD = 1000; // could be made configurable via UI
+  const CATEGORY_OTHER_PERCENT_THRESHOLD = 0.02; // categories <2% of selected metric get grouped into 'Other'
+      try {
+        if (inventoryData) {
+          const categoryBreakdownEmpty = !inventoryData.category_breakdown || inventoryData.category_breakdown.length === 0;
+          const needsEnhance = (inventoryData.total_quantity === 0) || (inventoryData.high_value_items === 0) || categoryBreakdownEmpty;
+          if (needsEnhance) {
+            const itemsRes = await fetch(`/api/inventory-items`);
+            if (itemsRes.ok) {
+              const itemsJson = await itemsRes.json();
+              if (Array.isArray(itemsJson)) {
+                const totals = itemsJson.reduce((acc: any, it: any) => {
+                  const qRaw = it.quantity ?? it.stockQuantity ?? it.qty ?? 0;
+                  const q = Number(isNaN(qRaw) ? 0 : qRaw);
+                  const costRaw = it.unit_price ?? it.unitPrice ?? it.cost_price ?? it.costPrice ?? 0;
+                  const cost = Number(isNaN(costRaw) ? 0 : costRaw);
+                  const category = (it.category || it.item_category || 'Uncategorized') as string;
+                  acc.totalQty += q;
+                  const value = q * cost;
+                  acc.totalValue += value;
+                  if (value >= HIGH_VALUE_ITEM_VALUE_THRESHOLD) acc.highValueCount += 1;
+                  // category aggregation
+                  if (!acc.categories[category]) {
+                    acc.categories[category] = { category, count: 0, totalstock: 0 };
+                  }
+                  acc.categories[category].count += 1; // number of distinct items in that category
+                  acc.categories[category].totalstock += q; // aggregate units
+                  return acc;
+                }, { totalQty: 0, totalValue: 0, highValueCount: 0, categories: {} as Record<string, { category: string; count: number; totalstock: number }> });
+                const derivedCategoryBreakdown = categoryBreakdownEmpty 
+                  ? (Object.values(totals.categories) as Array<{ category: string; count: number; totalstock: number }>).sort((a,b)=> b.totalstock - a.totalstock)
+                  : inventoryData.category_breakdown?.map((c:any)=> ({ ...c, totalstock: c.totalstock ?? c.value ?? 0 }));
+                inventoryData = {
+                  ...inventoryData,
+                  total_quantity: totals.totalQty,
+                  // Only override inventory value if backend returned 0 meaning incomplete
+                  total_inventory_value: inventoryData.total_inventory_value === 0 ? totals.totalValue : inventoryData.total_inventory_value,
+                  high_value_items: totals.highValueCount,
+                  category_breakdown: derivedCategoryBreakdown,
+                };
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Inventory enhancement failed", e);
+      }
+
       setKpis(kpisData);
       setSalesTrends(trendsData);
       setTopCustomers(customersData);
       setTopProducts(productsData);
       setConversionFunnel(funnelData);
-      setInventoryAnalytics(inventoryData);
+    setInventoryAnalytics(inventoryData);
       setSupplierAnalytics(supplierData);
       setFinancialAnalytics(financialData);
       setAuditTrailAnalytics(auditData);
@@ -371,6 +425,30 @@ export default function AnalyticsPage() {
       setLoading(false);
     }
   };
+
+  // Derived memo for category breakdown with metric toggle & 'Other' grouping
+  const displayedCategoryBreakdown = useMemo(() => {
+    if (!inventoryAnalytics || !inventoryAnalytics.category_breakdown) return [] as any[];
+    const metric = inventoryCategoryMetric; // 'totalstock' or 'count'
+    const data = inventoryAnalytics.category_breakdown;
+    const total = data.reduce((acc, c) => acc + (c[metric as keyof typeof c] as number || 0), 0);
+    if (total === 0) return data;
+    const main: typeof data = [] as any;
+    let otherStock = 0, otherCount = 0;
+    data.forEach(c => {
+      const v = (c[metric as keyof typeof c] as number) || 0;
+      if (total > 0 && v / total < CATEGORY_OTHER_PERCENT_THRESHOLD && data.length > 6) {
+        otherStock += c.totalstock;
+        otherCount += c.count;
+      } else {
+        main.push(c);
+      }
+    });
+    if (otherStock > 0) {
+      main.push({ category: 'Other', count: otherCount, totalstock: otherStock });
+    }
+    return main;
+  }, [inventoryAnalytics, inventoryCategoryMetric]);
 
   const getStartDate = (period: string) => {
     switch (period) {
@@ -1332,34 +1410,71 @@ export default function AnalyticsPage() {
                 </Card>
               </div>
 
-              {/* Category Breakdown */}
+              {/* Category Breakdown with metric toggle (using totalstock) */}
               <Card>
-                <CardHeader>
-                  <CardTitle>Inventory by Category</CardTitle>
-                  <CardDescription>Item distribution and value by category</CardDescription>
+                <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <CardTitle>Inventory by Category</CardTitle>
+                    <CardDescription>Distribution by {inventoryCategoryMetric === 'totalstock' ? 'stock units' : 'item count'}</CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                   
+                    <Button 
+                      variant={inventoryCategoryMetric === 'count' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setInventoryCategoryMetric('count')}
+                    >Items</Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-[300px]">
+                  <div className="h-[320px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
-                          data={inventoryAnalytics?.category_breakdown || []}
+                          data={displayedCategoryBreakdown}
                           cx="50%"
                           cy="50%"
                           labelLine={false}
-                          label={({ category, value }) => `${category}: ${formatCurrency(value)}`}
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="value"
+                          outerRadius={90}
+                          dataKey={inventoryCategoryMetric}
+                          nameKey="category"
+                          label={(p:any) => {
+                            const total = displayedCategoryBreakdown.reduce((acc, c:any) => acc + (c[inventoryCategoryMetric] || 0), 0);
+                            const raw = p[inventoryCategoryMetric] || 0;
+                            const pct = total ? ((raw / total) * 100).toFixed(1) : 0;
+                            return `${p.category}: ${raw} (${pct}%)`;
+                          }}
                         >
-                          {inventoryAnalytics.category_breakdown && inventoryAnalytics.category_breakdown.length > 0 ? inventoryAnalytics.category_breakdown.map((entry, index) => (
+                          {displayedCategoryBreakdown.map((entry:any, index:number) => (
                             <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                          )) : null}
+                          ))}
                         </Pie>
-                        <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                        <Tooltip 
+                          formatter={(val:any, name:any, p:any) => {
+                            if (inventoryCategoryMetric === 'totalstock') return [val, 'Stock Units'];
+                            return [val, inventoryCategoryMetric === 'count' ? 'Items' : 'Value'];
+                          }}
+                        />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
+                  {displayedCategoryBreakdown.length > 0 && (
+                    <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+                      {displayedCategoryBreakdown.map((c:any, i:number) => {
+                        const metricVal = c[inventoryCategoryMetric] || 0;
+                        const total = displayedCategoryBreakdown.reduce((acc, d:any) => acc + (d[inventoryCategoryMetric] || 0), 0);
+                        const pct = total ? ((metricVal / total) * 100).toFixed(1) : '0.0';
+                        return (
+                          <div key={c.category} className="flex items-center gap-2 border rounded px-2 py-1 bg-white">
+                            <span className="inline-block w-3 h-3 rounded-sm" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
+                            <span className="flex-1 truncate" title={c.category}>{c.category}</span>
+                            <span className="font-medium">{metricVal}</span>
+                            <span className="text-muted-foreground">{pct}%</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 

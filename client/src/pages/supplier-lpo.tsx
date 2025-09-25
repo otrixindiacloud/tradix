@@ -189,6 +189,34 @@ export default function SupplierLpoPage() {
   const totalPages = Math.ceil(lpoList.length / pageSize);
   const paginatedLpos = lpoList.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
+  // Status chip styles (icon + colored border/background) for main table
+  const statusChipStyles: Record<string, string> = {
+    Draft: "border-slate-300 text-slate-700 bg-slate-50",
+    Sent: "border-blue-300 text-blue-700 bg-blue-50",
+    Confirmed: "border-emerald-300 text-emerald-700 bg-emerald-50",
+    Received: "border-purple-300 text-purple-700 bg-purple-50",
+    Cancelled: "border-rose-300 text-rose-700 bg-rose-50",
+    Missing: "border-red-300 text-red-700 bg-red-50"
+  };
+  const statusIconMap: Record<string, React.ReactNode> = {
+    Draft: <FileText className="h-3.5 w-3.5" />,
+    Sent: <Send className="h-3.5 w-3.5" />,
+    Confirmed: <CheckCircle className="h-3.5 w-3.5" />,
+    Received: <Package className="h-3.5 w-3.5" />,
+    Cancelled: <XCircle className="h-3.5 w-3.5" />,
+    Missing: <XCircle className="h-3.5 w-3.5" />
+  };
+
+  const renderStatusChip = (status?: string) => {
+    const key = status || 'Missing';
+    return (
+      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border shadow-sm ${statusChipStyles[key] || statusChipStyles.Missing}`}>
+        {statusIconMap[key]}
+        <span>{key}</span>
+      </span>
+    );
+  };
+
   return (
     <div className="space-y-6 p-6">
       {/* Enhanced Card-style header */}
@@ -530,11 +558,13 @@ export default function SupplierLpoPage() {
                     >
                       <TableCell className="font-medium border-r border-gray-200">{lpo.lpoNumber}</TableCell>
                       <TableCell className="border-r border-gray-200">
-                        <span className="px-2 py-1 rounded bg-gray-50 text-gray-700 font-semibold border border-gray-200">
+                        <div className="text-sm font-medium text-slate-700 truncate max-w-[180px]" title={lpo.supplierName || '-' }>
                           {lpo.supplierName || "-"}
-                        </span>
+                        </div>
                       </TableCell>
-                      <TableCell className="border-r border-gray-200">{getStatusBadge(lpo.status ?? "Missing")}</TableCell>
+                      <TableCell className="border-r border-gray-200">
+                        {renderStatusChip(lpo.status || undefined)}
+                      </TableCell>
                       <TableCell className="border-r border-gray-200">{getApprovalStatusBadge(lpo.approvalStatus || "Not Required")}</TableCell>
                       <TableCell className="border-r border-gray-200">
                         {lpo.lpoDate ? format(new Date(lpo.lpoDate), "MMM dd, yyyy") : "-"}

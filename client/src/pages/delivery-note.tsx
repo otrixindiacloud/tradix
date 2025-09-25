@@ -82,8 +82,13 @@ interface DeliveryItem {
 
 export default function DeliveryNote() {
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 15;
-  const [searchTerm, setSearchTerm] = useState("");
+  // Page size is now dynamic to allow a "Show All" toggle (sets a large size)
+  const [pageSize, setPageSize] = useState(15);
+  // Separate search term for delivery notes table
+  const [deliverySearchTerm, setDeliverySearchTerm] = useState("");
+  // Independent search term for sales order selection inside the create dialog
+  const [salesOrderSearchTerm, setSalesOrderSearchTerm] = useState("");
+  const [showAll, setShowAll] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const [customerFilter, setCustomerFilter] = useState("");
   const [selectedDeliveryNote, setSelectedDeliveryNote] = useState<DeliveryNote | null>(null);
@@ -104,15 +109,33 @@ export default function DeliveryNote() {
   const queryClient = useQueryClient();
   const userId = useUserId();
 
+  // Helper to format ISO or date string for datetime-local input (strip seconds & timezone)
+  const formatForDateTimeLocal = (value: string | null): string => {
+    if (!value) return "";
+    try {
+      const d = new Date(value);
+      if (isNaN(d.getTime())) return "";
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      const year = d.getFullYear();
+      const month = pad(d.getMonth() + 1);
+      const day = pad(d.getDate());
+      const hours = pad(d.getHours());
+      const minutes = pad(d.getMinutes());
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    } catch {
+      return "";
+    }
+  };
+
   // Fetch delivery notes
   const { data: deliveryNotesData = [], isLoading, error, refetch } = useQuery({
-  queryKey: ["delivery-notes", currentPage, searchTerm, statusFilter, customerFilter],
+  queryKey: ["delivery-notes", currentPage, deliverySearchTerm, statusFilter, customerFilter, pageSize],
     queryFn: async () => {
       try {
         const params = new URLSearchParams();
         params.set('page', currentPage.toString());
         params.set('pageSize', pageSize.toString());
-        if (searchTerm) params.set('search', searchTerm);
+        if (deliverySearchTerm) params.set('search', deliverySearchTerm);
         if (statusFilter && statusFilter !== 'all') params.set('status', statusFilter);
         
         // Try relative URL first (for production), then absolute URL (for development)
@@ -204,7 +227,7 @@ export default function DeliveryNote() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["delivery-notes"] });
       setCurrentPage(1);
-      setSearchTerm("");
+  setDeliverySearchTerm("");
       setStatusFilter("all");
       setCustomerFilter("");
       refetch();
@@ -232,7 +255,7 @@ export default function DeliveryNote() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["delivery-notes"] });
       setCurrentPage(1);
-      setSearchTerm("");
+  setDeliverySearchTerm("");
       setStatusFilter("all");
       setCustomerFilter("");
       refetch();
@@ -263,6 +286,7 @@ export default function DeliveryNote() {
     setCarrierName("");
     setDeliveryConfirmationName("");
     setSelectedDeliveryNote(null);
+    setSalesOrderSearchTerm("");
   };
 
   const handleCreateDeliveryNote = () => {
@@ -349,54 +373,54 @@ export default function DeliveryNote() {
     {
       key: "deliveryNumber",
       header: "Delivery Number",
-      render: (row) => (
+      render: (_value, item) => (
         <div className="font-medium text-blue-600">
-          {row?.deliveryNumber || 'N/A'}
+          {item?.deliveryNumber || 'N/A'}
         </div>
       )
     },
     {
       key: "salesOrder.customer.name",
       header: "Customer",
-      render: (row) => (
+      render: (_value, item) => (
         <div>
-          <div className="font-medium">{row.salesOrder?.customer?.name || 'N/A'}</div>
-          <div className="text-sm text-gray-500">{row.salesOrder?.customer?.email || ''}</div>
+          <div className="font-medium">{item.salesOrder?.customer?.name || 'N/A'}</div>
+          <div className="text-sm text-gray-500">{item.salesOrder?.customer?.email || ''}</div>
         </div>
       )
     },
     {
       key: "status",
       header: "Status",
-      render: (row) => (
-        <StatusPill status={row?.status || 'Unknown'} />
+      render: (_value, item) => (
+        <StatusPill status={item?.status || 'Unknown'} />
       )
     },
     {
       key: "deliveryType",
       header: "Type",
-      render: (row) => (
-        <Badge variant="outline">{row?.deliveryType || 'Unknown'}</Badge>
+      render: (_value, item) => (
+        <Badge variant="outline">{item?.deliveryType || 'Unknown'}</Badge>
       )
     },
     {
       key: "deliveryDate",
       header: "Delivery Date",
-      render: (row) => (
+      render: (_value, item) => (
         <div>
-          {row?.deliveryDate ? formatDate(row.deliveryDate) : "Not scheduled"}
+          {item?.deliveryDate ? formatDate(item.deliveryDate) : "Not scheduled"}
         </div>
       )
     },
     {
       key: "trackingNumber",
       header: "Tracking",
-      render: (row) => (
+      render: (_value, item) => (
         <div>
-          {row?.trackingNumber ? (
+          {item?.trackingNumber ? (
             <div>
-              <div className="font-medium">{row.trackingNumber}</div>
-              <div className="text-sm text-gray-500">{row.carrierName || ''}</div>
+              <div className="font-medium">{item.trackingNumber}</div>
+              <div className="text-sm text-gray-500">{item.carrierName || ''}</div>
             </div>
           ) : (
             <span className="text-gray-400">No tracking</span>
@@ -407,81 +431,96 @@ export default function DeliveryNote() {
     {
       key: "createdAt",
       header: "Created",
-      render: (row) => formatDate(row?.createdAt)
+      render: (_value, item) => formatDate(item?.createdAt)
     },
     {
       key: "actions",
       header: "Actions",
-      render: (row) => (
-        <div className="flex gap-2">
-          {row && (
-            <>
-              {/* View icon */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSelectedDeliveryNote(row);
-                  setShowDetailsDialog(true);
-                }}
-                title="View Details"
-              >
-                <Eye className="h-4 w-4" />
-              </Button>
-              {/* Edit icon */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSelectedDeliveryNote(row);
-                  setShowEditDialog(true);
-                }}
-                title="Edit Delivery Note"
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-                {/* Delete icon */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    // TODO: Implement delete logic (confirmation dialog recommended)
-                    toast({
-                      title: "Delete Delivery Note",
-                      description: `Delete action for ${row.deliveryNumber} triggered. Implement logic as needed.`,
-                      variant: "destructive"
-                    });
-                  }}
-                  title="Delete Delivery Note"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              {/* Existing picking and confirm delivery actions */}
-              {row.status === "Pending" && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedDeliveryNote(row);
-                    setShowPickingDialog(true);
-                  }}
-                >
-                  <Package className="h-4 w-4" />
-                </Button>
-              )}
-              {(row.status === "Partial" || row.status === "Complete") && !row.deliveryConfirmedBy && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedDeliveryNote(row);
-                    setShowConfirmDeliveryDialog(true);
-                  }}
-                >
-                  <CheckCircle className="h-4 w-4" />
-                </Button>
-              )}
-            </>
+      render: (_value, item) => (
+        <div className="flex items-center gap-1">
+          {/* View */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            title="View"
+            aria-label="View"
+            onClick={() => {
+              setSelectedDeliveryNote(item);
+              setShowDetailsDialog(true);
+            }}
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
+          {/* Edit */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            title="Edit"
+            aria-label="Edit"
+            onClick={() => {
+              setSelectedDeliveryNote(item);
+              // Pre-fill edit form values
+              setDeliveryDate(formatForDateTimeLocal(item.deliveryDate));
+              setDeliveryAddress(item.deliveryAddress || "");
+              setCarrierName(item.carrierName || "");
+              setTrackingNumber(item.trackingNumber || "");
+              setDeliveryNotes(item.deliveryNotes || "");
+              setShowEditDialog(true);
+            }}
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+          {/* Delete */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-red-600 hover:text-red-700"
+            title="Delete"
+            aria-label="Delete"
+            onClick={() => {
+              // Placeholder delete logic; ideally show confirmation dialog
+              toast({
+                title: "Delete Delivery Note",
+                description: `Delete action for ${item.deliveryNumber} triggered. Implement logic as needed.`,
+                variant: "destructive"
+              });
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+          {/* Start Picking (only Pending) */}
+          {item.status === "Pending" && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              title="Start Picking"
+              aria-label="Start Picking"
+              onClick={() => {
+                setSelectedDeliveryNote(item);
+                setShowPickingDialog(true);
+              }}
+            >
+              <Package className="h-4 w-4" />
+            </Button>
+          )}
+          {/* Confirm Delivery (Partial or Complete but not yet confirmed) */}
+          {(item.status === "Partial" || item.status === "Complete") && !item.deliveryConfirmedBy && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-green-600 hover:text-green-700"
+              title="Confirm Delivery"
+              aria-label="Confirm Delivery"
+              onClick={() => {
+                setSelectedDeliveryNote(item);
+                setShowConfirmDeliveryDialog(true);
+              }}
+            >
+              <CheckCircle className="h-4 w-4" />
+            </Button>
           )}
         </div>
       )
@@ -560,8 +599,11 @@ export default function DeliveryNote() {
             <div className="flex-1">
               <Input
                 placeholder="Search by delivery number, customer, or tracking..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={deliverySearchTerm}
+                onChange={(e) => {
+                  setDeliverySearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="max-w-md"
               />
             </div>
@@ -577,9 +619,30 @@ export default function DeliveryNote() {
                 <SelectItem value="Cancelled">Cancelled</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline">
-              <Filter className="h-4 w-4 mr-2" />
-              More Filters
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (showAll) {
+                  // revert
+                  setPageSize(15);
+                  setShowAll(false);
+                  setCurrentPage(1);
+                } else {
+                  setPageSize(500); // large number to effectively show all
+                  setShowAll(true);
+                  setCurrentPage(1);
+                }
+              }}
+            >
+              {showAll ? (
+                <>
+                  <Filter className="h-4 w-4 mr-2" /> Paginate
+                </>
+              ) : (
+                <>
+                  <Filter className="h-4 w-4 mr-2" /> Show All
+                </>
+              )}
             </Button>
           </div>
         </CardContent>
@@ -655,15 +718,15 @@ export default function DeliveryNote() {
                     <Input
                       id="salesOrderSearch"
                       placeholder="Search sales order number or customer..."
-                      value={searchTerm}
-                      onChange={e => setSearchTerm(e.target.value)}
+                      value={salesOrderSearchTerm}
+                      onChange={e => setSalesOrderSearchTerm(e.target.value)}
                       className="mb-2"
                       autoFocus
                     />
                   </div>
                   {availableSalesOrders
                     .filter(order => {
-                      const term = searchTerm.trim().toLowerCase();
+                      const term = salesOrderSearchTerm.trim().toLowerCase();
                       if (!term) return true;
                       return (
                         order.orderNumber?.toLowerCase().includes(term) ||

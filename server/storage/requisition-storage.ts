@@ -130,7 +130,7 @@ export class RequisitionStorage extends BaseStorage implements IRequisitionStora
       await this.logAuditEvent(
         'requisition',
         result.id,
-        'CREATE',
+        'created',
         `Created requisition ${requisitionNumber}`,
         null,
         result
