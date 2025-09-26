@@ -17,8 +17,8 @@ import {
   Boxes,
   Plus, 
   Search, 
-  Edit, 
   Eye,
+  Pencil,
   CheckCircle,
   Clock,
   XCircle,
@@ -34,6 +34,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import DataTable from "@/components/tables/data-table";
 import { formatDate, formatCurrency } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Validation schema (UI-only concerns)
 const physicalStockSchema = z.object({
@@ -248,32 +249,47 @@ export default function PhysicalStockPage() {
       key: "actions",
       header: "Actions",
       render: (_: any, stock: any) => (
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setSelectedStock(stock);
-              setShowDetailsDialog(true);
-            }}
-          >
-            <Eye className="h-4 w-4 text-sky-600" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => startEdit(stock)}
-          >
-            <Edit className="h-4 w-4 text-amber-600" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleDelete(stock)}
-            disabled={deleteMutation.isPending && deleteMutation.variables === stock.id}
-          >
-            <Trash2 className="h-4 w-4 text-red-600" />
-          </Button>
+        <div className="flex items-center gap-6">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="View"
+                onClick={() => { setSelectedStock(stock); setShowDetailsDialog(true); }}
+                className="h-8 w-8 flex items-center justify-center rounded-lg text-blue-600 hover:text-blue-700 bg-transparent hover:bg-blue-50 active:scale-95 transition-colors duration-150 shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-blue-400/40"
+              >
+                <Eye className="h-4 w-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="py-1 px-2 text-xs">View</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="Edit"
+                onClick={() => startEdit(stock)}
+                className="h-8 w-8 flex items-center justify-center rounded-lg text-green-600 hover:text-green-700 bg-transparent hover:bg-green-50 active:scale-95 transition-colors duration-150 shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-green-400/40"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="py-1 px-2 text-xs">Edit</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="Delete"
+                disabled={deleteMutation.isPending && deleteMutation.variables === stock.id}
+                onClick={() => handleDelete(stock)}
+                className="h-8 w-8 flex items-center justify-center rounded-lg text-red-600 hover:text-red-700 bg-transparent hover:bg-red-50 active:scale-95 transition-colors duration-150 shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-red-400/40 disabled:opacity-50"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="py-1 px-2 text-xs">Delete</TooltipContent>
+          </Tooltip>
         </div>
       ),
     },

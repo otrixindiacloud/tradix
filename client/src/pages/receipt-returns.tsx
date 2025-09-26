@@ -33,12 +33,48 @@ import {
   Package,
   Undo2,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Trash2,
+  Truck
 } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import DataTable from "@/components/tables/data-table";
 import { formatDate, formatCurrency } from "@/lib/utils";
+
+// Status mapping helpers (DB <-> UI)
+const mapDbStatusToUi = (s: string | undefined | null): string => {
+  switch ((s || "").toLowerCase()) {
+    case "pending":
+      return "Draft"; // treat pending as Draft in UI listing
+    case "approved":
+      return "Approved";
+    case "returned":
+      return "Returned";
+    case "credited":
+      return "Credited";
+    default:
+      return s || "Draft";
+  }
+};
+
+// (If needed later) UI -> DB mapping kept centralized
+const mapUiStatusToDb = (s: string): string => {
+  switch (s) {
+    case "Draft":
+    case "Pending Approval":
+      return "pending";
+    case "Approved":
+      return "approved";
+    case "Returned":
+      return "returned";
+    case "Credited":
+      return "credited";
+    default:
+      return s;
+  }
+};
 
 // Form schemas
 const receiptReturnSchema = z.object({
@@ -61,24 +97,48 @@ type ReceiptReturnItemForm = {
   conditionNotes?: string;
 };
 
-// Status badge component (light background, border + icon, no saturated fills)
+// Pill style StatusBadge supporting existing statuses plus new visual styles (Pending, Completed, Partial, Discrepancy)
 const StatusBadge = ({ status }: { status: string }) => {
-  const cfg: Record<string, { icon: React.ElementType; classes: string; label: string }> = {
-    Draft: { icon: FileText, classes: "text-gray-700 border-gray-300", label: "Draft" },
-    "Pending Approval": { icon: Clock, classes: "text-yellow-700 border-yellow-400", label: "Pending" },
-    Approved: { icon: CheckCircle, classes: "text-blue-700 border-blue-400", label: "Approved" },
-    Returned: { icon: RotateCcw, classes: "text-orange-700 border-orange-400", label: "Returned" },
-    Credited: { icon: DollarSign, classes: "text-green-700 border-green-400", label: "Credited" },
+  // Normalize some incoming statuses to our visual groups
+  const normalized = (() => {
+    switch (status) {
+      case "Pending Approval":
+        return "Pending";
+      case "Approved":
+        return "Completed"; // Display as Completed per provided design
+      case "Returned":
+        return "Returned";
+      case "Credited":
+        return "Credited";
+      case "Partial":
+        return "Partial";
+      case "Discrepancy":
+        return "Discrepancy";
+      case "Draft":
+        return "Draft";
+      default:
+        return status;
+    }
+  })();
+
+  const cfg: Record<string, { icon: React.ElementType; classes: string; text: string }> = {
+    Pending: { icon: Clock, classes: "text-yellow-700 bg-yellow-50 border-yellow-300", text: "Pending" },
+    Completed: { icon: CheckCircle, classes: "text-green-700 bg-green-50 border-green-300", text: "Completed" },
+    Partial: { icon: Truck, classes: "text-blue-700 bg-blue-50 border-blue-300", text: "Partial" },
+    Discrepancy: { icon: AlertTriangle, classes: "text-red-700 bg-red-50 border-red-300", text: "Discrepancy" },
+    Returned: { icon: RotateCcw, classes: "text-orange-700 bg-orange-50 border-orange-300", text: "Returned" },
+    Credited: { icon: DollarSign, classes: "text-indigo-700 bg-indigo-50 border-indigo-300", text: "Credited" },
+    Draft: { icon: FileText, classes: "text-gray-700 bg-gray-50 border-gray-300", text: "Draft" },
   };
-  const data = cfg[status] || cfg["Draft"];
+
+  const data = cfg[normalized] || cfg.Draft;
   const Icon = data.icon;
+
   return (
-    <Badge
-      className={`flex items-center gap-1.5 border bg-transparent px-2 py-0.5 text-xs font-medium rounded-md ${data.classes}`}
-    >
+    <span className={`inline-flex items-center gap-1.5 border px-3 py-1 rounded-full text-xs font-medium select-none ${data.classes}`}>
       <Icon className="h-3.5 w-3.5" />
-      <span>{data.label}</span>
-    </Badge>
+      {data.text}
+    </span>
   );
 };
 
@@ -106,7 +166,12 @@ export default function ReceiptReturnsPage() {
       try {
         const response = await apiRequest("GET", "/api/receipt-returns");
         const data = await response.json();
-        return Array.isArray(data) ? data : [];
+        if (!Array.isArray(data)) return [];
+        // Normalize statuses to UI values
+        return data.map((r: any) => ({
+          ...r,
+          status: mapDbStatusToUi(r.status),
+        }));
       } catch (error) {
         console.error("Failed to fetch receipt returns:", error);
         return [];
@@ -240,7 +305,12 @@ export default function ReceiptReturnsPage() {
   // Update receipt return mutation
   const updateReturnMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<ReceiptReturnForm> }) => {
-      const res = await apiRequest("PUT", `/api/receipt-returns/${id}`, data);
+      // Map status to DB canonical form before sending
+      const outgoing: any = { ...data };
+      if (outgoing.status) {
+        outgoing.status = mapUiStatusToDb(outgoing.status);
+      }
+      const res = await apiRequest("PUT", `/api/receipt-returns/${id}`, outgoing);
       let json: any = {};
       try { json = await res.json(); } catch { /* ignore */ }
       if (!res.ok) {
@@ -249,6 +319,10 @@ export default function ReceiptReturnsPage() {
       return json;
     },
     onSuccess: (updated: any) => {
+      // Normalize status for UI immediately
+      if (updated?.status) {
+        updated.status = mapDbStatusToUi(updated.status);
+      }
       // Merge into cache optimistically
       queryClient.setQueryData(["receipt-returns"], (old: any) => {
         if (!Array.isArray(old)) return old;
@@ -443,46 +517,77 @@ export default function ReceiptReturnsPage() {
       key: "actions",
       header: "Actions",
       render: (_: any, returnItem: any) => (
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setSelectedReturn(returnItem);
-              setShowDetailsDialog(true);
-            }}
-          >
-            <Eye className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setEditForm(returnItem);
-              setShowEditDialog(true);
-              // Prefill form values
-              form.setValue("returnNumber", returnItem.returnNumber || returnItem.return_number || "");
-              form.setValue("goodsReceiptId", returnItem.goodsReceiptId || returnItem.goods_receipt_id || "");
-              form.setValue("returnReason", returnItem.returnReason || returnItem.return_reason || "");
-              form.setValue("returnDate", returnItem.returnDate || returnItem.return_date || "");
-              form.setValue("status", returnItem.status || "Draft");
-              form.setValue("notes", returnItem.notes || "");
-            }}
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              if (confirm(`Are you sure you want to delete return ${returnItem.return_number}?`)) {
-                deleteReturnMutation.mutate(returnItem.id);
-              }
-            }}
-          >
-            <XCircle className="h-4 w-4 text-red-500" />
-          </Button>
-        </div>
+        <TooltipProvider>
+          <div className="flex items-center gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedReturn(returnItem);
+                    setShowDetailsDialog(true);
+                  }}
+                  className="h-8 w-8 inline-flex items-center justify-center rounded-md text-slate-600 hover:text-blue-600 hover:bg-slate-100 transition-colors"
+                  aria-label="View"
+                >
+                  <Eye className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>View</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditForm(returnItem);
+                    setShowEditDialog(true);
+                    // Prefill form values
+                    form.setValue("returnNumber", returnItem.returnNumber || returnItem.return_number || "");
+                    form.setValue("goodsReceiptId", returnItem.goodsReceiptId || returnItem.goods_receipt_id || "");
+                    form.setValue("returnReason", returnItem.returnReason || returnItem.return_reason || "");
+                    const rawDate = returnItem.returnDate || returnItem.return_date;
+                    let formattedDate = "";
+                    if (rawDate) {
+                      try {
+                        const d = new Date(rawDate);
+                        if (!isNaN(d.getTime())) {
+                          formattedDate = d.toISOString().slice(0,10);
+                        }
+                      } catch {}
+                    }
+                    form.setValue("returnDate", formattedDate);
+                    form.setValue("status", returnItem.status || "Draft");
+                    form.setValue("notes", returnItem.notes || "");
+                    form.setValue("supplierId", returnItem.supplierId || returnItem.supplier_id || "");
+                  }}
+                  className="h-8 w-8 inline-flex items-center justify-center rounded-md text-green-600 hover:bg-green-50 hover:text-green-700 transition-colors"
+                  aria-label="Edit"
+                >
+                  <Edit className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Edit</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm(`Are you sure you want to delete return ${returnItem.return_number}?`)) {
+                      deleteReturnMutation.mutate(returnItem.id);
+                    }
+                  }}
+                  className="h-8 w-8 inline-flex items-center justify-center rounded-md text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors"
+                  aria-label="Delete"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Delete</TooltipContent>
+            </Tooltip>
+          </div>
+        </TooltipProvider>
       ),
     },
   ];
@@ -938,10 +1043,18 @@ export default function ReceiptReturnsPage() {
                   goodsReceiptId: data.goodsReceiptId,
                   supplierId,
                   returnReason: data.returnReason,
-                  returnDate: data.returnDate,
-                  status: data.status,
+                  status: data.status, // keep UI value; server maps again
                   notes: data.notes,
                 };
+                if (data.returnDate) {
+                  // Keep yyyy-mm-dd string (server converts) – ensure valid
+                  payload.returnDate = data.returnDate;
+                }
+                // Sanitize empty string UUIDs (avoid DB uuid cast errors)
+                ["goodsReceiptId", "supplierId"].forEach((k) => {
+                  const key = k as keyof typeof payload;
+                  if (payload[key] === "") delete payload[key];
+                });
                 // Optimistic cache update before mutation
                 queryClient.setQueryData(["receipt-returns"], (old: any) => {
                   if (!Array.isArray(old)) return old;
@@ -971,7 +1084,17 @@ export default function ReceiptReturnsPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Goods Receipt</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select
+                        onValueChange={(val) => {
+                          field.onChange(val);
+                          // Mirror create dialog logic: derive supplierId from selected receipt
+                          const selected = goodsReceipts.find((r: any) => r.id === val);
+                          if (selected?.supplierId) {
+                            form.setValue("supplierId", selected.supplierId, { shouldValidate: true });
+                          }
+                        }}
+                        value={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select goods receipt" />

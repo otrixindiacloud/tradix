@@ -435,27 +435,29 @@ export default function StockTransferPage() {
       key: "actions",
       header: "Actions",
       render: (_: any, transfer: any) => (
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            aria-label="View Details"
             onClick={() => {
               setSelectedTransfer(transfer);
               setShowDetailsDialog(true);
             }}
+            className="p-1 rounded hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-300 transition"
           >
-            <Eye className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
+            <Eye className="h-4 w-4 text-slate-600 hover:text-slate-900" />
+          </button>
+          <button
+            type="button"
+            aria-label="Edit Transfer"
             onClick={() => {
               setSelectedTransfer(transfer);
               setShowEditDialog(true);
             }}
+            className="p-1 rounded hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-300 transition"
           >
-            <Edit className="h-4 w-4" />
-          </Button>
+            <Edit className="h-4 w-4 text-blue-600 hover:text-blue-700" />
+          </button>
         </div>
       ),
     },

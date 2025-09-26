@@ -105,10 +105,66 @@ router.post("/:id/items", async (req, res) => {
 // PUT /api/receipt-returns/:id
 router.put("/:id", async (req, res) => {
   try {
-    const updated = await storage.updateReturn(req.params.id, req.body);
+    const body = req.body || {};
+    // Map frontend verbose statuses to compact internal values (align with POST logic)
+    const statusMap: Record<string, string> = {
+      Draft: "pending",
+      "Pending Approval": "pending",
+      Approved: "approved",
+      Returned: "returned",
+      Credited: "credited",
+    };
+    // Whitelist only updatable columns
+    const allowed = [
+      "returnNumber",
+      "supplierId",
+      "goodsReceiptId",
+      "returnReason",
+      "notes",
+      "status",
+      "returnDate",
+      "totalReturnValue",
+      "debitNoteNumber",
+      "debitNoteGenerated",
+    ];
+    const payload: any = {};
+    for (const k of allowed) {
+      if (Object.prototype.hasOwnProperty.call(body, k)) {
+        payload[k] = body[k];
+      }
+    }
+    if (body.status) payload.status = statusMap[body.status] || body.status;
+    if (body.returnDate === "" || body.returnDate === null) {
+      // Remove empty date to avoid invalid update
+      delete payload.returnDate;
+    } else if (typeof body.returnDate === "string" && /\d{4}-\d{2}-\d{2}$/.test(body.returnDate)) {
+      try { payload.returnDate = new Date(body.returnDate); } catch { /* ignore */ }
+    }
+    // Remove empty string fields that could violate NOT NULL / type constraints
+    Object.keys(payload).forEach(k => {
+      if (payload[k] === "") delete payload[k];
+      if (payload[k] === undefined || payload[k] === null) delete payload[k];
+    });
+    // Basic safeguard: never allow id overwrite
+    delete payload.id;
+    // Debug logging (can be removed later)
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[PUT /api/receipt-returns/:id] payload", req.params.id, payload);
+    }
+    const updated = await storage.updateReturn(req.params.id, payload);
     if (!updated) return res.status(404).json({ message: "Return not found" });
     res.json(updated);
   } catch (err) {
+    console.error("Failed to update return (server route)", err);
+    // Drizzle / PG error code for unique violation
+    // @ts-ignore
+    if (err?.code === "23505") {
+      return res.status(400).json({ message: "Return number already exists" });
+    }
+    if (process.env.NODE_ENV !== "production") {
+      // @ts-ignore
+      return res.status(500).json({ message: "Failed to update return", code: err?.code, detail: err?.detail, error: String(err) });
+    }
     res.status(500).json({ message: "Failed to update return" });
   }
 });

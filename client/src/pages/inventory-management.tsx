@@ -2462,10 +2462,7 @@ function SupplierReturnsTab() {
             <p className="text-gray-600 text-center mb-4">
               Supplier returns will appear here when you need to return items to suppliers.
             </p>
-            <Button data-testid="button-create-first-return" onClick={() => setShowCreateDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create First Return
-            </Button>
+            {/* Removed 'Create First Return' button as per request */}
           </CardContent>
         </Card>
       )}

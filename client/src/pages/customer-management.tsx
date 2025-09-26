@@ -822,41 +822,47 @@ export default function CustomerManagementPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
+                        <div className="flex items-center gap-4">
+                          {/* View */}
+                          <button
+                            type="button"
                             onClick={() => navigate(`/customers/${customer.id}`)}
-                            title="View customer details"
+                            aria-label="View customer"
+                            title="View"
+                            className="p-1 rounded transition hover:bg-gray-100 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                            data-testid={`icon-view-${customer.id}`}
                           >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
+                            <Eye className="h-5 w-5" />
+                          </button>
+                          {/* Edit */}
+                          <button
+                            type="button"
                             onClick={() => openEditDialog(customer)}
-                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200 hover:border-blue-300"
-                            title="Edit customer"
+                            aria-label="Edit customer"
+                            title="Edit"
+                            className="p-1 rounded transition hover:bg-blue-50 text-blue-600 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                            data-testid={`icon-edit-${customer.id}`}
                           >
-                            <Edit className="h-4 w-4" />
-                          </Button>
+                            <Edit className="h-5 w-5" />
+                          </button>
+                          {/* Delete with confirmation */}
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300"
-                                title="Delete customer"
+                              <button
+                                type="button"
+                                aria-label="Delete customer"
+                                title="Delete"
+                                className="p-1 rounded transition hover:bg-red-50 text-red-600 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-300"
+                                data-testid={`icon-delete-${customer.id}`}
                               >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                                <Trash2 className="h-5 w-5" />
+                              </button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  This action cannot be undone. This will permanently delete the customer
-                                  "{customer.name}" and remove all associated data.
+                                  This action cannot be undone. This will permanently delete the customer "{customer.name}" and remove all associated data.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -864,6 +870,7 @@ export default function CustomerManagementPage() {
                                 <AlertDialogAction
                                   onClick={() => handleDeleteCustomer(customer.id)}
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  data-testid={`confirm-delete-${customer.id}`}
                                 >
                                   Delete
                                 </AlertDialogAction>
